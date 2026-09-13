@@ -11,12 +11,13 @@
 <link rel="stylesheet" href="weekend-tracker.css?v=20260909f">
 <link rel="stylesheet" href="weekend-tracker-leaders.css?v=20260910d">
 <link rel="stylesheet" href="weekend-tracker-liveux.css?v=20260909f">
+<link rel="stylesheet" href="weekend-tracker-compact.css?v=20260913a">
 </head>
 <body>
 <div class="app">
   <header class="topbar">
     <div class="toprow">
-      <div class="brand"><div class="logo">🏈</div><div><small>FANTASY WEEKEND</small><b>League Matrix</b></div></div>
+      <div class="brand"><div class="logo">🏈</div><div><small>FANTASY WEEKEND</small><b>Weekend Tracker</b></div></div>
       <div class="controls">
         <select id="season" class="field desktop" aria-label="Season"></select>
         <select id="week" class="field" aria-label="Week"></select>
@@ -39,7 +40,9 @@
     <section id="leadersView" class="leadersView">
       <div class="leadersShell">
         <div class="leadersToolbar"><div><b>League Leaders</b><span class="statuspill">Full NFL player pool · highest fantasy points to lowest</span></div><div class="right"><label class="statuspill">Scoring league <select id="leadersLeagueFilter" class="field"></select></label><label class="leadersToggle"><input id="leadersHideZero" type="checkbox" checked> Hide 0 pts</label></div></div>
-        <div class="leadersFilterBar">
+        <div id="leadersCompactToolbar" class="compactLeaderToolbar" aria-label="Leader filters and sorting"></div>
+        <div id="leadersPositionBar" class="leadersPositionBar" aria-label="Position filter"></div>
+        <div class="leadersFilterBar" aria-hidden="true">
           <div class="leadersFilterGroup"><span class="filterGroupLabel">Status</span><div id="leadersGameFilters" class="gameFilterChips" aria-label="Game status filters"></div></div>
           <div class="leadersFilterGroup"><span class="filterGroupLabel">Window</span><div id="leadersWindowFilters" class="gameFilterChips" aria-label="Game window filters"></div></div>
           <div class="leadersFilterGroup"><span class="filterGroupLabel">Field</span><div id="leadersSituationFilters" class="gameFilterChips" aria-label="Live field situation filters"></div></div>
@@ -62,5 +65,6 @@
 <script src="weekend-tracker-core.js?v=20260909f"></script>
 <script src="weekend-tracker-ui.js?v=20260910c"></script>
 <script src="weekend-tracker-data.js?v=20260910e"></script>
+<script src="weekend-tracker-compact.js?v=20260913a"></script>
 </body>
 </html>
