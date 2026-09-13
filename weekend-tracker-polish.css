@@ -1,0 +1,265 @@
+/* Weekend Tracker readability polish — 2026-09-13
+   Loaded after weekend-tracker-compact.css so this file can safely refine the compact UI
+   without changing the scoring/data pipeline. */
+
+/* ---------- Leader card hierarchy ---------- */
+.leaderColumnHead,
+.leaderRowMain{
+  grid-template-columns:42px 34px minmax(120px,1fr) 70px 118px;
+  gap:7px;
+}
+.leaderColumnHead span:nth-child(1){grid-column:1}
+.leaderColumnHead span:nth-child(2){display:none}
+.leaderColumnHead span:nth-child(3){display:block;grid-column:3}
+.leaderColumnHead span:nth-child(4),
+.leaderColumnHead span:nth-child(5){display:none}
+.leaderColumnHead span:nth-child(6){display:block;grid-column:4}
+.leaderColumnHead span:nth-child(7){display:block;grid-column:5}
+
+.leaderRank{grid-column:1}
+.leaderPlayerImage{
+  display:grid!important;
+  grid-column:2;
+  place-items:center;
+}
+.leaderPlayerImage .avatar{
+  width:30px;
+  height:30px;
+  border-radius:9px;
+  background:#202a34;
+  box-shadow:0 0 0 1px rgba(255,255,255,.045);
+}
+.leaderPlayerImage .avatar img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.leaderPlayerImage .avatar .teamLogo,
+.leaderPlayerImage .avatar .teamLogo.big{
+  width:25px;
+  height:25px;
+}
+.leaderName{grid-column:3;min-width:0}
+.leaderPts{grid-column:4;text-align:right}
+.leaderGameTime{grid-column:5;justify-content:flex-end}
+.leaderLogoCell,
+.leaderOppLogo{display:none!important}
+
+/* More readable player identity. */
+.leaderName b{
+  font-size:14px;
+  line-height:1.12;
+  font-weight:800;
+  letter-spacing:-.015em;
+}
+.compactMeta{
+  color:#91a1af;
+  font-size:9px;
+  line-height:1.2;
+  margin-top:3px;
+}
+
+/* Score first, then live context. */
+.leaderPts{
+  font-size:19px;
+  line-height:1;
+  font-weight:850;
+  font-variant-numeric:tabular-nums;
+}
+.leaderGameTime{
+  gap:5px;
+  min-width:0;
+}
+.leaderGameTime .gameState{
+  min-height:25px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size:10px;
+  font-weight:850;
+  padding:4px 7px;
+  max-width:78px;
+}
+.leaderGameTime .gameState.live{
+  color:#98f0bd;
+  background:rgba(55,210,126,.17);
+  border:1px solid rgba(55,210,126,.22);
+}
+.leaderGameTime .gameState.final{
+  color:#a8b4bf;
+  border:1px solid rgba(145,160,174,.12);
+}
+.leaderGameTime .remaining{
+  font-size:9px;
+  font-weight:850;
+}
+
+/* Stronger card separation without making the board brighter overall. */
+.leaderCard{
+  background:#121a21;
+  border-color:#33424f;
+}
+.leaderCard + .leaderCard{margin-top:1px}
+.leaderCard:hover{
+  background:#152029;
+  border-color:#4b6070;
+}
+.leaderStatsRow{
+  border-top-color:#34414d;
+}
+.leaderStatsLabel{
+  color:#8192a1;
+  font-weight:850;
+}
+.leaderStatsCell .stat{
+  color:#d4dce3;
+  font-weight:750;
+}
+
+/* Keep the default scan view focused: window/possession/RZ + three key stats.
+   Secondary context comes back when the row is expanded. */
+.leaderCard:not(.compactExpanded) .leaderStatsCell .matchBadge,
+.leaderCard:not(.compactExpanded) .leaderStatsCell .weatherPill:not(.alert),
+.leaderCard:not(.compactExpanded) .leaderStatsCell .fieldLine:not(:has(.fieldBadge.redzone)){
+  display:none!important;
+}
+.leaderCard.compactExpanded .leaderStatsCell .matchBadge,
+.leaderCard.compactExpanded .leaderStatsCell .weatherPill,
+.leaderCard.compactExpanded .leaderStatsCell .fieldLine{
+  display:inline-flex!important;
+}
+.leaderStatsCell .windowBadge,
+.leaderStatsCell .possessionBadge,
+.leaderStatsCell .fieldBadge.redzone{
+  font-weight:850;
+}
+
+/* ---------- Lane readability ---------- */
+.leaderLane{
+  border-color:#32414d;
+  box-shadow:0 8px 22px rgba(0,0,0,.16);
+}
+.leaderLaneHead{
+  background:#161f27;
+  border-bottom-color:#33414d;
+}
+.leaderLaneHead b{
+  font-size:15px;
+  letter-spacing:-.01em;
+}
+.leaderLaneHead span{
+  color:#96a8b7;
+  font-weight:650;
+}
+.leaderColumnHead{
+  background:#0f171e;
+  color:#8294a5;
+  font-size:9px;
+  font-weight:850;
+}
+
+/* ---------- Density behavior ---------- */
+.tracker-density-comfortable .leaderRowMain{
+  grid-template-columns:46px 38px minmax(142px,1fr) 76px 126px;
+  gap:8px;
+}
+.tracker-density-comfortable .leaderPlayerImage .avatar{
+  width:36px;
+  height:36px;
+  border-radius:10px;
+}
+.tracker-density-comfortable .leaderPlayerImage .avatar .teamLogo,
+.tracker-density-comfortable .leaderPlayerImage .avatar .teamLogo.big{
+  width:30px;
+  height:30px;
+}
+.tracker-density-comfortable .leaderName b{font-size:15px}
+.tracker-density-comfortable .compactMeta{font-size:10px}
+.tracker-density-comfortable .leaderPts{font-size:21px}
+
+/* Ultra-compact stays genuinely ultra-compact: remove headshots and reclaim width. */
+.tracker-density-ultra .leaderRowMain{
+  grid-template-columns:36px minmax(138px,1fr) 60px 100px;
+  gap:5px;
+}
+.tracker-density-ultra .leaderColumnHead{
+  grid-template-columns:36px minmax(138px,1fr) 60px 100px;
+  gap:5px;
+}
+.tracker-density-ultra .leaderPlayerImage{display:none!important}
+.tracker-density-ultra .leaderName{grid-column:2}
+.tracker-density-ultra .leaderPts{grid-column:3}
+.tracker-density-ultra .leaderGameTime{grid-column:4}
+.tracker-density-ultra .leaderColumnHead span:nth-child(1){grid-column:1}
+.tracker-density-ultra .leaderColumnHead span:nth-child(3){grid-column:2}
+.tracker-density-ultra .leaderColumnHead span:nth-child(6){grid-column:3}
+.tracker-density-ultra .leaderColumnHead span:nth-child(7){grid-column:4}
+
+/* ---------- Live feed ---------- */
+.leadersFeedBar{
+  min-height:42px;
+}
+.leadersFeedBar:has(.scoreFeedEmpty){
+  grid-template-columns:auto minmax(0,1fr);
+  padding-top:6px;
+  padding-bottom:6px;
+}
+.leadersFeedBar:has(.scoreFeedEmpty) .feedClear{display:none}
+.leadersFeedBar:has(.scoreFeedEmpty) .leadersFeedTitle small{display:none}
+.leadersFeedBar:has(.scoreFeedEmpty) .scoreFeedEmpty{
+  min-height:26px;
+  color:#8395a5;
+}
+
+/* ---------- Sticky position bar / toolbar clarity ---------- */
+.compactLeaderToolbar{
+  background:#0e161c;
+}
+.compactFilterSummary{
+  color:#eef3f7;
+  font-weight:800;
+}
+.leadersPositionBar{
+  box-shadow:0 5px 16px rgba(0,0,0,.14);
+}
+.positionSwitchBtn:not(.on){
+  color:#bbc7d1;
+}
+
+/* ---------- Responsive tuning ---------- */
+@media(max-width:900px){
+  .leaderRowMain,
+  .tracker-density-comfortable .leaderRowMain{
+    grid-template-columns:38px 32px minmax(112px,1fr) 62px 106px;
+    gap:5px;
+  }
+  .leaderColumnHead,
+  .tracker-density-comfortable .leaderColumnHead{
+    grid-template-columns:38px 32px minmax(112px,1fr) 62px 106px;
+    gap:5px;
+  }
+  .leaderPlayerImage .avatar,
+  .tracker-density-comfortable .leaderPlayerImage .avatar{
+    width:29px;
+    height:29px;
+  }
+  .leaderName b{font-size:13px}
+}
+
+@media(max-width:620px){
+  .leaderRowMain,
+  .tracker-density-comfortable .leaderRowMain{
+    grid-template-columns:35px 30px minmax(104px,1fr) 57px 94px;
+  }
+  .leaderColumnHead,
+  .tracker-density-comfortable .leaderColumnHead{
+    grid-template-columns:35px 30px minmax(104px,1fr) 57px 94px;
+  }
+  .leaderPlayerImage .avatar,
+  .tracker-density-comfortable .leaderPlayerImage .avatar{
+    width:27px;
+    height:27px;
+  }
+  .leaderPts{font-size:17px}
+  .leaderGameTime .gameState{max-width:61px;padding:3px 5px}
+}
