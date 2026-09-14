@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="weekend-tracker-liveux.css?v=20260909f">
 <link rel="stylesheet" href="weekend-tracker-compact.css?v=20260913a">
 <link rel="stylesheet" href="weekend-tracker-polish.css?v=20260913b">
+<link rel="stylesheet" href="weekend-tracker-voice.css?v=20260914a">
 </head>
 <body>
 <div class="app">
@@ -29,7 +30,7 @@
     <div class="searchrow">
       <div class="searchwrap"><input id="playerSearch" class="field" autocomplete="off" placeholder="Type a player name, e.g. Lamar Jackson"><div id="searchMenu" class="searchmenu"></div></div>
       <span id="playerStatus" class="statuspill">Players: loading…</span>
-      <div class="viewtabs"><button id="matrixViewBtn" class="viewtab on">Matrix</button><button id="leadersViewBtn" class="viewtab">Leaders</button></div>
+      <div class="viewtabs"><button id="matrixViewBtn" class="viewtab on">Matrix</button><button id="leadersViewBtn" class="viewtab">Leaders</button><button id="voiceViewBtn" class="viewtab">Voice Picks <span class="voiceTabCount" style="display:none">0</span></button></div>
     </div>
   </header>
   <main class="main">
@@ -53,6 +54,41 @@
         <div id="leadersLanes" class="leaderLanes"></div>
       </div>
     </section>
+
+    <section id="voiceMatchView" class="voiceMatchView">
+      <div class="voiceShell">
+        <div class="voiceToolbar">
+          <button id="voiceMic" class="btn primary voiceBtn voiceMic">🎙️ <span id="voiceMicLabel">Start Dictation</span></button>
+          <span id="voiceMicStatus" class="voiceStatus"><span class="voiceStatusDot"></span><span id="voiceMicStatusText">Mic ready</span></span>
+          <button id="voiceCompare" class="btn primary voiceBtn">Compare</button>
+          <button id="voiceClearMatches" class="btn small">Clear Matches</button>
+          <span class="spacer"></span>
+          <div class="voiceConfirmedSummary"><span id="voiceConfirmedCount" class="voiceCount">0 confirmed</span><div id="voiceConfirmedStrip" class="voiceConfirmedStrip"></div><button id="voiceClearConfirmed" class="btn small">Clear Picks</button></div>
+        </div>
+        <div class="voiceGrid">
+          <section class="voicePanel">
+            <div class="voiceHead"><div><b>1. Dictate / type</b><small>Raw input stays untouched. Combined names are split only when Compare is pressed.</small></div></div>
+            <div class="voiceBody">
+              <textarea id="voiceInput" class="voiceInput" spellcheck="false" placeholder="Examples:&#10;Bo Nicks&#10;Sam Darnolds&#10;Jared Goff James Cook&#10;Amon Ra St Brown"></textarea>
+              <div id="voiceInterim" class="voiceInterim"></div>
+              <div class="voiceInputFoot"><span id="voiceInputCount">0 entries</span><button id="voiceClearInput" class="btn small">Clear Input</button></div>
+            </div>
+          </section>
+          <section class="voicePanel">
+            <div class="voiceHead"><div><b>2. Match + confirm</b><small id="voiceMatchMeta">Confirm the matches you want highlighted on Leaders.</small></div></div>
+            <div id="voiceMatches" class="voiceBody voiceEmpty"><div><b>No comparison yet</b>Nothing runs until you press Compare.</div></div>
+          </section>
+          <section class="voicePanel poolPanel">
+            <div class="voiceHead"><div><b>3. Active 2026 player pool</b><small>Uses the same active player IDs as Weekend Tracker so confirmed picks map directly to Leaders.</small></div></div>
+            <div class="voiceBody">
+              <div class="voicePoolTools"><button id="voiceLoadPlayers" class="btn voiceBtn">Load 2026 Players</button><input id="voicePoolSearch" class="voicePoolSearch" type="search" placeholder="Filter player / team / position"></div>
+              <div id="voicePoolMeta" class="voicePoolMeta">Use Load 2026 Players to refresh the active player pool.</div>
+              <div id="voicePool" class="voicePool"><div class="voiceEmpty"><div><b>Player pool</b>Load or filter active players here.</div></div></div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
   </main>
 </div>
 
@@ -68,5 +104,6 @@
 <script src="weekend-tracker-data.js?v=20260910e"></script>
 <script src="weekend-tracker-compact.js?v=20260913a"></script>
 <script src="weekend-tracker-compact-fix.js?v=20260913a"></script>
+<script src="weekend-tracker-voice.js?v=20260914a"></script>
 </body>
 </html>
