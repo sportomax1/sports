@@ -21,8 +21,9 @@
 .matchupField,.matchupField.offenseOnlyField{padding:8px 10px 11px;min-height:0}
 .matchupZoneLabel{font-size:11px;margin-bottom:5px}
 
-/* ESPN does not provide useful OL box-score production here; do not spend vertical space on pending cards. */
+/* Hide OL while snap data is unavailable; reveal it only when the helper confirms real snap counts. */
 .matchupOLRow{display:none!important}
+.matchupOLRow.has-snap-data{display:grid!important;margin-bottom:8px}
 
 .matchupFieldFormation{gap:8px 10px;margin-top:0}
 .matchupPositionZone{border-radius:10px}
