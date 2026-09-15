@@ -9,6 +9,7 @@ let requestToken=0;
 const cache=new Map();
 const escM=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const normM=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\b(jr|sr|ii|iii|iv|v)\b\.?/g,' ').replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ');
+const numM=v=>Number.isFinite(Number(v))?Number(v):0;
 const teamLogoM=t=>t?`https://a.espncdn.com/i/teamlogos/nfl/500/${encodeURIComponent(String(t).toLowerCase())}.png`:'';
 const teamNameM=t=>(typeof TEAM_NAMES!=='undefined'&&TEAM_NAMES[t])||t||'Team';
 const fmtClock=d=>{if(!d)return'';const x=new Date(d);if(Number.isNaN(x.getTime()))return'';return x.toLocaleString([],{weekday:'short',hour:'numeric',minute:'2-digit'});};
@@ -75,6 +76,12 @@ function flattenRoster(data){
   if(Array.isArray(data?.roster))data.roster.forEach(x=>push(x,x.position?.name||''));
   return raw.filter(x=>x.name&&x.position);
 }
+
+function applyDepthChart(roster,data){
+  const ranks=new Map();
+  for(const chart of data?.depthCharts||[]){for(const pos of Object.values(chart?.positions||{})){for(const row of pos?.athletes||[]){const a=row?.athlete||{},id=String(a.id||'');if(!id)continue;const rank=Number(row.rank||99),prev=ranks.get(id);if(!prev||rank<prev)ranks.set(id,rank)}}}
+  return roster.map(p=>{const depthRank=ranks.get(String(p.id))||99;return {...p,depthRank,starter:depthRank===1||p.starter}});
+}
 function parseBoxscore(summary){
   const byTeam=new Map();
   for(const block of summary?.boxscore?.players||[]){
@@ -89,7 +96,8 @@ function findBoxPlayer(boxMap,p){if(!boxMap||!p)return null;if(p.id&&boxMap.has(
 function bestCat(bp,names){if(!bp)return{};for(const n of names){for(const [k,v] of Object.entries(bp.cats||{}))if(k.includes(n))return v}return{}}
 function statsFor(p,bp){
   if(!bp)return[];
-  const pos=p.position,out=[];
+  const pos=p.position;
+  const out=[];
   const add=(obj,keys,label)=>{for(const k of keys){const v=obj[k];if(v!==undefined&&v!==null&&String(v)!==''&&String(v)!=='0'&&String(v)!=='0.0'){out.push(`${v} ${label}`);return}}};
   if(pos==='QB'){const s=bestCat(bp,['passing']);add(s,['YDS'],'PYD');add(s,['TD'],'PTD');add(s,['INT'],'INT');add(s,['QBR','RTG'],'QBR')}
   else if(['RB','FB'].includes(pos)){const r=bestCat(bp,['rushing']),c=bestCat(bp,['receiving']);add(r,['YDS'],'RYD');add(r,['TD'],'RTD');add(c,['REC'],'REC');add(c,['YDS'],'REY')}
@@ -97,7 +105,7 @@ function statsFor(p,bp){
   else{const d=bestCat(bp,['defensive','defense']);add(d,['TOT','TOTAL'],'TCK');add(d,['SACKS','SACK'],'SCK');add(d,['INT'],'INT');add(d,['FF'],'FF')}
   return out.slice(0,4);
 }
-function rankRoster(list,positions,count){return list.filter(p=>positions.includes(p.position)).sort((a,b)=>(b.starter-a.starter)||Number(a.jersey||999)-Number(b.jersey||999)||a.name.localeCompare(b.name)).slice(0,count)}
+function rankRoster(list,positions,count){return list.filter(p=>positions.includes(p.position)).sort((a,b)=>(Number(a.depthRank||99)-Number(b.depthRank||99))||(b.starter-a.starter)||Number(a.jersey||999)-Number(b.jersey||999)||a.name.localeCompare(b.name)).slice(0,count)}
 function faceUrl(p){if(p.headshot)return typeof p.headshot==='string'?p.headshot:(p.headshot.href||'');return p.id?`https://a.espncdn.com/i/headshots/nfl/players/full/${encodeURIComponent(p.id)}.png`:''}
 function playerCard(p,bp,cls=''){
   if(!p)return `<div class="matchupCard ${cls} empty"><div class="matchupCardName"><b>—</b><small>Not listed</small></div></div>`;
@@ -124,20 +132,23 @@ async function renderSelectedGame(parentToken=requestToken){
   root.innerHTML='<div class="matchupLoading" style="grid-column:1/-1"><div><b>Building lineup</b>Loading both rosters and the selected game’s box score.</div></div>';
   meta.innerHTML=`<span class="matchupMiniTag ${stateClass}">${escM(eventStatus(ev))}</span><span>${escM(away.abbr)} at ${escM(home.abbr)}</span><span>•</span><span>Season ${season} · Week ${Number(E('week')?.value||state?.week||1)}</span>`;
   try{
-    const [homeRosterData,awayRosterData,summary]=await Promise.all([
+    const [homeRosterData,awayRosterData,homeDepthData,awayDepthData,summary]=await Promise.all([
       cachedFetch(`roster:${season}:${home.abbr}`,`https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/${encodeURIComponent(home.abbr.toLowerCase())}/roster?season=${season}`,15*60*1000).catch(()=>({})),
       cachedFetch(`roster:${season}:${away.abbr}`,`https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/${encodeURIComponent(away.abbr.toLowerCase())}/roster?season=${season}`,15*60*1000).catch(()=>({})),
+      cachedFetch(`depth:${season}:${home.id}`,`https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/${encodeURIComponent(home.id||home.abbr)}/depthcharts`,15*60*1000).catch(()=>({})),
+      cachedFetch(`depth:${season}:${away.id}`,`https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/${encodeURIComponent(away.id||away.abbr)}/depthcharts`,15*60*1000).catch(()=>({})),
       cachedFetch(`summary:${ev.id}`,`https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=${encodeURIComponent(ev.id)}`,stateClass==='live'?30*1000:5*60*1000).catch(()=>({}))
     ]);
     if(parentToken!==requestToken||String(selectedEventId)!==String(ev.id))return;
-    const homeRoster=flattenRoster(homeRosterData),awayRoster=flattenRoster(awayRosterData),boxes=parseBoxscore(summary),homeBox=boxes.get(home.abbr)||new Map(),awayBox=boxes.get(away.abbr)||new Map();
+    const homeRoster=applyDepthChart(flattenRoster(homeRosterData),homeDepthData),awayRoster=applyDepthChart(flattenRoster(awayRosterData),awayDepthData),boxes=parseBoxscore(summary),homeBox=boxes.get(home.abbr)||new Map(),awayBox=boxes.get(away.abbr)||new Map();
     root.innerHTML=teamBoard(home,homeRoster,awayRoster,homeBox,awayBox)+teamBoard(away,awayRoster,homeRoster,awayBox,homeBox);
-    if(!(homeRoster.length+awayRoster.length))meta.innerHTML+='<span class="matchupMiniTag">Roster endpoint returned no players</span>';
+    const total=homeRoster.length+awayRoster.length;
+    if(!total)meta.innerHTML+=`<span class="matchupMiniTag">Roster endpoint returned no players</span>`;
   }catch(e){console.error('Matchup render failed',e);root.innerHTML=`<div class="matchupError" style="grid-column:1/-1"><div><b>Could not build the lineup</b>${escM(e.message||e)}</div></div>`}
 }
 function bindMatchup(){
   E('matchupViewBtn')?.addEventListener('click',()=>setActive(true));
-  ['matrixViewBtn','leadersViewBtn','voiceViewBtn'].forEach(id=>E(id)?.addEventListener('click',()=>setActive(false)));
+  ['matrixViewBtn','leadersViewBtn','voiceViewBtn'].forEach(id=>E(id)?.addEventListener('click',()=>{setActive(false)}));
   E('matchupGameSelect')?.addEventListener('change',e=>{selectedEventId=e.target.value;localStorage.setItem(GAME_KEY,selectedEventId);renderSelectedGame()});
   E('matchupReload')?.addEventListener('click',()=>loadWeekGames(true));
   E('season')?.addEventListener('change',()=>{if(matchupActive)setTimeout(()=>loadWeekGames(true),0)});
