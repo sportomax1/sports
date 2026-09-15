@@ -1,0 +1,54 @@
+.matchupView{display:none;min-height:calc(100vh - 130px)}
+.matchupShell{padding:14px 18px 32px;max-width:1800px;margin:0 auto}
+.matchupToolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.matchupToolbar .matchupTitle{font-weight:900;font-size:17px;letter-spacing:-.02em}
+.matchupToolbar .spacer{flex:1}
+.matchupGameSelect{min-width:min(440px,70vw)}
+.matchupMeta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:#aab2bf;font-size:12px;margin-bottom:12px}
+.matchupBoards{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
+.matchupTeamBoard{position:relative;overflow:hidden;border:1px solid #2a303a;border-radius:16px;background:linear-gradient(180deg,#10151c 0%,#0c1016 100%);min-height:660px;box-shadow:0 14px 36px rgba(0,0,0,.2)}
+.matchupTeamHead{display:flex;align-items:center;gap:10px;padding:13px 14px;border-bottom:1px solid #262c35;background:rgba(255,255,255,.025)}
+.matchupTeamLogo{width:42px;height:42px;object-fit:contain;flex:0 0 42px}
+.matchupTeamHeadText{min-width:0}
+.matchupTeamHeadText b{display:block;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.matchupTeamHeadText small{display:block;color:#8f99a8;margin-top:2px}
+.matchupScore{margin-left:auto;text-align:right}
+.matchupScore strong{display:block;font-size:22px;line-height:1;font-variant-numeric:tabular-nums}
+.matchupScore span{font-size:10px;color:#8f99a8;text-transform:uppercase;letter-spacing:.08em}
+.matchupField{position:relative;padding:14px 12px 18px;min-height:588px;background-image:linear-gradient(rgba(255,255,255,.024) 1px,transparent 1px);background-size:100% 58px}
+.matchupField:before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(104,132,93,.05),rgba(104,132,93,.015));pointer-events:none}
+.matchupZoneLabel{position:relative;z-index:1;display:flex;align-items:center;gap:8px;color:#8f99a8;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.matchupZoneLabel:after{content:"";height:1px;background:#2b3340;flex:1}
+.matchupDefense{position:relative;z-index:1;min-height:242px;display:flex;flex-direction:column;gap:8px;justify-content:flex-start}
+.matchupDefRow,.matchupOffRow{display:flex;justify-content:center;gap:7px;min-height:62px}
+.matchupDefRow.db{justify-content:space-between}
+.matchupLos{position:relative;z-index:1;height:2px;margin:8px 0 12px;background:linear-gradient(90deg,transparent,#4f5e70 12%,#4f5e70 88%,transparent)}
+.matchupOffense{position:relative;z-index:1;display:flex;flex-direction:column;gap:10px;min-height:235px}
+.matchupOffRow.skills{justify-content:space-between;align-items:center}
+.matchupOffRow.backfield{gap:18px;align-items:flex-start}
+.matchupCard{width:112px;min-width:0;border:1px solid #303847;border-radius:10px;background:#151b24;padding:7px 7px 6px;box-shadow:0 5px 14px rgba(0,0,0,.16)}
+.matchupCard.compact{width:96px}
+.matchupCard.qb{width:130px;border-color:#51627a;background:#17202b}
+.matchupCard.empty{opacity:.48;border-style:dashed;background:#10151b}
+.matchupCardTop{display:flex;align-items:center;gap:6px;min-width:0}
+.matchupFace{width:30px;height:30px;border-radius:50%;object-fit:cover;background:#222b37;flex:0 0 30px}
+.matchupCardName{min-width:0}
+.matchupCardName b{display:block;font-size:11px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.matchupCardName small{display:block;color:#8f99a8;font-size:9px;margin-top:2px}
+.matchupCardStats{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;min-height:15px}
+.matchupStat{font-size:8px;font-weight:800;color:#b8c3d1;background:#222b37;border-radius:5px;padding:2px 4px;white-space:nowrap}
+.matchupStat.hot{color:#fff;background:#394a61}
+.matchupCenterCol{display:flex;flex-direction:column;align-items:center;gap:8px}
+.matchupLegend{position:relative;z-index:1;margin-top:10px;text-align:center;color:#747f8f;font-size:10px}
+.matchupLoading,.matchupError,.matchupEmpty{display:grid;place-items:center;min-height:430px;padding:30px;text-align:center;color:#9aa5b3;border:1px dashed #303845;border-radius:14px;background:#0f141b}
+.matchupLoading b,.matchupError b,.matchupEmpty b{display:block;color:#e6ebf2;font-size:16px;margin-bottom:6px}
+.matchupError{color:#d99b9b}
+.matchupMiniTag{display:inline-flex;align-items:center;height:22px;padding:0 8px;border:1px solid #303845;border-radius:999px;color:#aeb8c5;font-size:10px;font-weight:800}
+.matchupMiniTag.live{border-color:#9a5438;color:#f0aa8c;background:#2b1812}
+.matchupMiniTag.final{border-color:#435061;color:#bac4d0}
+.matchupMiniTag.pre{border-color:#344151;color:#9fb1c5}
+.matchupToggle{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#9da8b6}
+.matchupToggle input{accent-color:currentColor}
+@media(max-width:1100px){.matchupBoards{grid-template-columns:1fr}.matchupTeamBoard{min-height:auto}.matchupField{min-height:560px}}
+@media(max-width:720px){.matchupShell{padding:10px 8px 24px}.matchupToolbar{align-items:stretch}.matchupToolbar .matchupTitle{width:100%}.matchupToolbar .spacer{display:none}.matchupGameSelect{min-width:0;width:100%}.matchupBoards{gap:10px}.matchupTeamBoard{border-radius:12px}.matchupTeamHead{padding:10px}.matchupTeamLogo{width:34px;height:34px;flex-basis:34px}.matchupField{padding:10px 6px 14px;min-height:530px}.matchupCard{width:88px;padding:5px}.matchupCard.compact{width:76px}.matchupCard.qb{width:108px}.matchupFace{width:24px;height:24px;flex-basis:24px}.matchupCardName b{font-size:9px}.matchupCardName small{font-size:8px}.matchupStat{font-size:7px;padding:2px 3px}.matchupDefRow,.matchupOffRow{gap:4px}.matchupZoneLabel{font-size:9px}.matchupDefense{min-height:224px}}
+@media(max-width:430px){.matchupCard{width:78px}.matchupCard.compact{width:68px}.matchupCard.qb{width:96px}.matchupCardStats{gap:2px}.matchupStat:nth-child(n+3){display:none}}
