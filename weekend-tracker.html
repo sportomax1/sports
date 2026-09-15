@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="weekend-tracker-compact.css?v=20260913a">
 <link rel="stylesheet" href="weekend-tracker-polish.css?v=20260913b">
 <link rel="stylesheet" href="weekend-tracker-voice.css?v=20260914a">
+<link rel="stylesheet" href="weekend-tracker-matchup.css?v=20260914a">
 </head>
 <body>
 <div class="app">
@@ -30,7 +31,7 @@
     <div class="searchrow">
       <div class="searchwrap"><input id="playerSearch" class="field" autocomplete="off" placeholder="Type a player name, e.g. Lamar Jackson"><div id="searchMenu" class="searchmenu"></div></div>
       <span id="playerStatus" class="statuspill">Players: loading…</span>
-      <div class="viewtabs"><button id="matrixViewBtn" class="viewtab on">Matrix</button><button id="leadersViewBtn" class="viewtab">Leaders</button><button id="voiceViewBtn" class="viewtab">Voice Picks <span class="voiceTabCount" style="display:none">0</span></button></div>
+      <div class="viewtabs"><button id="matrixViewBtn" class="viewtab on">Matrix</button><button id="leadersViewBtn" class="viewtab">Leaders</button><button id="matchupViewBtn" class="viewtab">Matchup</button><button id="voiceViewBtn" class="viewtab">Voice Picks <span class="voiceTabCount" style="display:none">0</span></button></div>
     </div>
   </header>
   <main class="main">
@@ -52,6 +53,20 @@
         </div>
         <div class="leadersFeedBar"><div class="leadersFeedTitle">Live scoring feed<small>derived from stat changes each refresh</small></div><div id="leadersScoringFeed" class="leadersScoringFeed"></div><button id="leadersFeedClear" class="btn small feedClear">Clear</button></div>
         <div id="leadersLanes" class="leaderLanes"></div>
+      </div>
+    </section>
+
+    <section id="matchupView" class="matchupView">
+      <div class="matchupShell">
+        <div class="matchupToolbar">
+          <div class="matchupTitle">Game Matchup Simulator</div>
+          <span class="statuspill">Choose a game from the selected season + week</span>
+          <span class="spacer"></span>
+          <select id="matchupGameSelect" class="field matchupGameSelect" aria-label="Game matchup"><option>Loading games…</option></select>
+          <button id="matchupReload" class="btn small">Reload</button>
+        </div>
+        <div id="matchupMeta" class="matchupMeta"></div>
+        <div id="matchupBoards" class="matchupBoards"><div class="matchupEmpty" style="grid-column:1/-1"><div><b>Select Matchup</b>Pick a game to build the mirrored offensive and defensive personnel view.</div></div></div>
       </div>
     </section>
 
@@ -105,5 +120,6 @@
 <script src="weekend-tracker-compact.js?v=20260913a"></script>
 <script src="weekend-tracker-compact-fix.js?v=20260913a"></script>
 <script src="weekend-tracker-voice-v2.js?v=20260914b"></script>
+<script src="weekend-tracker-matchup.js?v=20260914a"></script>
 </body>
 </html>
