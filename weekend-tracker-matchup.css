@@ -32,6 +32,7 @@
 .matchupPositionHead span{font-size:9px}
 .matchupFieldCard{padding:7px}
 .matchupFieldPlayer{grid-template-columns:24px 34px minmax(0,1fr);gap:6px;margin-bottom:4px}
+.matchupFieldPlayer>div{grid-column:3;min-width:0}
 .matchupFieldRank{font-size:11px}
 .matchupFieldPlayer img{width:34px;height:34px}
 .matchupFieldPlayer b{font-size:14px}
