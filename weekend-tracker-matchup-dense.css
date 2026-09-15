@@ -1,0 +1,46 @@
+.matchupShell{padding:4px 14px 18px}
+.matchupToolbar{gap:8px;margin-bottom:6px}
+.matchupToolbar .matchupTitle{font-size:18px}
+.matchupToolbar>.statuspill{display:none}
+.matchupModeToggle button{padding:9px 12px}
+.matchupGameSelect{min-width:min(390px,48vw)}
+.matchupMeta{display:none!important;margin:0!important}
+.matchupBoards{gap:10px}
+.matchupTeamBoard{min-height:0}
+.matchupTeamBoard.offenseOnly{min-height:0}
+.matchupTeamHead{padding:7px 10px;gap:8px}
+.matchupTeamLogo{width:34px;height:34px;flex-basis:34px}
+.matchupTeamHeadText b{font-size:16px}
+.matchupTeamHeadText small{font-size:10px;margin-top:1px}
+.matchupScore strong{font-size:22px}
+.matchupScore span{font-size:9px}
+.matchupField,.matchupField.offenseOnlyField{padding:8px 10px 11px;min-height:0}
+.matchupZoneLabel{font-size:11px;margin-bottom:5px}
+.matchupOLRow.no-snap-data{display:none!important}
+.matchupOLRow.has-snap-data{margin-bottom:8px}
+.matchupFieldFormation{gap:8px 10px;margin-top:0}
+.matchupPositionZone{border-radius:10px}
+.matchupPositionHead{padding:5px 7px}
+.matchupPositionHead b{font-size:13px}
+.matchupPositionHead span{font-size:9px}
+.matchupFieldCard{padding:7px}
+.matchupFieldPlayer{grid-template-columns:24px 34px minmax(0,1fr);gap:6px;margin-bottom:4px}
+.matchupFieldRank{font-size:11px}
+.matchupFieldPlayer img{width:34px;height:34px}
+.matchupFieldPlayer b{font-size:14px}
+.matchupFieldPlayer small{font-size:9px;margin-top:2px}
+.matchupFieldLines{gap:3px}
+.matchupFieldLine{display:flex;align-items:center;gap:6px;min-width:0;padding:4px 6px;border-radius:6px;background:#1d2632;white-space:nowrap}
+.matchupFieldLine>strong{flex:0 0 38px;font-size:10px;line-height:1}
+.matchupFieldLine>div{display:flex;align-items:center;flex-wrap:nowrap;gap:0;min-width:0;overflow-x:auto;scrollbar-width:none}
+.matchupFieldLine>div::-webkit-scrollbar{display:none}
+.matchupFieldLine span{display:inline-flex;align-items:baseline;gap:2px;flex:0 0 auto;padding:0;border-radius:0;background:transparent;color:#b8c2cf;font-size:10px;line-height:1.25}
+.matchupFieldLine span+span::before{content:"·";color:#697789;margin:0 5px 0 4px;font-weight:900}
+.matchupFieldLine span b{font-size:11px}
+.matchupOtherContributors{margin-top:8px}
+.matchupLegend{margin-top:6px;font-size:9px}
+.matchupDefense{gap:6px}
+.matchupDefRow{gap:6px}
+.matchupLos{margin:7px 0 6px;height:14px}
+@media(max-width:1200px){.matchupBoards{grid-template-columns:1fr}.matchupGameSelect{min-width:300px}.matchupFieldFormation{gap:8px 12px}}
+@media(max-width:760px){.matchupShell{padding:4px 6px 14px}.matchupToolbar{margin-bottom:5px}.matchupToolbar .matchupTitle{font-size:16px}.matchupGameSelect{min-width:0;width:100%}.matchupTeamHead{padding:6px 8px}.matchupField,.matchupField.offenseOnlyField{padding:7px 7px 10px}.matchupFieldPlayer b{font-size:13px}.matchupFieldLine{padding:4px 5px}.matchupFieldLine span{font-size:9px}.matchupFieldLine span b{font-size:10px}}
