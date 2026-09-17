@@ -5,415 +5,113 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Depth Chart Lab</title>
 <style>
-:root{
-  color-scheme:dark;
-  --bg:#07101b;--panel:#0d1826;--panel2:#132238;--panel3:#182b43;
-  --line:#263a55;--text:#f7fbff;--muted:#91a4bd;--gold:#f4b400;
-  --green:#7ee787;--red:#ff7b72;--blue:#58a6ff;--orange:#ffa657;
-  --shadow:0 12px 32px rgba(0,0,0,.22)
-}
-*{box-sizing:border-box}
-html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font:14px/1.35 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-button,select,input{font:inherit}
-button,select,input{border:1px solid #34506f;background:var(--panel2);color:#fff;border-radius:10px;padding:10px 12px}
-button{cursor:pointer}
-button:hover{border-color:#57769a}
-button.active{background:var(--gold);border-color:var(--gold);color:#101010;font-weight:900}
-button.secondary.active{background:#1f6feb;border-color:#1f6feb;color:white}
-button:disabled{opacity:.5;cursor:not-allowed}
-.shell{max-width:1500px;margin:auto;padding:18px}
-.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap}
-h1{margin:0;font-size:clamp(28px,4vw,42px);letter-spacing:-.03em}
-.sub{margin-top:4px;color:var(--muted)}
-.actions,.tabs,.controls,.view-tabs{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.tabs{margin:16px 0 10px}
-.controls{background:var(--panel);border:1px solid var(--line);padding:10px;border-radius:14px;box-shadow:var(--shadow)}
-.controls label{display:flex;gap:7px;align-items:center;color:var(--muted)}
-.controls select{min-width:220px}
-.controls input{min-width:220px;flex:1}
-.status{margin:10px 0;padding:11px 13px;background:var(--panel);border:1px solid var(--line);border-radius:12px;color:var(--muted)}
-.status.ok{border-color:#275a37;color:#b7f7c0}.status.warn{border-color:#6f5a22;color:#ffe08a}.status.error{border-color:#6a3030;color:#ffb0aa}
-.hero{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;background:linear-gradient(135deg,var(--panel),#102238);border:1px solid var(--line);border-radius:16px;padding:14px;margin:10px 0;box-shadow:var(--shadow)}
-.hero img{width:72px;height:72px;object-fit:contain}
-.hero h2{margin:0;font-size:24px}.hero-meta{color:var(--muted);margin-top:3px}
-.source-badge{font-size:11px;border:1px solid #3d5572;border-radius:999px;padding:5px 8px;color:#c9d7e8;white-space:nowrap}
-.summary{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:9px;margin:10px 0}
-.stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px}.stat b{display:block;font-size:22px}.stat span{color:var(--muted);font-size:12px}
-.notice{background:#101d2d;border:1px solid var(--line);border-left:4px solid var(--blue);padding:11px 12px;border-radius:10px;margin:10px 0;color:#cbd9e9}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:11px}
-.group{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
-.group>h3{margin:0;padding:11px 13px;background:var(--panel2);display:flex;justify-content:space-between;align-items:center;gap:8px}.group-count{font-size:11px;color:var(--muted)}
-.position{padding:10px 11px;border-top:1px solid var(--line)}
-.position-title{display:flex;justify-content:space-between;gap:10px;align-items:center;font-weight:900;color:#ffd45c;margin-bottom:7px}
-.player{display:grid;grid-template-columns:31px 42px minmax(0,1fr) auto;gap:8px;align-items:center;background:#091421;border:1px solid transparent;border-radius:10px;padding:7px;margin:6px 0}
-.player:hover{border-color:#334b68;background:#0d1a2a}
-.player img{width:40px;height:40px;border-radius:50%;object-fit:cover;background:#122035}
-.rank{font-weight:900;text-align:center;font-size:15px}.rank.one{color:var(--green)}
-.player-name{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.player-meta{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.badge{font-size:10px;border:1px solid #40516a;border-radius:15px;padding:4px 7px;white-space:nowrap}.badge.starter{color:var(--green);border-color:#2f6640}.badge.depth{color:#ffd45c}.badge.roster{color:#b9c8dc}
-.empty{padding:34px;text-align:center;color:var(--muted);border:1px dashed #345;border-radius:12px;background:var(--panel)}
-.table-wrap{overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px}
-table{width:100%;border-collapse:collapse;min-width:740px}th,td{padding:9px 10px;text-align:left;border-bottom:1px solid var(--line)}th{position:sticky;top:0;background:var(--panel2);font-size:11px;color:#b8c7da;text-transform:uppercase;letter-spacing:.04em}tr:hover td{background:#0f1d2d}
-.mini-head{width:34px;height:34px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:8px;background:#122035}
-details{margin:11px 0;background:#0b1522;border:1px solid var(--line);border-radius:11px;padding:9px}.debug{font-size:11px;word-break:break-all;color:#7890ad;max-height:260px;overflow:auto}
-.hidden{display:none!important}
-@media(max-width:760px){.shell{padding:12px}.summary{grid-template-columns:repeat(2,1fr)}.hero{grid-template-columns:auto 1fr}.hero .source-badge{grid-column:1/-1;width:max-content}.controls{align-items:stretch}.controls label{width:100%}.controls select,.controls input{min-width:0;width:100%}.grid{grid-template-columns:1fr}}
+:root{color-scheme:dark;--bg:#08111d;--panel:#0e1a29;--panel2:#14243a;--line:#293d59;--text:#f6f8fb;--muted:#93a6bf;--gold:#f4b400;--green:#7ee787;--red:#ff7b72;--blue:#58a6ff}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.4 system-ui,-apple-system,Segoe UI,sans-serif}.wrap{max-width:1450px;margin:auto;padding:18px}h1{margin:0;font-size:36px}.muted{color:var(--muted)}button,select,input{font:inherit;color:#fff;background:var(--panel2);border:1px solid #395270;border-radius:10px;padding:10px}button{cursor:pointer}button.active{background:var(--gold);color:#111;border-color:var(--gold);font-weight:800}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.sports{margin:16px 0 10px}.controls{padding:10px;background:var(--panel);border:1px solid var(--line);border-radius:14px}.controls label{display:flex;align-items:center;gap:6px;color:var(--muted)}select{min-width:230px}input{flex:1;min-width:220px}.status{margin:10px 0;padding:11px 13px;background:var(--panel);border:1px solid var(--line);border-radius:12px}.status.ok{color:#b9f6c2;border-color:#315d3c}.status.warn{color:#ffe08a;border-color:#6c5b28}.status.error{color:#ffb0aa;border-color:#6b3131}.hero{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:13px;margin:10px 0}.hero img{width:64px;height:64px;object-fit:contain}.hero h2{margin:0}.summary{display:grid;grid-template-columns:repeat(3,minmax(130px,1fr));gap:9px;margin:10px 0}.stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px}.stat b{display:block;font-size:22px}.stat span{font-size:12px;color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:10px}.card{background:var(--panel);border:1px solid var(--line);border-radius:13px;overflow:hidden}.card h3{margin:0;padding:11px 12px;background:var(--panel2)}.player{display:grid;grid-template-columns:32px 42px 1fr auto;gap:8px;align-items:center;padding:7px 10px;border-top:1px solid var(--line)}.player img{width:38px;height:38px;border-radius:50%;object-fit:cover;background:#132238}.rank{text-align:center;font-weight:900}.rank.one{color:var(--green)}.badge{font-size:10px;padding:3px 6px;border:1px solid #435976;border-radius:999px;white-space:nowrap}.name{font-weight:800}.meta{font-size:11px;color:var(--muted)}.empty{padding:28px;text-align:center;color:var(--muted);background:var(--panel);border:1px dashed #3a516d;border-radius:12px}.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:13px;background:var(--panel)}table{width:100%;border-collapse:collapse;min-width:720px}th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left}th{background:var(--panel2);font-size:11px;text-transform:uppercase;color:#b9c8db}.tiny{width:32px;height:32px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:8px}.notice{margin:10px 0;padding:10px 12px;border-left:4px solid var(--blue);background:#101d2d;border-radius:10px;color:#cbd8e8}details{margin-top:10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px}.debug{font:11px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace;color:#8298b5;white-space:pre-wrap;word-break:break-word}.hide{display:none}@media(max-width:700px){.wrap{padding:12px}.summary{grid-template-columns:1fr 1fr}.controls{align-items:stretch}.controls label{width:100%}select,input{width:100%;min-width:0}.grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<main class="shell">
-  <div class="topbar">
-    <div>
-      <h1>Depth Chart Lab</h1>
-      <div class="sub">Core Four team roles, true depth order where a reliable feed exists, and complete rosters everywhere.</div>
-    </div>
-    <div class="actions"><button id="reload">↻ Refresh data</button></div>
-  </div>
-
-  <div id="sports" class="tabs"></div>
-
-  <div class="controls">
+<main class="wrap">
+  <h1>Depth Chart Lab</h1>
+  <div class="muted">Core Four rosters, plus true depth charts when the provider actually supplies them.</div>
+  <div id="sports" class="row sports"></div>
+  <div class="row controls">
     <label>Team <select id="team"></select></label>
-    <div class="view-tabs" id="modes">
-      <button class="secondary" data-mode="best">Best available</button>
-      <button class="secondary" data-mode="depth">True depth</button>
-      <button class="secondary" data-mode="roster">Roster</button>
-    </div>
-    <input id="filter" type="search" placeholder="Filter player or position…" autocomplete="off">
-    <div class="view-tabs" id="views">
-      <button data-view="cards">Cards</button>
-      <button data-view="table">Table</button>
-    </div>
+    <button data-mode="auto">Best available</button>
+    <button data-mode="depth">Depth chart</button>
+    <button data-mode="roster">Roster</button>
+    <button data-view="cards">Cards</button>
+    <button data-view="table">Table</button>
+    <input id="filter" placeholder="Filter player / position">
+    <button id="reload">Refresh</button>
   </div>
-
   <div id="status" class="status">Starting…</div>
   <div id="hero"></div>
-  <div id="summary" class="summary hidden"></div>
+  <div id="summary" class="summary hide"></div>
   <div id="notice"></div>
   <div id="out"></div>
-  <details><summary>Data diagnostics</summary><div id="debug" class="debug"></div></details>
+  <details><summary>Diagnostics</summary><div id="debug" class="debug"></div></details>
 </main>
 <script>
 'use strict';
-
-const CFG={
-  NFL:{sport:'football',league:'nfl',sleeper:true},
-  NBA:{sport:'basketball',league:'nba'},
-  MLB:{sport:'baseball',league:'mlb'},
-  NHL:{sport:'hockey',league:'nhl'}
-};
-const $=id=>document.getElementById(id);
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const safe=s=>String(s??'').trim();
-const CACHE_MS=5*60*1000;
-const state={
-  sport:localStorage.depthSportV7||'NFL',
-  mode:localStorage.depthModeV7||'best',
-  view:localStorage.depthViewV7||'cards',
-  teams:[],team:null,model:null,logs:[],requestId:0
-};
-
-function log(msg){
-  state.logs.push(`[${new Date().toLocaleTimeString()}] ${msg}`);
-  if(state.logs.length>120)state.logs.shift();
-  $('debug').innerHTML=state.logs.map(esc).join('<br>');
-}
-function setStatus(text,type=''){
-  $('status').className='status'+(type?' '+type:'');
-  $('status').innerHTML=text;
-}
-function cacheGet(key){
-  try{const x=JSON.parse(sessionStorage.getItem(key)||'null');return x&&Date.now()-x.t<CACHE_MS?x.v:null}catch{return null}
-}
-function cacheSet(key,v){try{sessionStorage.setItem(key,JSON.stringify({t:Date.now(),v}))}catch{}}
-async function getJSON(url,{cache=true,timeout=12000}={}){
-  const ck='dc:'+url,hit=cache?cacheGet(ck):null;
-  if(hit){log('CACHE '+url);return hit}
-  log('GET '+url);
-  const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),timeout);
-  try{
-    const r=await fetch(url,{cache:'no-store',credentials:'omit',signal:ctl.signal});
-    log('HTTP '+r.status+' '+url);
-    if(!r.ok)throw Error('HTTP '+r.status);
-    const j=await r.json();if(cache)cacheSet(ck,j);return j;
-  }catch(e){
-    log((e.name==='AbortError'?'TIMEOUT ':'ERROR ')+e.message+' '+url);throw e;
-  }finally{clearTimeout(timer)}
-}
-function teamsFrom(j){
-  return (j?.sports?.[0]?.leagues?.[0]?.teams||j?.teams||[])
-    .map(x=>x.team||x).filter(x=>x?.id);
-}
-function normPlayer(a={},extra={}){
-  const p=a?.athlete||a?.player||a||{};
-  const pos=p?.position?.abbreviation||p?.position?.name||extra.pos||'';
-  return {
-    id:safe(p.id||extra.id),
-    name:safe(p.displayName||p.fullName||p.shortName||[p.firstName,p.lastName].filter(Boolean).join(' ')||extra.name||'Unknown'),
-    jersey:safe(p.jersey||extra.jersey),
-    pos:safe(pos),
-    head:safe(p?.headshot?.href||p?.headshot||extra.head),
-    rank:Number(extra.rank??a?.rank??p?.rank??0)||0,
-    status:safe(p?.status?.name||p?.status?.type||extra.status),
-    source:extra.source||'ESPN'
-  };
-}
-function refUrl(x){return safe(x?.athlete?.$ref||x?.player?.$ref||x?.$ref).replace(/^http:/,'https:')}
-async function resolvePlayer(x){
-  const immediate=normPlayer(x);
-  if(immediate.name!=='Unknown')return immediate;
-  const u=refUrl(x);if(!u)return immediate;
-  try{return normPlayer(await getJSON(u),{rank:x?.rank,source:'ESPN'})}catch{return immediate}
-}
-async function mapLimit(items,limit,fn){
-  const out=new Array(items.length);let next=0;
-  async function worker(){while(true){const i=next++;if(i>=items.length)return;out[i]=await fn(items[i],i)}}
-  await Promise.all(Array.from({length:Math.min(limit,items.length)},worker));return out;
-}
-function parseDepth(j){
-  const charts=Array.isArray(j?.depthCharts)?j.depthCharts:Array.isArray(j?.items)?j.items:(j?.positions?[j]:[]);
-  const groups=[];
-  for(const chart of charts){
-    const raw=chart?.positions||{};
-    const entries=Array.isArray(raw)?raw.map((p,i)=>[String(i),p]):Object.entries(raw);
-    const positions=[];
-    for(const [key,p] of entries){
-      let items=p?.athletes||p?.items||[];
-      if(!Array.isArray(items))items=Object.values(items||{});
-      items=items.filter(Boolean);
-      if(items.length)positions.push({
-        name:safe(p?.position?.name||p?.name||key),
-        abbr:safe(p?.position?.abbreviation||p?.abbreviation||key.toUpperCase()),
-        items
-      });
-    }
-    if(positions.length)groups.push({name:safe(chart?.name||chart?.displayName||'Depth Chart'),positions});
-  }
-  return groups;
-}
-async function hydrateDepth(groups){
-  const refs=[];groups.forEach(g=>g.positions.forEach(p=>p.items.forEach(x=>refs.push(x))));
-  const players=await mapLimit(refs,8,resolvePlayer);let n=0;
-  groups.forEach(g=>g.positions.forEach(p=>p.items=p.items.map((x,i)=>({...x,_player:{...players[n++],rank:players[n-1]?.rank||Number(x?.rank)||i+1}}))));
-  return groups;
+const LEAGUES={NFL:{sport:'football',league:'nfl'},NBA:{sport:'basketball',league:'nba'},MLB:{sport:'baseball',league:'mlb'},NHL:{sport:'hockey',league:'nhl'}};
+const el=id=>document.getElementById(id);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+const clean=v=>String(v??'').trim();
+const state={sport:localStorage.dcSport||'NFL',mode:localStorage.dcMode||'auto',view:localStorage.dcView||'cards',teams:[],team:null,model:null,request:0,logs:[]};
+if(!LEAGUES[state.sport])state.sport='NFL';
+if(!['auto','depth','roster'].includes(state.mode))state.mode='auto';
+if(!['cards','table'].includes(state.view))state.view='cards';
+function log(msg){state.logs.push(msg);if(state.logs.length>80)state.logs.shift();el('debug').textContent=state.logs.join('\n')}
+function status(msg,type=''){el('status').className='status'+(type?' '+type:'');el('status').textContent=msg}
+async function api(url){log('GET '+url);const ctrl=new AbortController();const timer=setTimeout(()=>ctrl.abort(),12000);try{const r=await fetch(url,{cache:'no-store',signal:ctrl.signal});log('HTTP '+r.status);if(!r.ok)throw new Error('HTTP '+r.status);return await r.json()}finally{clearTimeout(timer)}}
+function getTeams(j){return (j?.sports?.[0]?.leagues?.[0]?.teams||j?.teams||[]).map(x=>x.team||x).filter(x=>x&&x.id)}
+function normalizePlayer(raw,position=''){
+  const p=raw?.athlete||raw?.player||raw||{};
+  return {id:clean(p.id),name:clean(p.displayName||p.fullName||p.shortName||[p.firstName,p.lastName].filter(Boolean).join(' ')||'Unknown'),jersey:clean(p.jersey),position:clean(p.position?.abbreviation||p.position?.name||position),head:clean(p.headshot?.href||p.headshot),status:clean(p.status?.name||p.status?.type)};
 }
 function parseRoster(j){
-  const src=Array.isArray(j?.athletes)?j.athletes:Array.isArray(j?.items)?j.items:[];
-  const map=new Map();
+  const groups=[];const src=Array.isArray(j?.athletes)?j.athletes:Array.isArray(j?.items)?j.items:[];
   for(const g of src){
     if(Array.isArray(g?.items)){
-      const gn=safe(typeof g.position==='string'?g.position:(g?.position?.name||g?.name||g?.abbreviation||'Roster'));
-      for(const item of g.items){if(!map.has(gn))map.set(gn,[]);map.get(gn).push(normPlayer(item,{source:'ESPN'}))}
+      const groupName=clean(typeof g.position==='string'?g.position:(g.position?.name||g.name||g.abbreviation||'Roster'));
+      const items=g.items.map(x=>normalizePlayer(x,groupName)).filter(p=>p.name!=='Unknown');
+      if(items.length)groups.push({name:groupName,items});
     }else if(g){
-      const p=normPlayer(g,{source:'ESPN'}),gn=p.pos||'Roster';if(!map.has(gn))map.set(gn,[]);map.get(gn).push(p);
+      const p=normalizePlayer(g);let group=groups.find(x=>x.name===(p.position||'Roster'));if(!group){group={name:p.position||'Roster',items:[]};groups.push(group)}group.items.push(p);
     }
   }
-  return [...map].map(([name,items])=>({name,items}));
+  return groups;
 }
-function sleeperTeamCode(team){
-  const abbr=safe(team?.abbreviation).toUpperCase();
-  const aliases={JAX:'JAX',WSH:'WAS',WAS:'WAS',LAR:'LAR',LA:'LAR',LV:'LV'};
-  return aliases[abbr]||abbr;
-}
-async function loadSleeperNFLDepth(team){
-  const all=await getJSON('https://api.sleeper.app/v1/players/nfl',{timeout:20000});
-  const code=sleeperTeamCode(team),players=[];
-  for(const [id,p] of Object.entries(all||{})){
-    if(safe(p?.team).toUpperCase()!==code)continue;
-    const order=Number(p?.depth_chart_order||0);
-    const dpos=safe(p?.depth_chart_position||p?.position);
-    if(!order||!dpos)continue;
-    players.push({
-      id,name:safe(p?.full_name||[p?.first_name,p?.last_name].filter(Boolean).join(' ')||'Unknown'),
-      jersey:safe(p?.number),pos:dpos,rank:order,status:safe(p?.status),source:'Sleeper',
-      head:`https://sleepercdn.com/content/nfl/players/${id}.jpg`
-    });
+function parseDepth(j){
+  const charts=Array.isArray(j?.depthCharts)?j.depthCharts:[];const groups=[];
+  for(const chart of charts){
+    const positions=[];const raw=chart?.positions||{};
+    for(const [key,pos] of Object.entries(raw)){
+      const athletes=Array.isArray(pos?.athletes)?pos.athletes:[];
+      const items=athletes.map((x,i)=>({rank:Number(x?.rank)||i+1,player:normalizePlayer(x,pos?.position?.abbreviation||key.toUpperCase())})).filter(x=>x.player.name!=='Unknown');
+      if(items.length)positions.push({name:clean(pos?.position?.name||key),abbr:clean(pos?.position?.abbreviation||key.toUpperCase()),items});
+    }
+    if(positions.length)groups.push({name:clean(chart?.name||'Depth Chart'),positions});
   }
-  if(!players.length)throw Error(`Sleeper returned no depth players for ${code||'team'}`);
-  const offense=new Set(['QB','RB','FB','WR','TE','LT','LG','C','RG','RT','OL']);
-  const defense=new Set(['DE','DT','NT','DL','LB','ILB','OLB','CB','DB','FS','SS','S']);
-  const special=new Set(['K','P','LS','KR','PR']);
-  const buckets=[['Offense',offense],['Defense',defense],['Special Teams',special],['Other',new Set()]];
-  const grouped=buckets.map(([name,set])=>({name,positions:[]}));
-  const byBucket=new Map(grouped.map(g=>[g.name,new Map()]));
-  for(const p of players){
-    let bucket=buckets.find(([n,set])=>n!=='Other'&&set.has(p.pos))?.[0]||'Other';
-    const m=byBucket.get(bucket);if(!m.has(p.pos))m.set(p.pos,[]);m.get(p.pos).push({_player:p});
-  }
-  for(const g of grouped){
-    g.positions=[...byBucket.get(g.name)].map(([abbr,items])=>({name:abbr,abbr,items:items.sort((a,b)=>a._player.rank-b._player.rank)}));
-  }
-  return grouped.filter(g=>g.positions.length);
+  return groups;
 }
-async function loadESPNDepth(team){
-  const c=CFG[state.sport];
-  const j=await getJSON(`https://site.api.espn.com/apis/site/v2/sports/${c.sport}/${c.league}/teams/${team.id}/depthcharts`);
-  const groups=parseDepth(j);if(!groups.length)throw Error('ESPN returned no usable depth positions');
-  await hydrateDepth(groups);return groups;
-}
-async function loadRoster(team){
-  const c=CFG[state.sport];
-  const j=await getJSON(`https://site.api.espn.com/apis/site/v2/sports/${c.sport}/${c.league}/teams/${team.id}/roster`);
-  const groups=parseRoster(j);if(!groups.length)throw Error('ESPN returned no roster players');return groups;
-}
-function depthPlayers(groups){
-  return groups.flatMap(g=>g.positions.flatMap(p=>p.items.map(x=>x._player||normPlayer(x))));
-}
-function rosterPlayers(groups){return groups.flatMap(g=>g.items||[])}
-function currentPlayers(){return !state.model?[]:state.model.kind==='depth'?depthPlayers(state.model.groups):rosterPlayers(state.model.groups)}
-function playerHead(p){
-  if(p.head)return p.head;
-  const league=CFG[state.sport].league;
-  return p.id?`https://a.espncdn.com/i/headshots/${league}/players/full/${p.id}.png`:'';
-}
-function match(q,...vals){return !q||vals.some(v=>safe(v).toLowerCase().includes(q))}
-function rowCard(p,rank,kind){
-  const label=kind==='depth'?(rank===1?'Starter':`Depth ${rank}`):'Roster';
-  return `<div class="player">
-    <div class="rank ${rank===1&&kind==='depth'?'one':''}">${kind==='depth'?rank:'•'}</div>
-    <img src="${esc(playerHead(p))}" alt="" loading="lazy" onerror="this.style.opacity=.12">
-    <div><div class="player-name">${esc(p.name)}</div><div class="player-meta">${p.jersey?'#'+esc(p.jersey)+' · ':''}${esc(p.pos||'—')}${p.status?' · '+esc(p.status):''}</div></div>
-    <span class="badge ${kind==='depth'?(rank===1?'starter':'depth'):'roster'}">${esc(label)}</span>
-  </div>`;
-}
-function flattenRows(){
-  if(!state.model)return[];
-  if(state.model.kind==='depth')return state.model.groups.flatMap(g=>g.positions.flatMap(p=>p.items.map((x,i)=>({group:g.name,position:p.abbr||p.name,rank:(x._player?.rank||i+1),player:x._player||normPlayer(x)}))));
-  return state.model.groups.flatMap(g=>g.items.map(p=>({group:'Roster',position:g.name||p.pos,rank:null,player:p})));
-}
-function renderCards(q){
-  if(state.model.kind==='depth'){
-    const html=state.model.groups.map(g=>{
-      let count=0;
-      const positions=g.positions.map(p=>{
-        const items=p.items.filter(x=>{const a=x._player||normPlayer(x);return match(q,p.name,p.abbr,a.name,a.pos)});
-        count+=items.length;if(!items.length)return'';
-        return `<div class="position"><div class="position-title"><span>${esc(p.abbr||p.name)} · ${esc(p.name)}</span><span class="group-count">${items.length}</span></div>${items.map((x,i)=>{const a=x._player||normPlayer(x);return rowCard(a,a.rank||i+1,'depth')}).join('')}</div>`;
-      }).join('');
-      return count?`<section class="group"><h3><span>${esc(g.name)}</span><span class="group-count">${count} players</span></h3>${positions}</section>`:'';
-    }).join('');
-    return html?`<div class="grid">${html}</div>`:`<div class="empty">No matching players.</div>`;
-  }
-  const html=state.model.groups.map(g=>{
-    const items=g.items.filter(p=>match(q,g.name,p.name,p.pos));if(!items.length)return'';
-    return `<section class="group"><h3><span>${esc(g.name)}</span><span class="group-count">${items.length} players</span></h3><div class="position">${items.map(p=>rowCard(p,0,'roster')).join('')}</div></section>`;
-  }).join('');
-  return html?`<div class="grid">${html}</div>`:`<div class="empty">No matching players.</div>`;
-}
-function renderTable(q){
-  const rows=flattenRows().filter(r=>match(q,r.group,r.position,r.player.name,r.player.pos));
-  if(!rows.length)return`<div class="empty">No matching players.</div>`;
-  return `<div class="table-wrap"><table><thead><tr><th>Rank</th><th>Player</th><th>Position</th><th>Group</th><th>Jersey</th><th>Status</th><th>Source</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r.rank??'—'}</td><td><img class="mini-head" src="${esc(playerHead(r.player))}" alt="" loading="lazy" onerror="this.style.opacity=.12"><b>${esc(r.player.name)}</b></td><td>${esc(r.player.pos||r.position||'—')}</td><td>${esc(r.group||'—')}</td><td>${r.player.jersey?'#'+esc(r.player.jersey):'—'}</td><td>${esc(r.player.status||'—')}</td><td>${esc(r.player.source||state.model.source||'—')}</td></tr>`).join('')}</tbody></table></div>`;
-}
-function renderSummary(){
-  if(!state.model){$('summary').classList.add('hidden');return}
-  const players=currentPlayers(),positions=new Set(players.map(p=>p.pos).filter(Boolean));
-  const starters=state.model.kind==='depth'?players.filter(p=>Number(p.rank)===1).length:0;
-  const groups=state.model.groups.length;
-  $('summary').classList.remove('hidden');
-  $('summary').innerHTML=`
-    <div class="stat"><b>${players.length}</b><span>Players shown</span></div>
-    <div class="stat"><b>${positions.size}</b><span>Positions</span></div>
-    <div class="stat"><b>${state.model.kind==='depth'?starters:'—'}</b><span>Rank-1 players</span></div>
-    <div class="stat"><b>${groups}</b><span>Groups</span></div>`;
-}
-function render(){
-  if(!state.model)return;
-  const q=$('filter').value.toLowerCase().trim();
-  $('out').innerHTML=state.view==='table'?renderTable(q):renderCards(q);
-  renderSummary();
-}
+function playerHead(p){if(p.head)return p.head;return p.id?`https://a.espncdn.com/i/headshots/${LEAGUES[state.sport].league}/players/full/${p.id}.png`:''}
 function renderNav(){
-  $('sports').innerHTML=Object.keys(CFG).map(s=>`<button data-s="${s}" class="${s===state.sport?'active':''}">${s}</button>`).join('');
-  document.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{state.sport=b.dataset.s;localStorage.depthSportV7=state.sport;renderNav();loadTeams()});
+  el('sports').innerHTML=Object.keys(LEAGUES).map(s=>`<button data-sport="${s}" class="${state.sport===s?'active':''}">${s}</button>`).join('');
+  document.querySelectorAll('[data-sport]').forEach(b=>b.onclick=()=>{state.sport=b.dataset.sport;localStorage.dcSport=state.sport;renderNav();loadTeams()});
   document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===state.mode));
   document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===state.view));
 }
-function teamHero(team){
-  $('hero').innerHTML=`<div class="hero">
-    <img src="${esc(team?.logos?.[0]?.href||'')}" alt="">
-    <div><h2>${esc(team?.displayName||team?.name||'Team')}</h2><div class="hero-meta">${state.sport} · ${state.mode==='best'?'Best available':state.mode==='depth'?'True depth':'Roster'} mode · ESPN team ${esc(team?.id)}</div></div>
-    <span class="source-badge" id="sourceBadge">Loading…</span>
-  </div>`;
+function hero(team,source=''){el('hero').innerHTML=`<div class="hero"><img src="${esc(team?.logos?.[0]?.href||'')}" alt=""><div><h2>${esc(team?.displayName||team?.name||'Team')}</h2><div class="muted">${esc(state.sport)}${source?' · '+esc(source):''}</div></div></div>`}
+function flatRows(){
+  if(!state.model)return[];
+  if(state.model.kind==='depth')return state.model.groups.flatMap(g=>g.positions.flatMap(p=>p.items.map(x=>({group:g.name,position:p.abbr||p.name,rank:x.rank,player:x.player}))));
+  return state.model.groups.flatMap(g=>g.items.map(p=>({group:g.name,position:p.position||g.name,rank:null,player:p})));
 }
-function noticeForModel(){
-  if(!state.model){$('notice').innerHTML='';return}
+function renderSummary(){const rows=flatRows();el('summary').classList.toggle('hide',!rows.length);if(!rows.length)return;const positions=new Set(rows.map(r=>r.position).filter(Boolean));const starters=rows.filter(r=>r.rank===1).length;el('summary').innerHTML=`<div class="stat"><b>${rows.length}</b><span>Players</span></div><div class="stat"><b>${positions.size}</b><span>Positions</span></div><div class="stat"><b>${state.model.kind==='depth'?starters:'—'}</b><span>Top depth slots</span></div>`}
+function cardPlayer(p,rank){return `<div class="player"><div class="rank ${rank===1?'one':''}">${rank??'•'}</div><img src="${esc(playerHead(p))}" alt="" onerror="this.style.opacity=.15"><div><div class="name">${esc(p.name)}</div><div class="meta">${p.jersey?'#'+esc(p.jersey)+' · ':''}${esc(p.position||'')}${p.status?' · '+esc(p.status):''}</div></div><span class="badge">${rank==null?'Roster':rank===1?'Starter':'Depth '+rank}</span></div>`}
+function renderCards(q){
   if(state.model.kind==='depth'){
-    $('notice').innerHTML=`<div class="notice"><b>Depth order:</b> ${esc(state.model.source)} is supplying explicit position/order values. Rank 1 is shown as the starter/top slot.</div>`;
-  }else{
-    $('notice').innerHTML=`<div class="notice"><b>Roster view:</b> this league/team did not supply a reliable true-depth feed in the selected path. Players are grouped by roster position; no fake depth ranking is inferred.</div>`;
+    const blocks=state.model.groups.map(g=>{const positions=g.positions.map(p=>{const items=p.items.filter(x=>!q||[p.name,p.abbr,x.player.name,x.player.position].some(v=>clean(v).toLowerCase().includes(q)));return items.length?`<div><h3>${esc(p.abbr||p.name)} · ${esc(p.name)}</h3>${items.map(x=>cardPlayer(x.player,x.rank)).join('')}</div>`:''}).join('');return positions?`<section class="card"><h3>${esc(g.name)}</h3>${positions}</section>`:''}).join('');return blocks?`<div class="grid">${blocks}</div>`:'<div class="empty">No matching players.</div>';
   }
+  const blocks=state.model.groups.map(g=>{const items=g.items.filter(p=>!q||[g.name,p.name,p.position].some(v=>clean(v).toLowerCase().includes(q)));return items.length?`<section class="card"><h3>${esc(g.name)}</h3>${items.map(p=>cardPlayer(p,null)).join('')}</section>`:''}).join('');return blocks?`<div class="grid">${blocks}</div>`:'<div class="empty">No matching players.</div>';
 }
-async function loadTeams(){
-  const req=++state.requestId;state.logs=[];$('debug').innerHTML='';state.model=null;$('out').innerHTML='';$('summary').classList.add('hidden');$('notice').innerHTML='';
-  setStatus(`Loading ${state.sport} teams…`);
-  const c=CFG[state.sport];
+function renderTable(q){const rows=flatRows().filter(r=>!q||[r.group,r.position,r.player.name].some(v=>clean(v).toLowerCase().includes(q)));if(!rows.length)return'<div class="empty">No matching players.</div>';return `<div class="tablewrap"><table><thead><tr><th>Rank</th><th>Player</th><th>Position</th><th>Group</th><th>Jersey</th><th>Status</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r.rank??'—'}</td><td><img class="tiny" src="${esc(playerHead(r.player))}" alt="" onerror="this.style.opacity=.15"><b>${esc(r.player.name)}</b></td><td>${esc(r.position||'—')}</td><td>${esc(r.group||'—')}</td><td>${r.player.jersey?'#'+esc(r.player.jersey):'—'}</td><td>${esc(r.player.status||'—')}</td></tr>`).join('')}</tbody></table></div>`}
+function render(){if(!state.model)return;const q=clean(el('filter').value).toLowerCase();el('out').innerHTML=state.view==='table'?renderTable(q):renderCards(q);renderSummary()}
+async function loadTeams(){const req=++state.request;state.model=null;el('out').innerHTML='';el('summary').classList.add('hide');el('notice').innerHTML='';state.logs=[];el('debug').textContent='';status('Loading '+state.sport+' teams…');const c=LEAGUES[state.sport];try{const j=await api(`https://site.api.espn.com/apis/site/v2/sports/${c.sport}/${c.league}/teams?limit=100`);if(req!==state.request)return;state.teams=getTeams(j).sort((a,b)=>clean(a.displayName).localeCompare(clean(b.displayName)));if(!state.teams.length)throw new Error('No teams returned');el('team').innerHTML=state.teams.map(t=>`<option value="${esc(t.id)}">${esc(t.displayName||t.name)}</option>`).join('');const saved=localStorage.getItem('dcTeam:'+state.sport);if(saved&&state.teams.some(t=>String(t.id)===saved))el('team').value=saved;await loadTeam()}catch(e){if(req===state.request)status('Could not load teams: '+e.message,'error')}}
+async function loadTeam(){const id=el('team').value;if(!id)return;const req=++state.request;const c=LEAGUES[state.sport];const team=state.teams.find(t=>String(t.id)===String(id));state.team=team;localStorage.setItem('dcTeam:'+state.sport,id);hero(team);state.model=null;el('out').innerHTML='';el('summary').classList.add('hide');el('notice').innerHTML='';state.logs=[];el('debug').textContent='';
+  const roster=async()=>{status('Loading roster…');const j=await api(`https://site.api.espn.com/apis/site/v2/sports/${c.sport}/${c.league}/teams/${id}/roster`);const groups=parseRoster(j);if(!groups.length)throw new Error('Roster response contained no players');if(req!==state.request)return false;state.model={kind:'roster',groups};hero(team,'ESPN roster');status('Roster loaded.','ok');el('notice').innerHTML='<div class="notice">Roster order is not presented as depth order.</div>';render();return true};
+  const depth=async()=>{status('Loading depth chart…');const j=await api(`https://site.api.espn.com/apis/site/v2/sports/${c.sport}/${c.league}/teams/${id}/depthcharts`);const groups=parseDepth(j);if(!groups.length)throw new Error('No depth chart data returned');if(req!==state.request)return false;state.model={kind:'depth',groups};hero(team,'ESPN depth chart');status('Depth chart loaded.','ok');el('notice').innerHTML='<div class="notice">Ranks are taken directly from the provider depth-chart response.</div>';render();return true};
   try{
-    const j=await getJSON(`https://site.api.espn.com/apis/site/v2/sports/${c.sport}/${c.league}/teams?limit=100`);
-    if(req!==state.requestId)return;
-    state.teams=teamsFrom(j).sort((a,b)=>safe(a.displayName).localeCompare(safe(b.displayName)));
-    if(!state.teams.length)throw Error('No teams returned');
-    $('team').innerHTML=state.teams.map(t=>`<option value="${esc(t.id)}">${esc(t.displayName||t.name)}</option>`).join('');
-    const saved=localStorage.getItem('depthTeamV7:'+state.sport);
-    if(saved&&state.teams.some(t=>String(t.id)===saved))$('team').value=saved;
-    await loadTeam();
-  }catch(e){if(req===state.requestId)setStatus(`Team list failed: ${esc(e.message)}`,'error')}
+    if(state.mode==='roster'){await roster();return}
+    if(state.mode==='depth'){await depth();return}
+    try{if(await depth())return}catch(e){log('DEPTH FALLBACK: '+e.message)}
+    await roster();
+  }catch(e){if(req!==state.request)return;status('Could not load team data: '+e.message,'error');el('out').innerHTML='<div class="empty">This request failed. Open Diagnostics below for the exact endpoint/status.</div>'}
 }
-async function loadTeam({force=false}={}){
-  const id=$('team').value;if(!id)return;
-  const req=++state.requestId;
-  if(force){for(const k of Object.keys(sessionStorage)){if(k.startsWith('dc:'))sessionStorage.removeItem(k)}}
-  state.logs=[];$('debug').innerHTML='';state.model=null;$('out').innerHTML='';$('summary').classList.add('hidden');$('notice').innerHTML='';
-  const team=state.teams.find(x=>String(x.id)===String(id));state.team=team;localStorage.setItem('depthTeamV7:'+state.sport,id);teamHero(team);
-  const badge=()=>document.getElementById('sourceBadge');
-  const useModel=(kind,groups,source,msg)=>{
-    if(req!==state.requestId)return false;
-    state.model={kind,groups,source};if(badge())badge().textContent=source;
-    setStatus(msg,'ok');noticeForModel();render();return true;
-  };
-  try{
-    if(state.mode==='roster'){
-      setStatus('Loading complete ESPN roster…');
-      return useModel('roster',await loadRoster(team),'ESPN roster','Roster loaded and grouped by listed position.');
-    }
-    if(state.sport==='NFL'){
-      setStatus('Loading NFL depth order from Sleeper…');
-      try{
-        const groups=await loadSleeperNFLDepth(team);
-        if(useModel('depth',groups,'Sleeper NFL depth','NFL depth chart loaded from Sleeper player depth-order fields.'))return;
-      }catch(e){log('SLEEPER DEPTH FAILED '+e.message)}
-    }
-    setStatus('Checking ESPN true-depth feed…');
-    try{
-      const groups=await loadESPNDepth(team);
-      if(useModel('depth',groups,'ESPN depth','True ESPN depth chart loaded.'))return;
-    }catch(e){log('ESPN DEPTH FAILED '+e.message)}
-    if(state.mode==='depth'){
-      if(req!==state.requestId)return;
-      if(badge())badge().textContent='No true depth feed';
-      setStatus(`No reliable true-depth feed is available for this ${state.sport} team right now.`,'warn');
-      $('notice').innerHTML='<div class="notice">Use <b>Best available</b> to fall back to the complete roster without inventing depth rankings.</div>';
-      $('out').innerHTML='<div class="empty">True depth data unavailable. Nothing has been fabricated from roster order.</div>';
-      return;
-    }
-    setStatus('No true depth feed found; loading roster fallback…','warn');
-    const roster=await loadRoster(team);
-    useModel('roster',roster,'ESPN roster fallback','Best available: no reliable true-depth feed was returned, so the complete ESPN roster is shown instead.');
-  }catch(e){
-    if(req!==state.requestId)return;
-    if(badge())badge().textContent='Load failed';
-    setStatus(`Load failed: ${esc(e.message)}`,'error');
-    $('out').innerHTML='<div class="empty">The data provider did not return usable team data. Open diagnostics below for the exact request trail.</div>';
-  }
-}
-
-$('team').onchange=()=>loadTeam();
-$('reload').onclick=()=>loadTeam({force:true});
-$('filter').oninput=render;
-document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{state.mode=b.dataset.mode;localStorage.depthModeV7=state.mode;renderNav();loadTeam()});
-document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{state.view=b.dataset.view;localStorage.depthViewV7=state.view;renderNav();render()});
-renderNav();
-loadTeams();
+el('team').onchange=loadTeam;el('reload').onclick=loadTeam;el('filter').oninput=render;
+document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{state.mode=b.dataset.mode;localStorage.dcMode=state.mode;renderNav();loadTeam()});
+document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{state.view=b.dataset.view;localStorage.dcView=state.view;renderNav();render()});
+renderNav();loadTeams();
 </script>
 </body>
 </html>
