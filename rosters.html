@@ -35,7 +35,7 @@ async function roster(teamId,year){const key=teamId+'-'+year;if(cache.has('R'+ke
   // game competitor rosters instead. This makes the season membership auditable.
   const evIndex=await api(`https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/${year}/teams/${teamId}/events?limit=100`);
   const eventRefs=evIndex?.items||[];
-  const eventIds=[...new Set(eventRefs.map(x=>{const m=ref(x).match(/\\/events\\/(\\d+)/);return m?.[1]}).filter(Boolean))];
+  const eventIds=[...new Set(eventRefs.map(x=>{const m=ref(x).match(/\/events\/(\d+)/);return m?.[1]}).filter(Boolean))];
   if(!eventIds.length){cache.set('R'+key,[]);return []}
   const gameRosters=await mapLimit(eventIds,6,async eid=>{
     try{return await api(`https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/${eid}/competitions/${eid}/competitors/${teamId}/roster`)}
