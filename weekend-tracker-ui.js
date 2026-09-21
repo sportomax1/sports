@@ -14,7 +14,8 @@ const POSITION_LANES=['QB','RB','WR','TE','DEF','K'];
 const LAST_REFRESH_KEY='fantasyWeekendMatrix.lastStatsRefresh';
 const MY_ONLY_KEY='fantasyWeekendMatrix.leadersMyPlayersOnly';
 const EVENT_KEY='fantasyWeekendMatrix.liveEvents.v1';
-let trackerView=localStorage.getItem('fantasyWeekendMatrix.view')||'matrix',draggingRoster=null;
+const ACTIVE_VIEW_KEY='fantasyWeekendMatrix.activeView';
+let trackerView=localStorage.getItem(ACTIVE_VIEW_KEY)==='leaders'?'leaders':(localStorage.getItem('fantasyWeekendMatrix.view')||'matrix'),draggingRoster=null;
 let leadersHideZero=localStorage.getItem('fantasyWeekendMatrix.leadersHideZero')!=='false';
 let leadersGameState=localStorage.getItem('fantasyWeekendMatrix.leadersGameState')||'all';
 let leadersEventId=localStorage.getItem('fantasyWeekendMatrix.leadersEventId')||'all';
@@ -38,8 +39,8 @@ function observeLeaders(){const root=document.querySelector('#leadersLanes');if(
 const originalRenderMatrix=renderMatrix;
 renderMatrix=function(){const result=originalRenderMatrix();applyTrackerView();decorateRosterDrag();if(trackerView==='leaders')renderLeaders();requestAnimationFrame(scanMatrixScores);return result};
 
-function setTrackerView(view){trackerView=view==='leaders'?'leaders':'matrix';localStorage.setItem('fantasyWeekendMatrix.view',trackerView);applyTrackerView();if(trackerView==='leaders')renderLeaders()}
-function applyTrackerView(){const has=state.leagues.length>0,matrix=$('#matrixShell'),empty=$('#emptyStart'),leaders=$('#leadersView');if(!matrix||!empty||!leaders)return;$('#matrixViewBtn')?.classList.toggle('on',trackerView==='matrix');$('#leadersViewBtn')?.classList.toggle('on',trackerView==='leaders');if(!has){leaders.style.display='none';matrix.style.display='none';empty.style.display='block';return}empty.style.display='none';if(trackerView==='leaders'){matrix.style.display='none';leaders.style.display='block'}else{leaders.style.display='none';matrix.style.display='block'}}
+function setTrackerView(view){trackerView=view==='leaders'?'leaders':'matrix';localStorage.setItem('fantasyWeekendMatrix.view',trackerView);localStorage.setItem(ACTIVE_VIEW_KEY,trackerView);localStorage.setItem('fantasyWeekendMatrix.voiceViewActive','false');localStorage.setItem('fantasyWeekendMatrix.matchupViewActive','false');applyTrackerView();if(trackerView==='leaders')renderLeaders()}
+function applyTrackerView(){const has=state.leagues.length>0,matrix=$('#matrixShell'),empty=$('#emptyStart'),leaders=$('#leadersView');if(!matrix||!empty||!leaders)return;const active=localStorage.getItem(ACTIVE_VIEW_KEY)||trackerView;if(active==='voice'||active==='matchup'){matrix.style.display='none';leaders.style.display='none';empty.style.display='none';$('#matrixViewBtn')?.classList.remove('on');$('#leadersViewBtn')?.classList.remove('on');return}trackerView=active==='leaders'?'leaders':'matrix';$('#matrixViewBtn')?.classList.toggle('on',trackerView==='matrix');$('#leadersViewBtn')?.classList.toggle('on',trackerView==='leaders');empty.style.display=(trackerView==='matrix'&&!has)?'block':'none';matrix.style.display=(trackerView==='matrix'&&has)?'block':'none';leaders.style.display=trackerView==='leaders'?'block':'none'}
 function selectedLeadersLeague(){const select=$('#leadersLeagueFilter');const id=select?.value||state.leagues[0]?.id;return state.leagues.find(l=>l.id===id)||state.leagues[0]||null}
 function rosterMemberships(pid){const out=[];for(const l of state.leagues){for(const [slot,id] of Object.entries(l.roster||{})){if(id===pid){out.push({l,slot});break}}}return out}
 function rosterFlags(pid){const memberships=rosterMemberships(pid);if(!memberships.length)return'';const currentSeason=num(state.season)===new Date().getFullYear(),title=currentSeason?'★ MY ROSTER':'★ CURRENT ROSTER';return `<span class="myRosterFlag">${title}</span>${memberships.map(x=>`<span class="rosterChip">${esc(x.l.name)} · ${esc(slotLabel(x.l,x.slot))}</span>`).join('')}`}
