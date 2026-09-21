@@ -1,9 +1,10 @@
 (()=>{'use strict';
 const E=id=>document.getElementById(id);
 const VIEW_KEY='fantasyWeekendMatrix.matchupViewActive';
+const ACTIVE_VIEW_KEY='fantasyWeekendMatrix.activeView';
 const GAME_KEY='fantasyWeekendMatrix.matchupGame';
 const MODE_KEY='fantasyWeekendMatrix.matchupMode';
-let matchupActive=localStorage.getItem(VIEW_KEY)==='true';
+let matchupActive=localStorage.getItem(ACTIVE_VIEW_KEY)==='matchup'||(!localStorage.getItem(ACTIVE_VIEW_KEY)&&localStorage.getItem(VIEW_KEY)==='true');
 let matchupMode=localStorage.getItem(MODE_KEY)||'offense-defense';
 let weekGames=[];
 let selectedEventId=localStorage.getItem(GAME_KEY)||'';
@@ -19,7 +20,7 @@ const teamLogoM=t=>t?`https://a.espncdn.com/i/teamlogos/nfl/500/${encodeURICompo
 const teamNameM=t=>(typeof TEAM_NAMES!=='undefined'&&TEAM_NAMES[t])||t||'Team';
 const fmtClock=d=>{if(!d)return'';const x=new Date(d);if(Number.isNaN(x.getTime()))return'';return x.toLocaleString([],{weekday:'short',hour:'numeric',minute:'2-digit'});};
 const safeHex=(v,fallback='53657b')=>/^[0-9a-f]{6}$/i.test(String(v||''))?String(v):fallback;
-function setActive(on){matchupActive=!!on;localStorage.setItem(VIEW_KEY,String(matchupActive));const view=E('matchupView'),btn=E('matchupViewBtn');if(!view)return;if(on){['matrixShell','leadersView','voiceMatchView','emptyStart'].forEach(id=>{const x=E(id);if(x)x.style.display='none'});['matrixViewBtn','leadersViewBtn','voiceViewBtn'].forEach(id=>E(id)?.classList.remove('on'));btn?.classList.add('on');view.style.display='block';syncModeButtons();loadWeekGames(false)}else{btn?.classList.remove('on');view.style.display='none'}}
+function setActive(on){matchupActive=!!on;localStorage.setItem(VIEW_KEY,String(matchupActive));if(on){localStorage.setItem(ACTIVE_VIEW_KEY,'matchup');localStorage.setItem('fantasyWeekendMatrix.voiceViewActive','false')}const view=E('matchupView'),btn=E('matchupViewBtn');if(!view)return;if(on){['matrixShell','leadersView','voiceMatchView','emptyStart'].forEach(id=>{const x=E(id);if(x)x.style.display='none'});['matrixViewBtn','leadersViewBtn','voiceViewBtn'].forEach(id=>E(id)?.classList.remove('on'));btn?.classList.add('on');view.style.display='block';syncModeButtons();loadWeekGames(false)}else{btn?.classList.remove('on');view.style.display='none'}}
 function gameTeams(ev){const comp=ev?.competitions?.[0]||{};const all=(comp.competitors||[]).map(c=>({id:String(c.id||c.team?.id||''),abbr:String(c.team?.abbreviation||'').toUpperCase(),name:c.team?.displayName||c.team?.shortDisplayName||'',logo:c.team?.logo||c.team?.logos?.[0]?.href||'',color:safeHex(c.team?.color),alternateColor:safeHex(c.team?.alternateColor,'b7c3d2'),score:String(c.score??'0'),homeAway:c.homeAway||''}));return{home:all.find(x=>x.homeAway==='home')||all[0]||{},away:all.find(x=>x.homeAway==='away')||all[1]||{}}}
 function eventState(ev){const s=ev?.status?.type||ev?.competitions?.[0]?.status?.type||{};return s.completed?'final':s.state==='in'?'live':'pre'}
 function eventStatus(ev){const s=ev?.status||ev?.competitions?.[0]?.status||{};return s.type?.shortDetail||s.type?.detail||s.displayClock||fmtClock(ev?.date||ev?.competitions?.[0]?.date)||'Pregame'}
