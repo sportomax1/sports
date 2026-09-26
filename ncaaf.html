@@ -348,29 +348,30 @@ async function discoverFbsTeamIds(force=false){
 }
 async function loadTeamStats(force=false){
   if(state.teamStatsLoading)return;
-  state.teamStatsLoading=true;renderTeamStats();$('status').textContent='Discovering FBS teams and loading season statistics…';
-  const season=$('season').value,type=$('seasonType').value,ids=await discoverFbsTeamIds(force);
-  if(!ids.length){state.teamStatsLoading=false;state.teamStatsRows=[];$('status').innerHTML='<span class="error">ESPN returned no FBS team IDs for Team Stats.</span>';renderTeamStats();return}
-  const queue=[...ids],rows=[];let done=0;
+  state.teamStatsLoading=true;renderTeamStats();$('status').textContent='Loading ESPN team statistics…';
+  const season=$('season').value,ids=await discoverFbsTeamIds(force);
+  if(!ids.length){state.teamStatsLoading=false;$('status').innerHTML='<span class="error">No FBS teams were discovered.</span>';renderTeamStats();return}
+  const queue=[...ids],rows=[];let done=0,failed=0;
   const worker=async()=>{while(queue.length){const id=queue.shift();try{
-    const [profile,stats,record]=await Promise.all([
-      api(BASE+'/teams/'+encodeURIComponent(id),force).catch(()=>null),
-      firstJson([
-        CORE+'/seasons/'+encodeURIComponent(season)+'/types/'+encodeURIComponent(type)+'/teams/'+encodeURIComponent(id)+'/statistics/0',
-        CORE+'/seasons/'+encodeURIComponent(season)+'/types/'+encodeURIComponent(type)+'/teams/'+encodeURIComponent(id)+'/statistics',
-        BASE+'/teams/'+encodeURIComponent(id)+'/statistics?season='+encodeURIComponent(season)+'&seasontype='+encodeURIComponent(type)
-      ]).catch(()=>null),
-      api(BASE+'/teams/'+encodeURIComponent(id)+'/record?season='+encodeURIComponent(season),force).catch(()=>null)
+    const [profile,stats,schedule]=await Promise.all([
+      api(BASE+'/teams/'+encodeURIComponent(id),force),
+      api(BASE+'/teams/'+encodeURIComponent(id)+'/statistics?season='+encodeURIComponent(season),force),
+      api(BASE+'/teams/'+encodeURIComponent(id)+'/schedule?season='+encodeURIComponent(season),force).catch(()=>({events:[]}))
     ]);
-    const t=profile?.team||profile||{},rec=record?.items?.[0]||record?.team?.record?.items?.[0]||{},summary=rec.summary||'0-0',wl=summary.match(/(\d+)\D+(\d+)/)||[];
-    const games=(Number(wl[1])||0)+(Number(wl[2])||0);
-    const pf=statVal(stats,['pointsFor','totalPoints','points']),pa=statVal(stats,['pointsAgainst','opponentPoints','pointsAllowed']);
-    const ypg=statVal(stats,['yardsPerGame','totalYardsPerGame']),totalYds=statVal(stats,['totalYards','yards']);
-    rows.push({id:String(id),name:t.displayName||t.shortDisplayName||t.name||id,abbr:t.abbreviation||'',logo:t.logos?.[0]?.href||t.logo||'',wins:Number(wl[1])||0,losses:Number(wl[2])||0,pointsFor:pf,pointsAgainst:pa,ppg:statVal(stats,['pointsPerGame'])||(games?pf/games:0),papg:statVal(stats,['opponentPointsPerGame','pointsAllowedPerGame'])||(games?pa/games:0),yardsFor:totalYds||ypg,yardsAgainst:statVal(stats,['opponentYards','yardsAllowed','opponentYardsPerGame']),passYds:statVal(stats,['passingYards','netPassingYards','passingYardsPerGame']),rushYds:statVal(stats,['rushingYards','rushingYardsPerGame']),turnovers:statVal(stats,['turnovers','totalTurnovers'])})
-  }catch{}finally{done++;$('progress').style.width=Math.round(done/ids.length*100)+'%'}}};
-  await Promise.all(Array.from({length:Math.min(10,ids.length)},worker));
-  state.teamStatsRows=rows.filter(r=>r.name);state.teamStatsLoading=false;$('progress').style.width='100%';setTimeout(()=>$('progress').style.width='0',300);
-  $('status').textContent=state.teamStatsRows.length+' of '+ids.length+' FBS teams loaded for team-stat comparison · '+seasonLabel();renderTeamStats()
+    const t=profile?.team||profile||{},events=schedule?.events||[];
+    let wins=0,losses=0,pf=0,pa=0,games=0;
+    for(const e of events){
+      const comp=e.competitions?.[0],mine=(comp?.competitors||[]).find(x=>String(x.team?.id)===String(id)),opp=(comp?.competitors||[]).find(x=>String(x.team?.id)!==String(id));
+      if(!mine||!opp||!comp?.status?.type?.completed)continue;
+      games++;pf+=Number(mine.score?.value??mine.score??0)||0;pa+=Number(opp.score?.value??opp.score??0)||0;
+      if(Number(mine.score?.value??mine.score??0)>Number(opp.score?.value??opp.score??0))wins++;else losses++
+    }
+    const data=stats?.results||stats?.statistics||stats;
+    rows.push({id:String(id),name:t.displayName||t.shortDisplayName||t.name||id,abbr:t.abbreviation||'',logo:t.logos?.[0]?.href||t.logo||'',wins,losses,pointsFor:pf,pointsAgainst:pa,ppg:games?pf/games:statVal(data,['pointsPerGame','points']),papg:games?pa/games:statVal(data,['opponentPointsPerGame','pointsAllowedPerGame']),yardsFor:statVal(data,['totalYards','yardsPerGame','offensiveYardsPerGame']),yardsAgainst:statVal(data,['opponentYards','yardsAllowed','yardsAllowedPerGame']),passYds:statVal(data,['passingYards','passingYardsPerGame']),rushYds:statVal(data,['rushingYards','rushingYardsPerGame']),turnovers:statVal(data,['turnovers','totalTurnovers'])})
+  }catch(e){failed++}finally{done++;$('progress').style.width=Math.round(done/ids.length*100)+'%'}}};
+  await Promise.all(Array.from({length:Math.min(8,ids.length)},worker));
+  state.teamStatsRows=rows;state.teamStatsLoading=false;$('progress').style.width='100%';setTimeout(()=>$('progress').style.width='0',300);
+  $('status').textContent=rows.length+' teams loaded'+(failed?' · '+failed+' ESPN stat requests failed':'')+' · '+seasonLabel();renderTeamStats()
 }
 
 function renderMapLoading(){$('content').innerHTML='<div class="empty">Loading conference teams, stadium locations and travel schedule…</div>'}
