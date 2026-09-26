@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#08111f">
+<title>NCAA Football Hub</title>
+<style>
+:root{color-scheme:dark;--bg:#060b12;--panel:#0d1623;--panel2:#121e2e;--line:#24344b;--text:#f4f7fb;--muted:#91a2b8;--accent:#f4b400;--green:#35d07f;--red:#ff6b6b;--blue:#59a7ff}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}body{background:radial-gradient(circle at 10% 0,#183a6550,transparent 35%),var(--bg)}
+button,select,input{font:inherit;color:inherit}.shell{width:min(1500px,calc(100% - 24px));margin:auto;padding:18px 0 40px}
+.topbar{position:sticky;top:0;z-index:20;margin:-18px -12px 14px;padding:14px 12px 10px;background:#060b12ee;backdrop-filter:blur(14px);border-bottom:1px solid #182538}
+.titleline{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.brand{display:flex;align-items:center;gap:10px}.ball{width:34px;height:34px;border-radius:9px;background:linear-gradient(145deg,#a74b21,#6c2d14);display:grid;place-items:center;font-size:19px}.titleline h1{font-size:25px;margin:0}.sub{color:var(--muted);font-size:12px}.spacer{flex:1}
+.controls{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}.controls select,.controls input,.btn{background:#101c2b;border:1px solid var(--line);border-radius:9px;padding:8px 10px}.controls input{min-width:190px}.btn{cursor:pointer}.btn:hover{border-color:#48617e}.btn.active{background:var(--accent);color:#101010;border-color:var(--accent);font-weight:800}.btn.primary{background:var(--accent);border-color:var(--accent);color:#111;font-weight:900}
+.tabs{display:flex;gap:6px;overflow:auto;padding:2px 0 10px}.tabs button{border:1px solid var(--line);background:#0e1723;border-radius:999px;padding:8px 13px;white-space:nowrap;cursor:pointer}.tabs button.active{background:#f4b400;color:#111;border-color:#f4b400;font-weight:900}
+.metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:4px 0 12px}.metric{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:12px;padding:11px}.metric b{font-size:21px}.metric span{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
+.status{min-height:22px;color:var(--muted);font-size:12px;padding:3px 1px}.error{color:#ff8c87}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.game{background:linear-gradient(180deg,#121e2e,#0c1521);border:1px solid var(--line);border-radius:13px;padding:11px;cursor:pointer;transition:.14s}.game:hover{transform:translateY(-1px);border-color:#405675}.game.live{border-color:#2a8156;box-shadow:0 0 0 1px #35d07f20 inset}.gamehead{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:10px;margin-bottom:8px}.livepill{color:#69eaa1;font-weight:900}.finalpill{color:#aebbd0}.team{display:grid;grid-template-columns:30px 1fr auto;align-items:center;gap:8px;padding:5px 0}.team img{width:27px;height:27px;object-fit:contain}.teamname{min-width:0}.teamname strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}.teamname span{font-size:10px;color:var(--muted)}.score{font-size:20px;font-weight:900}.winner .teamname strong,.winner .score{color:#fff}.loser{opacity:.72}.gamefoot{display:flex;justify-content:space-between;gap:8px;border-top:1px solid #1d2a3d;margin-top:7px;padding-top:7px;color:var(--muted);font-size:10px}
+.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}table{width:100%;border-collapse:collapse;min-width:820px}th,td{padding:9px 10px;border-bottom:1px solid #1d2b3d;text-align:right;white-space:nowrap;font-size:12px}th{position:sticky;top:0;background:#111c2a;color:#afbdd0;font-size:10px;text-transform:uppercase;letter-spacing:.04em}th:first-child,td:first-child{text-align:left}.rank{font-weight:900;color:#ffd45c}.ath{display:flex;align-items:center;gap:8px}.ath img{width:30px;height:30px;border-radius:50%;object-fit:cover;background:#162334}.teamchip{display:inline-flex;align-items:center;gap:5px}.teamchip img{width:18px;height:18px;object-fit:contain}
+.empty{padding:32px;text-align:center;color:var(--muted);border:1px dashed #33455f;border-radius:12px}
+.modal{position:fixed;inset:0;z-index:100;background:#02060bd9;display:none;align-items:center;justify-content:center;padding:14px}.modal.open{display:flex}.dialog{width:min(1160px,100%);max-height:94vh;overflow:hidden;background:#0a121e;border:1px solid #33465f;border-radius:16px;box-shadow:0 24px 80px #000a;display:flex;flex-direction:column}.dialoghead{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}.dialoghead h2{font-size:17px;margin:0}.close{margin-left:auto;border:1px solid var(--line);background:#111d2b;border-radius:8px;padding:6px 10px;cursor:pointer}.dialogbody{padding:13px;overflow:auto}.scorehero{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:18px;padding:10px 4px 16px}.heroTeam{display:flex;align-items:center;gap:10px}.heroTeam.right{justify-content:flex-end;text-align:right}.heroTeam img{width:54px;height:54px;object-fit:contain}.bigscore{font-size:34px;font-weight:950;text-align:center}.detailtabs{display:flex;gap:6px;overflow:auto;margin-bottom:10px}.detailtabs button{padding:7px 10px;border:1px solid var(--line);background:#0f1b29;border-radius:8px;cursor:pointer;white-space:nowrap}.detailtabs button.active{background:#f4b400;color:#111;border-color:#f4b400;font-weight:900}.section{margin:12px 0}.section h3{font-size:13px;margin:0 0 7px;color:#dce6f5}.twocol{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mini{border:1px solid var(--line);border-radius:10px;overflow:auto}.mini table{min-width:540px}.leadersbar{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}.leadersbar button{background:#101c2b;border:1px solid var(--line);padding:7px 9px;border-radius:8px;cursor:pointer}.leadersbar button.active{background:#f4b400;color:#111;font-weight:900}.progress{height:3px;background:#192536;overflow:hidden;border-radius:99px;margin:5px 0}.progress>i{display:block;height:100%;background:#f4b400;width:0;transition:.2s}
+@media(max-width:1000px){.grid{grid-template-columns:repeat(2,1fr)}.metrics{grid-template-columns:repeat(3,1fr)}}@media(max-width:650px){.grid{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}.twocol{grid-template-columns:1fr}.scorehero{gap:8px}.heroTeam img{width:38px;height:38px}.bigscore{font-size:26px}.titleline h1{font-size:21px}}
+</style>
+</head>
+<body>
+<main class="shell">
+  <div class="topbar">
+    <div class="titleline">
+      <div class="brand"><div class="ball">🏈</div><div><h1>NCAA Football Hub</h1><div class="sub">FBS games · box scores · stats · weekly leaders · ESPN data</div></div></div>
+      <div class="spacer"></div><a class="btn" href="./index.html" style="text-decoration:none">Sports Home</a>
+    </div>
+    <div class="controls">
+      <label>Season <select id="season"></select></label>
+      <label>Type <select id="seasonType"><option value="2">Regular Season</option><option value="3">Postseason</option></select></label>
+      <label>Week <select id="week"></select></label>
+      <label>Conference <select id="conference"><option value="">All FBS</option></select></label>
+      <input id="search" placeholder="Search team / game">
+      <button class="btn primary" id="refresh">Refresh</button>
+    </div>
+    <div class="progress"><i id="progress"></i></div>
+  </div>
+
+  <nav class="tabs"><button data-view="games" class="active">Games</button><button data-view="leaders">Weekly Leaders</button></nav>
+  <section id="metrics" class="metrics"></section>
+  <div id="status" class="status"></div>
+  <section id="content"></section>
+</main>
+
+<div id="modal" class="modal"><div class="dialog"><div class="dialoghead"><h2 id="modalTitle">Game</h2><button id="closeModal" class="close">Close</button></div><div id="modalBody" class="dialogbody"></div></div></div>
+
+<script>
+'use strict';
+const BASE='https://site.api.espn.com/apis/site/v2/sports/football/college-football';
+const FBS_GROUP=80;
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const state={view:'games',games:[],filtered:[],summaryCache:new Map(),weeklyRows:[],leaderMetric:'passYds',loadToken:0};
+const confIds={ACC:'1','American':'151','Big 12':'4','Big Ten':'5','Conference USA':'12','MAC':'15','Mountain West':'17','Pac-12':'9','SEC':'8','Sun Belt':'37','Independents':'18'};
+const leaderDefs={
+  passYds:{label:'Passing Yards',cat:['passing'],stat:['YDS']},
+  passTD:{label:'Passing TD',cat:['passing'],stat:['TD']},
+  rushYds:{label:'Rushing Yards',cat:['rushing'],stat:['YDS']},
+  rushTD:{label:'Rushing TD',cat:['rushing'],stat:['TD']},
+  recYds:{label:'Receiving Yards',cat:['receiving'],stat:['YDS']},
+  recTD:{label:'Receiving TD',cat:['receiving'],stat:['TD']},
+  receptions:{label:'Receptions',cat:['receiving'],stat:['REC']},
+  tackles:{label:'Tackles',cat:['defensive','defense'],stat:['TOT','TOTAL']},
+  sacks:{label:'Sacks',cat:['defensive','defense'],stat:['SACKS','SACK']},
+  interceptions:{label:'Interceptions',cat:['interceptions','defensive','defense'],stat:['INT']}
+};
+function currentSeason(){const d=new Date();return d.getMonth()<6?d.getFullYear()-1:d.getFullYear()}
+function init(){
+  const now=currentSeason(),savedSeason=localStorage.getItem('ncaafSeason')||String(now);
+  $('season').innerHTML=Array.from({length:27},(_,i)=>now-i).map(y=>'<option '+(String(y)===savedSeason?'selected':'')+'>'+y+'</option>').join('');
+  $('week').innerHTML=Array.from({length:18},(_,i)=>'<option value="'+(i+1)+'">Week '+(i+1)+'</option>').join('');
+  $('week').value=localStorage.getItem('ncaafWeek')||guessWeek();
+  $('conference').innerHTML='<option value="">All FBS</option>'+Object.entries(confIds).map(([n,id])=>'<option value="'+id+'">'+esc(n)+'</option>').join('');
+  bind();loadGames();
+}
+function guessWeek(){const d=new Date(),y=d.getFullYear(),start=new Date(y,7,22);return String(Math.max(1,Math.min(18,Math.floor((d-start)/604800000)+1)))}
+function bind(){
+  document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{state.view=b.dataset.view;document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x===b));render();if(state.view==='leaders'&&!state.weeklyRows.length)loadWeeklyLeaders()});
+  $('season').onchange=()=>{localStorage.setItem('ncaafSeason',$('season').value);state.weeklyRows=[];loadGames()};
+  $('seasonType').onchange=()=>{state.weeklyRows=[];loadGames()};
+  $('week').onchange=()=>{localStorage.setItem('ncaafWeek',$('week').value);state.weeklyRows=[];loadGames()};
+  $('conference').onchange=applyFilters;$('search').oninput=applyFilters;$('refresh').onclick=()=>{state.summaryCache.clear();state.weeklyRows=[];loadGames(true)};
+  $('closeModal').onclick=()=>$('modal').classList.remove('open');$('modal').onclick=e=>{if(e.target===$('modal'))$('modal').classList.remove('open')};document.addEventListener('keydown',e=>{if(e.key==='Escape')$('modal').classList.remove('open')});
+}
+async function api(url,force=false){const key='ncaaf:'+url;try{if(!force){const c=JSON.parse(sessionStorage.getItem(key)||'null');if(c&&Date.now()-c.t<300000)return c.v}}catch{}const r=await fetch(url,{cache:'no-store',headers:{Accept:'application/json'}});if(!r.ok)throw Error('ESPN HTTP '+r.status);const j=await r.json();try{sessionStorage.setItem(key,JSON.stringify({t:Date.now(),v:j}))}catch{}return j}
+function scoreboardUrl(){return BASE+'/scoreboard?groups='+FBS_GROUP+'&limit=1000&dates='+$('season').value+'&seasontype='+$('seasonType').value+'&week='+$('week').value}
+async function loadGames(force=false){
+  const token=++state.loadToken;$('status').textContent='Loading all FBS games from ESPN…';$('progress').style.width='30%';
+  try{const j=await api(scoreboardUrl(),force);if(token!==state.loadToken)return;state.games=(j.events||[]).map(normalizeGame).filter(Boolean).sort((a,b)=>a.date-b.date);$('progress').style.width='100%';setTimeout(()=>$('progress').style.width='0',350);applyFilters();$('status').textContent='ESPN · '+state.games.length+' FBS games loaded for '+$('season').value+' Week '+$('week').value+'.';if(state.view==='leaders')loadWeeklyLeaders()}
+  catch(e){$('progress').style.width='0';$('status').innerHTML='<span class="error">Could not load ESPN scoreboard: '+esc(e.message)+'</span>';$('content').innerHTML='<div class="empty">No games available.</div>'}
+}
+function normalizeGame(e){
+  const c=e.competitions?.[0],comps=c?.competitors;if(!c||!comps?.length)return null;const home=comps.find(x=>x.homeAway==='home')||comps[0],away=comps.find(x=>x.homeAway==='away')||comps[1];
+  const team=x=>({id:x.team?.id,name:x.team?.displayName||x.team?.name,short:x.team?.shortDisplayName||x.team?.name,abbr:x.team?.abbreviation,logo:x.team?.logo,score:Number(x.score||0),winner:!!x.winner,rank:x.curatedRank?.current<99?x.curatedRank.current:null,records:(x.records||[]).find(r=>r.type==='total')?.summary||'',conferenceId:String(x.team?.conferenceId||'')});
+  return{id:e.id,name:e.name,date:new Date(e.date),status:e.status?.type?.state||'',statusDetail:e.status?.type?.shortDetail||e.status?.type?.detail||'',completed:!!e.status?.type?.completed,home:team(home),away:team(away),venue:c.venue?.fullName||'',city:[c.venue?.address?.city,c.venue?.address?.state].filter(Boolean).join(', '),broadcast:(c.broadcasts||[]).flatMap(x=>x.names||[]).join(', '),neutral:!!c.neutralSite};
+}
+function applyFilters(){
+  const q=$('search').value.trim().toLowerCase(),cid=$('conference').value;
+  state.filtered=state.games.filter(g=>(!q||[g.name,g.home.name,g.away.name,g.home.abbr,g.away.abbr].join(' ').toLowerCase().includes(q))&&(!cid||g.home.conferenceId===cid||g.away.conferenceId===cid));
+  render();
+}
+function metrics(){
+  const a=state.filtered,live=a.filter(g=>g.status==='in').length,done=a.filter(g=>g.completed).length,up=a.length-done-live;
+  const ranked=a.filter(g=>g.home.rank||g.away.rank).length;
+  $('metrics').innerHTML=[['Games',a.length],['Live',live],['Final',done],['Upcoming',up],['Ranked Matchups',ranked]].map(([k,v])=>'<div class="metric"><b>'+v+'</b><span>'+k+'</span></div>').join('');
+}
+function render(){metrics();state.view==='games'?renderGames():renderLeaders()}
+function logo(t){return t.logo?'<img src="'+esc(t.logo)+'" alt="">':'<span></span>'}
+function rankName(t){return (t.rank?'#'+t.rank+' ':'')+esc(t.short||t.name)}
+function gameCard(g){
+  const cls=g.status==='in'?' live':'',status=g.status==='in'?'<span class="livepill">● '+esc(g.statusDetail)+'</span>':g.completed?'<span class="finalpill">FINAL</span>':esc(g.statusDetail);
+  const row=t=>'<div class="team '+(t.winner?'winner':'')+(g.completed&&!t.winner?' loser':'')+'">'+logo(t)+'<div class="teamname"><strong>'+rankName(t)+'</strong><span>'+esc(t.records)+'</span></div><div class="score">'+((g.status==='pre'&&!g.completed)?'–':t.score)+'</div></div>';
+  return '<article class="game'+cls+'" data-game="'+g.id+'"><div class="gamehead"><span>'+fmtDate(g.date)+'</span>'+status+'</div>'+row(g.away)+row(g.home)+'<div class="gamefoot"><span>'+esc(g.broadcast||'')+'</span><span>'+esc(g.venue||'')+'</span></div></article>';
+}
+function renderGames(){
+  $('content').innerHTML=state.filtered.length?'<div class="grid">'+state.filtered.map(gameCard).join('')+'</div>':'<div class="empty">No games match these filters.</div>';
+  document.querySelectorAll('[data-game]').forEach(el=>el.onclick=()=>openGame(el.dataset.game));
+}
+function fmtDate(d){return new Intl.DateTimeFormat('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}).format(d)}
+async function getSummary(id){if(state.summaryCache.has(id))return state.summaryCache.get(id);const j=await api(BASE+'/summary?event='+encodeURIComponent(id));state.summaryCache.set(id,j);return j}
+async function openGame(id){
+  const g=state.games.find(x=>x.id===id);if(!g)return;$('modal').classList.add('open');$('modalTitle').textContent=g.away.short+' at '+g.home.short;$('modalBody').innerHTML='<div class="empty">Loading ESPN game summary…</div>';
+  try{const s=await getSummary(id);renderGameDetail(g,s,'box')}catch(e){$('modalBody').innerHTML='<div class="empty error">Game detail failed: '+esc(e.message)+'</div>'}
+}
+function renderGameDetail(g,s,tab){
+  const hero='<div class="scorehero"><div class="heroTeam">'+logo(g.away)+'<div><b>'+rankName(g.away)+'</b><div class="sub">'+esc(g.away.records)+'</div></div></div><div class="bigscore">'+(g.status==='pre'?'VS':g.away.score+' – '+g.home.score)+'</div><div class="heroTeam right"><div><b>'+rankName(g.home)+'</b><div class="sub">'+esc(g.home.records)+'</div></div>'+logo(g.home)+'</div></div>';
+  const tabs=['box','team','leaders','drives'].map(x=>'<button data-dtab="'+x+'" class="'+(x===tab?'active':'')+'">'+({box:'Box Score',team:'Team Stats',leaders:'Game Leaders',drives:'Scoring / Drives'}[x])+'</button>').join('');
+  $('modalBody').innerHTML=hero+'<div class="detailtabs">'+tabs+'</div><div id="detailPane">'+detailPane(s,tab)+'</div>';
+  document.querySelectorAll('[data-dtab]').forEach(b=>b.onclick=()=>renderGameDetail(g,s,b.dataset.dtab));
+}
+function detailPane(s,tab){
+  if(tab==='box')return playerBox(s);
+  if(tab==='team')return teamStats(s);
+  if(tab==='leaders')return gameLeaders(s);
+  return scoringDrives(s);
+}
+function playerBox(s){
+  const teams=s.boxscore?.players||[];if(!teams.length)return '<div class="empty">Player box score is not available yet.</div>';
+  return teams.map(tp=>'<div class="section"><h3>'+esc(tp.team?.displayName||tp.team?.name||'Team')+'</h3>'+tp.statistics.map(cat=>{
+    const labels=cat.labels||[],rows=cat.athletes||[];return '<div class="mini" style="margin-bottom:9px"><table><thead><tr><th>'+esc(cat.displayName||cat.name)+'</th>'+labels.map(l=>'<th>'+esc(l)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(a=>'<tr><td><b>'+esc(a.athlete?.displayName||a.athlete?.shortName)+'</b><div class="sub">'+esc(a.athlete?.position?.abbreviation||'')+'</div></td>'+(a.stats||[]).map(v=>'<td>'+esc(v)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'
+  }).join('')+'</div>').join('');
+}
+function teamStats(s){
+  const ts=s.boxscore?.teams||[];if(!ts.length)return '<div class="empty">Team statistics are not available yet.</div>';
+  const all=[...new Set(ts.flatMap(t=>(t.statistics||[]).map(x=>x.name)))];
+  return '<div class="tablewrap"><table><thead><tr><th>Stat</th>'+ts.map(t=>'<th>'+esc(t.team?.abbreviation||t.team?.displayName)+'</th>').join('')+'</tr></thead><tbody>'+all.map(name=>'<tr><td><b>'+esc((ts.flatMap(t=>t.statistics||[]).find(x=>x.name===name)||{}).label||name)+'</b></td>'+ts.map(t=>{const x=(t.statistics||[]).find(z=>z.name===name);return '<td>'+esc(x?.displayValue??x?.value??'—')+'</td>'}).join('')+'</tr>').join('')+'</tbody></table></div>';
+}
+function gameLeaders(s){
+  const ls=s.leaders||[];if(!ls.length)return '<div class="empty">Game leaders are not available yet.</div>';
+  return '<div class="grid">'+ls.flatMap(team=>(team.leaders||[]).map(cat=>{const a=cat.leaders?.[0],ath=a?.athlete;return '<div class="metric"><span>'+esc(team.team?.abbreviation||'')+' · '+esc(cat.displayName||cat.name)+'</span><b style="font-size:15px">'+esc(ath?.displayName||'—')+'</b><div class="sub">'+esc(a?.displayValue||a?.value||'')+'</div></div>'})).join('')+'</div>';
+}
+function scoringDrives(s){
+  const plays=s.scoringPlays||[];const drives=s.drives?.previous||[];
+  if(plays.length)return '<div class="tablewrap"><table><thead><tr><th>Scoring Play</th><th>Qtr</th><th>Time</th><th>Score</th></tr></thead><tbody>'+plays.map(p=>'<tr><td>'+esc(p.text)+'</td><td>'+esc(p.period?.number)+'</td><td>'+esc(p.clock?.displayValue)+'</td><td>'+esc(p.awayScore)+' - '+esc(p.homeScore)+'</td></tr>').join('')+'</tbody></table></div>';
+  if(drives.length)return '<div class="tablewrap"><table><thead><tr><th>Drive</th><th>Result</th><th>Plays</th><th>Yards</th><th>Time</th></tr></thead><tbody>'+drives.map(d=>'<tr><td>'+esc(d.team?.abbreviation||'')+'</td><td>'+esc(d.displayResult||d.result)+'</td><td>'+esc(d.plays)+'</td><td>'+esc(d.yards)+'</td><td>'+esc(d.timeElapsed?.displayValue||'')+'</td></tr>').join('')+'</tbody></table></div>';
+  return '<div class="empty">Drive data is not available yet.</div>';
+}
+function renderLeaders(){
+  const buttons=Object.entries(leaderDefs).map(([k,d])=>'<button data-leader="'+k+'" class="'+(state.leaderMetric===k?'active':'')+'">'+d.label+'</button>').join('');
+  if(!state.weeklyRows.length){$('content').innerHTML='<div class="leadersbar">'+buttons+'</div><div class="empty">Weekly leaders will be calculated from every completed ESPN FBS box score in this week.</div>';wireLeaderButtons();return}
+  const rows=state.weeklyRows.filter(r=>r.metric===state.leaderMetric).sort((a,b)=>b.value-a.value).slice(0,100);
+  $('content').innerHTML='<div class="leadersbar">'+buttons+'</div>'+(rows.length?'<div class="tablewrap"><table><thead><tr><th>Player</th><th>Team</th><th>Value</th><th>Games</th></tr></thead><tbody>'+rows.map((r,i)=>'<tr><td><div class="ath">'+(r.head?'<img src="'+esc(r.head)+'" alt="">':'')+'<div><b><span class="rank">#'+(i+1)+'</span> '+esc(r.name)+'</b><div class="sub">'+esc(r.position||'')+'</div></div></div></td><td><span class="teamchip">'+(r.teamLogo?'<img src="'+esc(r.teamLogo)+'" alt="">':'')+esc(r.team)+'</span></td><td><b>'+fmtVal(r.value)+'</b></td><td>'+r.games+'</td></tr>').join('')+'</tbody></table></div>':'<div class="empty">No values were returned for this category.</div>');
+  wireLeaderButtons();
+}
+function wireLeaderButtons(){document.querySelectorAll('[data-leader]').forEach(b=>b.onclick=()=>{state.leaderMetric=b.dataset.leader;renderLeaders()})}
+function norm(s){return String(s||'').toLowerCase().replace(/[^a-z]/g,'')}
+function num(v){if(v==null)return 0;const s=String(v).replace(/,/g,'');if(s.includes('/'))return Number(s.split('/')[0])||0;const m=s.match(/-?\d+(?:\.\d+)?/);return m?Number(m[0]):0}
+function statIndex(labels,wants){const n=labels.map(x=>String(x).toUpperCase().replace(/[^A-Z]/g,''));for(const w of wants){const x=String(w).toUpperCase().replace(/[^A-Z]/g,'');let i=n.indexOf(x);if(i>=0)return i}return -1}
+function extractLeaderRows(summary){
+  const out=[];for(const tp of summary.boxscore?.players||[]){const team=tp.team||{};for(const cat of tp.statistics||[]){const c=norm(cat.name||cat.displayName);for(const [metric,d] of Object.entries(leaderDefs)){if(!d.cat.some(x=>c.includes(norm(x))))continue;const idx=statIndex(cat.labels||[],d.stat);if(idx<0)continue;for(const a of cat.athletes||[]){const value=num(a.stats?.[idx]);if(value<=0)continue;out.push({metric,value,id:a.athlete?.id||a.athlete?.uid||a.athlete?.displayName,name:a.athlete?.displayName||a.athlete?.shortName||'Unknown',head:a.athlete?.headshot?.href||'',position:a.athlete?.position?.abbreviation||'',team:team.abbreviation||team.shortDisplayName||team.displayName||'',teamLogo:team.logo||''})}}}}return out
+}
+async function loadWeeklyLeaders(){
+  const completed=state.games.filter(g=>g.completed);if(!completed.length){state.weeklyRows=[];renderLeaders();$('status').textContent='No completed games yet for this week, so weekly leaders cannot be calculated.';return}
+  const token=state.loadToken;$('status').textContent='Calculating weekly leaders from '+completed.length+' completed ESPN box scores…';const agg=new Map();let done=0;const queue=[...completed];
+  const worker=async()=>{while(queue.length){const g=queue.shift();try{const s=await getSummary(g.id);for(const r of extractLeaderRows(s)){const k=r.metric+'|'+r.id;const old=agg.get(k);if(old){old.value+=r.value;old.games++}else agg.set(k,{...r,games:1})}}catch{}done++;$('progress').style.width=Math.round(done/completed.length*100)+'%'}};
+  await Promise.all(Array.from({length:Math.min(10,completed.length)},worker));if(token!==state.loadToken)return;state.weeklyRows=[...agg.values()];$('progress').style.width='100%';setTimeout(()=>$('progress').style.width='0',350);$('status').textContent='Weekly leaders calculated from '+done+' completed FBS games · '+state.weeklyRows.length+' player/category rows.';renderLeaders();
+}
+function fmtVal(v){return Number.isInteger(v)?v:String(Math.round(v*10)/10)}
+init();
+</script>
+</body></html>
