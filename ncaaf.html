@@ -64,6 +64,8 @@ button,select,input{font:inherit;color:inherit}.shell{width:min(1500px,calc(100%
 <script>
 'use strict';
 const BASE='https://site.api.espn.com/apis/site/v2/sports/football/college-football';
+const V2='https://site.api.espn.com/apis/v2/sports/football/college-football';
+const CORE='https://sports.core.api.espn.com/v2/sports/football/leagues/college-football';
 const FBS_GROUP=80;
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -124,16 +126,39 @@ async function loadConferenceTeams(){
     }catch{confTeamSets.set(String(id),new Set())}
   }))
 }
-function scoreboardUrl(){return BASE+'/scoreboard?groups='+FBS_GROUP+'&limit=1000&dates='+$('season').value+'&seasontype='+$('seasonType').value+'&week='+$('week').value}
+function scoreboardUrl(){return BASE+'/scoreboard?groups='+FBS_GROUP+'&limit=200&dates='+$('season').value+'&seasontype='+$('seasonType').value+'&week='+$('week').value}
+async function loadWeekByDates(force=false){
+  const season=$('season').value,week=$('week').value,type=$('seasonType').value;
+  let cal=null;
+  try{cal=await api(BASE+'/calendar?dates='+encodeURIComponent(season)+'&seasontype='+encodeURIComponent(type),force)}catch{}
+  let start,end;
+  const items=Array.isArray(cal)?cal:(cal?.calendar||cal?.leagues?.[0]?.calendar||[]);
+  const match=items.find(x=>Number(x.value||x.week?.number||x.number)===Number(week));
+  if(match){start=new Date(match.startDate||match.start);end=new Date(match.endDate||match.end)}
+  if(!start||isNaN(start)){const base=new Date(Number(season),7,20);start=new Date(base.getTime()+(Number(week)-1)*7*86400000);end=new Date(start.getTime()+8*86400000)}
+  if(!end||isNaN(end))end=new Date(start.getTime()+8*86400000);
+  start=new Date(start.getTime()-86400000);end=new Date(end.getTime()+86400000);
+  const days=[];for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1))days.push(new Date(d));
+  const queue=[...days],events=[];
+  const worker=async()=>{while(queue.length){const d=queue.shift(),ds=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');try{const j=await api(BASE+'/scoreboard?groups='+FBS_GROUP+'&limit=200&dates='+ds,force);events.push(...(j.events||[]))}catch{}}};
+  await Promise.all(Array.from({length:Math.min(6,queue.length)},worker));
+  return events
+}
 async function loadGames(force=false){
-  const token=++state.loadToken;$('status').textContent='Loading all FBS games from ESPN…';$('progress').style.width='30%';showSkeletons();
-  try{const j=await api(scoreboardUrl(),force);if(token!==state.loadToken)return;
-    let events=[...(j.events||[])];
+  const token=++state.loadToken;$('status').textContent='Loading complete FBS week from ESPN…';$('progress').style.width='18%';showSkeletons();
+  try{
+    const [weekly,dateEvents]=await Promise.all([api(scoreboardUrl(),force),loadWeekByDates(force)]);
+    if(token!==state.loadToken)return;
+    let events=dedupeEvents([...(weekly.events||[]),...dateEvents]);
+    $('progress').style.width='65%';
     const missing=await supplementWeekEvents(events,force);
     if(token!==state.loadToken)return;
     events=dedupeEvents([...events,...missing]);
-    state.games=events.map(normalizeGame).filter(Boolean).sort((a,b)=>a.date-b.date);$('progress').style.width='100%';setTimeout(()=>$('progress').style.width='0',350);applyFilters();$('status').textContent='ESPN · '+state.games.length+' FBS games loaded for '+$('season').value+' Week '+$('week').value+'.';if(state.view==='leaders')loadWeeklyLeaders()}
-  catch(e){$('progress').style.width='0';$('status').innerHTML='<span class="error">Could not load ESPN scoreboard: '+esc(e.message)+'</span>';$('content').innerHTML='<div class="empty">No games available.</div>'}
+    state.games=events.map(normalizeGame).filter(Boolean).sort((a,b)=>a.date-b.date);
+    $('progress').style.width='100%';setTimeout(()=>$('progress').style.width='0',350);applyFilters();
+    $('status').textContent='ESPN · '+state.games.length+' FBS games loaded for '+$('season').value+' Week '+$('week').value+' · complete week scan.';
+    if(state.view==='leaders')loadWeeklyLeaders();if(state.view==='standings')loadStandings()
+  }catch(e){$('progress').style.width='0';$('status').innerHTML='<span class="error">Could not load ESPN scoreboard: '+esc(e.message)+'</span>';$('content').innerHTML='<div class="empty">No games available.</div>'}
 }
 function dedupeEvents(events){const m=new Map();for(const e of events){if(e?.id)m.set(String(e.id),e)}return [...m.values()]}
 async function supplementWeekEvents(existing,force=false){
@@ -264,8 +289,9 @@ async function loadStandings(){
     let j=state.standingsCache.get(key);
     if(!j){
       j=await firstJson([
-        BASE+'/standings?season='+encodeURIComponent(season)+'&group='+encodeURIComponent(cid),
-        'https://site.api.espn.com/apis/v2/sports/football/college-football/standings?region=us&lang=en&contentorigin=espn&season='+encodeURIComponent(season)+'&type=0&level=2&sort=playoffseed%3Aasc&group='+encodeURIComponent(cid)
+        V2+'/standings?region=us&lang=en&contentorigin=espn&season='+encodeURIComponent(season)+'&type=0&level=2&group='+encodeURIComponent(cid),
+        V2+'/standings?season='+encodeURIComponent(season)+'&group='+encodeURIComponent(cid),
+        CORE+'/seasons/'+encodeURIComponent(season)+'/types/2/groups/'+encodeURIComponent(cid)+'/standings?limit=100'
       ]);
       state.standingsCache.set(key,j)
     }
@@ -276,10 +302,10 @@ function renderStandings(j,cid){
   const confName=Object.entries(confIds).find(([,id])=>String(id)===String(cid))?.[0]||'Conference';
   const groups=j.children||j.groups||j.standings?.children||[];
   let entries=[];
-  const collect=x=>{if(Array.isArray(x?.standings?.entries))entries.push(...x.standings.entries);for(const y of x?.children||[])collect(y)};
+  const collect=x=>{if(Array.isArray(x?.standings?.entries))entries.push(...x.standings.entries);if(Array.isArray(x?.entries))entries.push(...x.entries);for(const y of x?.children||[])collect(y)};
   if(Array.isArray(j.standings?.entries))entries.push(...j.standings.entries);
+  if(Array.isArray(j.entries))entries.push(...j.entries);
   for(const g of groups)collect(g);
-  if(!entries.length&&Array.isArray(j.entries))entries=j.entries;
   const members=confTeamSets.get(String(cid));
   const seen=new Set();
   entries=entries.filter(e=>{const id=String(e.team?.id||'');if(!id||seen.has(id))return false;seen.add(id);return !members?.size||members.has(id)});
