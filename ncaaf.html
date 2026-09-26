@@ -88,7 +88,7 @@ function bind(){
   $('closeModal').onclick=()=>$('modal').classList.remove('open');$('modal').onclick=e=>{if(e.target===$('modal'))$('modal').classList.remove('open')};
   $('closeEntity').onclick=()=>$('entityModal').classList.remove('open');$('entityModal').onclick=e=>{if(e.target===$('entityModal'))$('entityModal').classList.remove('open')};
   document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('entityModal').classList.contains('open'))$('entityModal').classList.remove('open');else $('modal').classList.remove('open')}});
-  document.body.addEventListener('click',e=>{const p=e.target.closest('[data-player]'),t=e.target.closest('[data-team]');if(p){e.preventDefault();e.stopPropagation();openPlayer(p.dataset.player)}else if(t){e.preventDefault();e.stopPropagation();openTeam(t.dataset.team)}});
+  document.body.addEventListener('click',e=>{const entity=e.target.closest('[data-player],[data-team]');if(!entity)return;e.preventDefault();e.stopPropagation();if(entity.dataset.player)openPlayer(entity.dataset.player);else if(entity.dataset.team)openTeam(entity.dataset.team)});
 }
 async function api(url,force=false){const key='ncaaf:'+url;try{if(!force){const c=JSON.parse(sessionStorage.getItem(key)||'null');if(c&&Date.now()-c.t<300000)return c.v}}catch{}const r=await fetch(url,{cache:'no-store',headers:{Accept:'application/json'}});if(!r.ok)throw Error('ESPN HTTP '+r.status);const j=await r.json();try{sessionStorage.setItem(key,JSON.stringify({t:Date.now(),v:j}))}catch{}return j}
 function scoreboardUrl(){return BASE+'/scoreboard?groups='+FBS_GROUP+'&limit=1000&dates='+$('season').value+'&seasontype='+$('seasonType').value+'&week='+$('week').value}
@@ -125,7 +125,7 @@ function gameCard(g){
 }
 function renderGames(){
   $('content').innerHTML=state.filtered.length?'<div class="grid">'+state.filtered.map(gameCard).join('')+'</div>':'<div class="empty">No games match these filters.</div>';
-  document.querySelectorAll('[data-game]').forEach(el=>el.onclick=()=>openGame(el.dataset.game));
+  document.querySelectorAll('[data-game]').forEach(el=>el.onclick=e=>{if(e.target.closest('[data-player],[data-team]'))return;openGame(el.dataset.game)});
 }
 function fmtDate(d){return new Intl.DateTimeFormat('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}).format(d)}
 async function getSummary(id){if(state.summaryCache.has(id))return state.summaryCache.get(id);const j=await api(BASE+'/summary?event='+encodeURIComponent(id));state.summaryCache.set(id,j);return j}
