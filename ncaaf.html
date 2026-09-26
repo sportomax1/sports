@@ -322,32 +322,57 @@ function renderTeamStats(){
   if(reload)reload.onclick=()=>loadTeamStats(true);
   document.querySelectorAll('[data-team-sort]').forEach(th=>th.onclick=()=>{const key=th.dataset.teamSort;if(state.teamStatsSort.key===key)state.teamStatsSort.dir*=-1;else{state.teamStatsSort.key=key;state.teamStatsSort.dir=key==='name'?1:-1}renderTeamStats()})
 }
+function flattenStats(node,out=[]){
+  if(!node||typeof node!=='object')return out;
+  if(Array.isArray(node)){for(const x of node)flattenStats(x,out);return out}
+  if(('value'in node||'displayValue'in node)&&(node.name||node.abbreviation||node.displayName))out.push(node);
+  for(const [k,v] of Object.entries(node)){if(k!=='team'&&k!=='season'&&k!=='$ref')flattenStats(v,out)}
+  return out
+}
 function statVal(stats,names){
-  for(const cat of stats||[]){for(const s of cat.stats||cat.statistics||[]){const n=norm(s.name||s.abbreviation||s.displayName);if(names.some(x=>n===norm(x)||n.includes(norm(x))))return num(s.value??s.displayValue)}}
-  for(const s of stats||[]){const n=norm(s.name||s.abbreviation||s.displayName);if(names.some(x=>n===norm(x)||n.includes(norm(x))))return num(s.value??s.displayValue)}
+  const wants=names.map(norm),flat=flattenStats(stats);
+  for(const s of flat){const n=norm(s.name||s.abbreviation||s.displayName);if(wants.some(x=>n===x))return num(s.value??s.displayValue)}
+  for(const s of flat){const n=norm(s.name||s.abbreviation||s.displayName);if(wants.some(x=>n.includes(x)||x.includes(n)))return num(s.value??s.displayValue)}
   return 0
+}
+async function discoverFbsTeamIds(force=false){
+  const ids=new Set(),season=$('season').value;
+  try{
+    const j=await api('https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams?groups=80&groupType=conference&enable=groups&limit=500&season='+encodeURIComponent(season),force);
+    const teams=j.sports?.[0]?.leagues?.[0]?.teams||j.teams||[];
+    for(const x of teams){const t=x.team||x;if(t.id)ids.add(String(t.id))}
+  }catch{}
+  for(const set of confTeamSets.values())for(const id of set)ids.add(String(id));
+  for(const g of state.games){if(g.home?.id)ids.add(String(g.home.id));if(g.away?.id)ids.add(String(g.away.id))}
+  return [...ids]
 }
 async function loadTeamStats(force=false){
   if(state.teamStatsLoading)return;
-  state.teamStatsLoading=true;renderTeamStats();$('status').textContent='Loading season team statistics across FBS…';
-  const season=$('season').value,type=$('seasonType').value;
-  const allIds=new Set([...confTeamSets.values()].flatMap(s=>[...s]));
-  const queue=[...allIds],rows=[];
+  state.teamStatsLoading=true;renderTeamStats();$('status').textContent='Discovering FBS teams and loading season statistics…';
+  const season=$('season').value,type=$('seasonType').value,ids=await discoverFbsTeamIds(force);
+  if(!ids.length){state.teamStatsLoading=false;state.teamStatsRows=[];$('status').innerHTML='<span class="error">ESPN returned no FBS team IDs for Team Stats.</span>';renderTeamStats();return}
+  const queue=[...ids],rows=[];let done=0;
   const worker=async()=>{while(queue.length){const id=queue.shift();try{
     const [profile,stats,record]=await Promise.all([
       api(BASE+'/teams/'+encodeURIComponent(id),force).catch(()=>null),
-      api(CORE+'/seasons/'+encodeURIComponent(season)+'/types/'+encodeURIComponent(type)+'/teams/'+encodeURIComponent(id)+'/statistics',force).catch(()=>null),
+      firstJson([
+        CORE+'/seasons/'+encodeURIComponent(season)+'/types/'+encodeURIComponent(type)+'/teams/'+encodeURIComponent(id)+'/statistics/0',
+        CORE+'/seasons/'+encodeURIComponent(season)+'/types/'+encodeURIComponent(type)+'/teams/'+encodeURIComponent(id)+'/statistics',
+        BASE+'/teams/'+encodeURIComponent(id)+'/statistics?season='+encodeURIComponent(season)+'&seasontype='+encodeURIComponent(type)
+      ]).catch(()=>null),
       api(BASE+'/teams/'+encodeURIComponent(id)+'/record?season='+encodeURIComponent(season),force).catch(()=>null)
     ]);
-    const t=profile?.team||profile||{},cats=stats?.splits?.categories||stats?.categories||stats?.statistics||stats?.stats||[];
-    const rec=record?.items?.[0]||record?.team?.record?.items?.[0]||{},summary=rec.summary||'0-0',wl=summary.match(/(\d+)\D+(\d+)/)||[];
+    const t=profile?.team||profile||{},rec=record?.items?.[0]||record?.team?.record?.items?.[0]||{},summary=rec.summary||'0-0',wl=summary.match(/(\d+)\D+(\d+)/)||[];
     const games=(Number(wl[1])||0)+(Number(wl[2])||0);
-    const pf=statVal(cats,['pointsFor','totalPoints','points']),pa=statVal(cats,['pointsAgainst','opponentPoints']);
-    rows.push({id:String(id),name:t.displayName||t.shortDisplayName||t.name||id,abbr:t.abbreviation||'',logo:t.logos?.[0]?.href||t.logo||'',wins:Number(wl[1])||0,losses:Number(wl[2])||0,pointsFor:pf,pointsAgainst:pa,ppg:games?pf/games:statVal(cats,['pointsPerGame']),papg:games?pa/games:statVal(cats,['opponentPointsPerGame']),yardsFor:statVal(cats,['totalYards','yardsPerGame']),yardsAgainst:statVal(cats,['opponentYards','yardsAllowed']),passYds:statVal(cats,['passingYards','netPassingYards']),rushYds:statVal(cats,['rushingYards']),turnovers:statVal(cats,['turnovers','totalTurnovers'])})
-  }catch{}}};
-  await Promise.all(Array.from({length:Math.min(12,Math.max(1,queue.length))},worker));
-  state.teamStatsRows=rows;state.teamStatsLoading=false;$('status').textContent=rows.length+' FBS teams loaded for team-stat comparison · '+seasonLabel();renderTeamStats()
+    const pf=statVal(stats,['pointsFor','totalPoints','points']),pa=statVal(stats,['pointsAgainst','opponentPoints','pointsAllowed']);
+    const ypg=statVal(stats,['yardsPerGame','totalYardsPerGame']),totalYds=statVal(stats,['totalYards','yards']);
+    rows.push({id:String(id),name:t.displayName||t.shortDisplayName||t.name||id,abbr:t.abbreviation||'',logo:t.logos?.[0]?.href||t.logo||'',wins:Number(wl[1])||0,losses:Number(wl[2])||0,pointsFor:pf,pointsAgainst:pa,ppg:statVal(stats,['pointsPerGame'])||(games?pf/games:0),papg:statVal(stats,['opponentPointsPerGame','pointsAllowedPerGame'])||(games?pa/games:0),yardsFor:totalYds||ypg,yardsAgainst:statVal(stats,['opponentYards','yardsAllowed','opponentYardsPerGame']),passYds:statVal(stats,['passingYards','netPassingYards','passingYardsPerGame']),rushYds:statVal(stats,['rushingYards','rushingYardsPerGame']),turnovers:statVal(stats,['turnovers','totalTurnovers'])})
+  }catch{}finally{done++;$('progress').style.width=Math.round(done/ids.length*100)+'%'}}};
+  await Promise.all(Array.from({length:Math.min(10,ids.length)},worker));
+  state.teamStatsRows=rows.filter(r=>r.name);state.teamStatsLoading=false;$('progress').style.width='100%';setTimeout(()=>$('progress').style.width='0',300);
+  $('status').textContent=state.teamStatsRows.length+' of '+ids.length+' FBS teams loaded for team-stat comparison · '+seasonLabel();renderTeamStats()
 }
+
 function renderMapLoading(){$('content').innerHTML='<div class="empty">Loading conference teams, stadium locations and travel schedule…</div>'}
 let conferenceLeafletMap=null;
 const FALLBACK_COORDS={
