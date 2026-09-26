@@ -19,7 +19,9 @@ button,select,input{font:inherit;color:inherit}.shell{width:min(1500px,calc(100%
 .tablewrap{overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}table{width:100%;border-collapse:collapse;min-width:820px}th,td{padding:9px 10px;border-bottom:1px solid #1d2b3d;text-align:right;white-space:nowrap;font-size:12px}th{position:sticky;top:0;background:#111c2a;color:#afbdd0;font-size:10px;text-transform:uppercase;letter-spacing:.04em}th:first-child,td:first-child{text-align:left}.rank{font-weight:900;color:#ffd45c}.ath{display:flex;align-items:center;gap:8px}.ath img{width:36px;height:36px;border-radius:50%;object-fit:cover;background:#162334;border:1px solid #2d4059}.teamchip{display:inline-flex;align-items:center;gap:5px}.teamchip img{width:20px;height:20px;object-fit:contain}.entityLink{cursor:pointer;border-radius:8px;transition:.12s}.entityLink:hover{background:#1a283b}.ath.entityLink{padding:3px 5px;margin:-3px -5px}.team.entityLink:hover{background:#172538}.teamchip.entityLink{padding:4px 6px;margin:-4px -6px}.profileHero{display:grid;grid-template-columns:96px 1fr;gap:16px;align-items:center;padding:8px 0 16px}.profileHero img{width:96px;height:96px;object-fit:contain;background:#111c2a;border:1px solid var(--line);border-radius:16px}.profileHero.player img{border-radius:50%;object-fit:cover}.profileHero h2{margin:0 0 4px;font-size:25px}.profileMeta{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.pill{border:1px solid var(--line);background:#101b29;border-radius:999px;padding:5px 8px;font-size:11px;color:#c7d3e3}.profileGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0}.profileCard{border:1px solid var(--line);background:#0f1a28;border-radius:11px;padding:10px}.profileCard span{display:block;color:var(--muted);font-size:9px;text-transform:uppercase}.profileCard b{display:block;margin-top:3px;font-size:14px}
 .empty{padding:32px;text-align:center;color:var(--muted);border:1px dashed #33455f;border-radius:12px}
 .modal{position:fixed;inset:0;z-index:100;background:#02060bd9;display:none;align-items:center;justify-content:center;padding:14px}.modal.open{display:flex}.dialog{width:min(1160px,100%);max-height:94vh;overflow:hidden;background:#0a121e;border:1px solid #33465f;border-radius:16px;box-shadow:0 24px 80px #000a;display:flex;flex-direction:column}.dialoghead{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}.dialoghead h2{font-size:17px;margin:0}.close{margin-left:auto;border:1px solid var(--line);background:#111d2b;border-radius:8px;padding:6px 10px;cursor:pointer}.dialogbody{padding:13px;overflow:auto}.scorehero{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:18px;padding:10px 4px 16px}.heroTeam{display:flex;align-items:center;gap:10px}.heroTeam.right{justify-content:flex-end;text-align:right}.heroTeam img{width:54px;height:54px;object-fit:contain}.bigscore{font-size:34px;font-weight:950;text-align:center}.detailtabs{display:flex;gap:6px;overflow:auto;margin-bottom:10px}.detailtabs button{padding:7px 10px;border:1px solid var(--line);background:#0f1b29;border-radius:8px;cursor:pointer;white-space:nowrap}.detailtabs button.active{background:#f4b400;color:#111;border-color:#f4b400;font-weight:900}.section{margin:12px 0}.section h3{font-size:13px;margin:0 0 7px;color:#dce6f5}.twocol{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mini{border:1px solid var(--line);border-radius:10px;overflow:auto}.mini table{min-width:540px}.leadersbar{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}.leadersbar button{background:#101c2b;border:1px solid var(--line);padding:7px 9px;border-radius:8px;cursor:pointer}.leadersbar button.active{background:#f4b400;color:#111;font-weight:900}.progress{height:3px;background:#192536;overflow:hidden;border-radius:99px;margin:5px 0}.progress>i{display:block;height:100%;background:#f4b400;width:0;transition:.2s}
-@media(max-width:1000px){.grid{grid-template-columns:repeat(2,1fr)}.metrics{grid-template-columns:repeat(3,1fr)}}@media(max-width:650px){.grid{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}.twocol{grid-template-columns:1fr}.scorehero{gap:8px}.heroTeam img{width:38px;height:38px}.bigscore{font-size:26px}.titleline h1{font-size:21px}}
+.mapbox{position:relative;height:520px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#08111f}.mapbox svg{width:100%;height:100%;display:block}.mapdot{cursor:pointer}.maplabel{font-size:10px;fill:#f4f7fb;font-weight:800;paint-order:stroke;stroke:#08111f;stroke-width:3px}.travelrow{display:grid;grid-template-columns:28px 1fr auto;gap:8px;align-items:center;padding:8px;border-bottom:1px solid #1d2b3d}.travelrow img{width:25px;height:25px;object-fit:contain}.sortable{cursor:pointer;user-select:none}.sortable:hover{color:#fff}.sortmark{color:#f4b400;margin-left:3px}
+@media(max-width:1000px){.grid{grid-template-columns:repeat(2,1fr)}.metrics{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:650px){.shell{width:100%;padding:0 10px 28px}.topbar{margin:0 -10px 10px;padding:10px;top:0}.titleline{gap:7px}.brand{min-width:0}.ball{width:30px;height:30px}.titleline h1{font-size:18px}.brand .sub{display:none}.titleline>a.btn{padding:6px 8px;font-size:11px}.controls{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}.controls label{font-size:10px;color:var(--muted)}.controls select{display:block;width:100%;margin-top:3px}.controls input{grid-column:1/-1;min-width:0;width:100%;padding:10px}.controls #refresh{grid-column:1/-1}.tabs{margin:0 -10px;padding:4px 10px 9px;scrollbar-width:none}.tabs button{padding:8px 10px;font-size:11px}.uxbar{flex-wrap:nowrap;overflow-x:auto;margin:0 -10px 9px;padding:0 10px 4px;scrollbar-width:none}.uxbar>*{flex:0 0 auto}.grid{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(3,1fr);gap:5px}.metric{padding:8px}.metric b{font-size:17px}.metric span{font-size:8px}.twocol{grid-template-columns:1fr}.scorehero{gap:5px}.heroTeam{gap:5px;min-width:0}.heroTeam img{width:32px;height:32px}.heroTeam b{font-size:11px}.bigscore{font-size:22px}.dialog{max-height:100dvh;height:100dvh;border-radius:0;border:0}.modal{padding:0}.dialoghead{position:sticky;top:0;background:#0a121e;z-index:3}.dialogbody{padding:10px}.profileGrid{grid-template-columns:repeat(2,1fr)}.profileHero{grid-template-columns:72px 1fr}.profileHero img{width:72px;height:72px}.profileHero h2{font-size:20px}.tablewrap{margin:0 -10px;border-radius:0;border-left:0;border-right:0}.tablewrap table{min-width:680px}.mapbox{height:62vh;min-height:380px}.game{padding:10px}.dayhead{position:sticky;top:116px;background:#060b12e8;backdrop-filter:blur(8px);z-index:5;padding:6px 0}.gamefoot{overflow:hidden}.gamefoot span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:48%}}
 </style>
 </head>
 <body>
@@ -40,13 +42,13 @@ button,select,input{font:inherit;color:inherit}.shell{width:min(1500px,calc(100%
     <div class="progress"><i id="progress"></i></div>
   </div>
 
-  <nav class="tabs"><button data-view="games" class="active">Games</button><button data-view="standings">Conference Standings</button><button data-view="leaders">Weekly Leaders</button></nav>
+  <nav class="tabs"><button data-view="games" class="active">Games</button><button data-view="standings">Conference Standings</button><button data-view="map">Conference Map + Travel</button><button data-view="leaders">Weekly Leaders</button></nav>
   <div class="uxbar" id="uxbar">
     <div class="weeknav"><button id="prevWeek" title="Previous week">‹</button><button id="nextWeek" title="Next week">›</button></div>
     <button class="chip" data-qf="live">Live</button>
     <button class="chip" data-qf="close">Close</button>
     <button class="chip" data-qf="redzone">Red Zone</button>
-    <button class="chip" data-qf="ranked">Ranked</button>
+    <button class="chip" data-qf="ranked">Ranked</button><button class="chip" data-qf="top25">Top 25</button>
     <button class="chip" data-qf="favorites">★ Favorites</button>
     <select id="sortGames" title="Sort games"><option value="time">Sort: Kickoff</option><option value="close">Sort: Closest</option><option value="ranked">Sort: Ranked</option></select>
     <button class="chip" id="density">Compact</button>
@@ -69,7 +71,7 @@ const CORE='https://sports.core.api.espn.com/v2/sports/football/leagues/college-
 const FBS_GROUP=80;
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const state={view:'games',games:[],filtered:[],summaryCache:new Map(),weeklyRows:[],leaderMetric:'passYds',loadToken:0,playerCache:new Map(),teamCache:new Map(),playerContext:new Map(),teamContext:new Map(),quickFilter:'',sort:'time',favorites:new Set(JSON.parse(localStorage.getItem('ncaafFavTeams')||'[]')),compact:localStorage.getItem('ncaafCompact')==='1',autoRefresh:false,autoTimer:null,standingsCache:new Map()};
+const state={view:'games',games:[],filtered:[],summaryCache:new Map(),weeklyRows:[],leaderMetric:'passYds',loadToken:0,playerCache:new Map(),teamCache:new Map(),playerContext:new Map(),teamContext:new Map(),quickFilter:'',sort:'time',favorites:new Set(JSON.parse(localStorage.getItem('ncaafFavTeams')||'[]')),compact:localStorage.getItem('ncaafCompact')==='1',autoRefresh:false,autoTimer:null,standingsCache:new Map(),top25:new Set(),mapTeams:new Map(),teamStatSort:{key:'',dir:-1}};
 const confIds={ACC:'1','American':'151','Big 12':'4','Big Ten':'5','Conference USA':'12','MAC':'15','Mountain West':'17','Pac-12':'9','SEC':'8','Sun Belt':'37','Independents':'18'};
 const confTeamSets=new Map();
 const leaderDefs={
@@ -91,12 +93,12 @@ function init(){
   $('week').innerHTML=Array.from({length:18},(_,i)=>'<option value="'+(i+1)+'">Week '+(i+1)+'</option>').join('');
   $('week').value=localStorage.getItem('ncaafWeek')||guessWeek();
   $('conference').innerHTML='<option value="">All FBS</option>'+Object.entries(confIds).map(([n,id])=>'<option value="'+id+'">'+esc(n)+'</option>').join('');
-  document.body.classList.toggle('compact',state.compact);$('density').classList.toggle('active',state.compact);bind();loadConferenceTeams().finally(()=>loadGames());
+  document.body.classList.toggle('compact',state.compact);$('density').classList.toggle('active',state.compact);bind();Promise.all([loadConferenceTeams(),loadTop25()]).finally(()=>loadGames());
 }
 function guessWeek(){const d=new Date(),y=d.getFullYear(),start=new Date(y,7,22);return String(Math.max(1,Math.min(18,Math.floor((d-start)/604800000)+1)))}
 function bind(){
-  document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{state.view=b.dataset.view;document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x===b));render();if(state.view==='leaders'&&!state.weeklyRows.length)loadWeeklyLeaders();if(state.view==='standings')loadStandings()});
-  $('season').onchange=async()=>{localStorage.setItem('ncaafSeason',$('season').value);state.weeklyRows=[];await loadConferenceTeams();loadGames()};
+  document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{state.view=b.dataset.view;document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x===b));render();if(state.view==='leaders'&&!state.weeklyRows.length)loadWeeklyLeaders();if(state.view==='standings')loadStandings();if(state.view==='map')loadConferenceMap()});
+  $('season').onchange=async()=>{localStorage.setItem('ncaafSeason',$('season').value);state.weeklyRows=[];await Promise.all([loadConferenceTeams(),loadTop25()]);loadGames()};
   $('seasonType').onchange=()=>{state.weeklyRows=[];loadGames()};
   $('week').onchange=()=>{localStorage.setItem('ncaafWeek',$('week').value);state.weeklyRows=[];loadGames()};
   $('conference').onchange=()=>{applyFilters();if(state.view==='standings')loadStandings()};$('search').oninput=applyFilters;$('refresh').onclick=()=>{state.summaryCache.clear();state.weeklyRows=[];loadGames(true)};
@@ -116,6 +118,13 @@ function bind(){
   document.addEventListener('keydown',e=>{if(e.target.matches('input,select,textarea'))return;if(e.key==='/'){e.preventDefault();$('search').focus()}else if(e.key==='ArrowLeft')changeWeek(-1);else if(e.key==='ArrowRight')changeWeek(1)});
 }
 async function api(url,force=false){const key='ncaaf:'+url;try{if(!force){const c=JSON.parse(sessionStorage.getItem(key)||'null');if(c&&Date.now()-c.t<300000)return c.v}}catch{}const r=await fetch(url,{cache:'no-store',headers:{Accept:'application/json'}});if(!r.ok)throw Error('ESPN HTTP '+r.status);const j=await r.json();try{sessionStorage.setItem(key,JSON.stringify({t:Date.now(),v:j}))}catch{}return j}
+async function loadTop25(){
+  try{
+    const j=await api(BASE+'/rankings?dates='+encodeURIComponent($('season').value));
+    const poll=(j.rankings||[]).find(x=>/ap/i.test(x.name||x.shortName||''))||(j.rankings||[])[0];
+    state.top25=new Set((poll?.ranks||[]).filter(x=>Number(x.current)<=25).map(x=>String(x.team?.id)).filter(Boolean))
+  }catch{state.top25=new Set()}
+}
 async function loadConferenceTeams(){
   const season=$('season').value;
   await Promise.all(Object.entries(confIds).map(async([name,id])=>{
@@ -192,6 +201,7 @@ function applyFilters(){
     if(state.quickFilter==='close'&&!(g.status==='in'&&Math.abs(g.home.score-g.away.score)<=8))return false;
     if(state.quickFilter==='redzone'&&!(g.status==='in'&&g.isRedZone))return false;
     if(state.quickFilter==='ranked'&&!(g.home.rank||g.away.rank))return false;
+    if(state.quickFilter==='top25'&&!state.top25.has(String(g.home.id))&&!state.top25.has(String(g.away.id)))return false;
     if(state.quickFilter==='favorites'&&!state.favorites.has(String(g.home.id))&&!state.favorites.has(String(g.away.id)))return false;
     return true
   });
@@ -202,7 +212,7 @@ function metrics(){
   const ranked=a.filter(g=>g.home.rank||g.away.rank).length;
   $('metrics').innerHTML=[['Games',a.length],['Live',live],['Final',done],['Upcoming',up],['Ranked Matchups',ranked]].map(([k,v])=>'<div class="metric"><b>'+v+'</b><span>'+k+'</span></div>').join('');
 }
-function render(){metrics();if(state.view==='games')renderGames();else if(state.view==='leaders')renderLeaders();else renderStandingsLoading()}
+function render(){metrics();if(state.view==='games')renderGames();else if(state.view==='leaders')renderLeaders();else if(state.view==='standings')renderStandingsLoading();else renderMapLoading()}
 function logo(t){return t.logo?'<img src="'+esc(t.logo)+'" alt="" onerror="this.style.visibility=\'hidden\'">':'<span></span>'}
 function rankName(t){return (t.rank?'#'+t.rank+' ':'')+esc(t.short||t.name)}
 function playerHead(a){const id=a?.id||a?.uid||'';return a?.headshot?.href||(id?'https://a.espncdn.com/i/headshots/college-football/players/full/'+encodeURIComponent(id)+'.png':'')}
@@ -266,9 +276,13 @@ function playerBox(s){
 }
 function teamStats(s){
   const ts=s.boxscore?.teams||[];if(!ts.length)return '<div class="empty">Team statistics are not available yet.</div>';
-  const all=[...new Set(ts.flatMap(t=>(t.statistics||[]).map(x=>x.name)))];
-  return '<div class="tablewrap"><table><thead><tr><th>Stat</th>'+ts.map(t=>{const tm=rememberTeam(t.team||{});return '<th><span class="teamchip entityLink" data-team="'+esc(tm.id||'')+'">'+(tm.logo?'<img src="'+esc(tm.logo)+'" alt="">':'')+esc(tm.abbreviation||tm.displayName)+'</span></th>'}).join('')+'</tr></thead><tbody>'+all.map(name=>'<tr><td><b>'+esc((ts.flatMap(t=>t.statistics||[]).find(x=>x.name===name)||{}).label||name)+'</b></td>'+ts.map(t=>{const x=(t.statistics||[]).find(z=>z.name===name);return '<td>'+esc(x?.displayValue??x?.value??'—')+'</td>'}).join('')+'</tr>').join('')+'</tbody></table></div>';
+  let all=[...new Set(ts.flatMap(t=>(t.statistics||[]).map(x=>x.name)))];
+  if(state.teamStatSort.key){all.sort((a,b)=>{const av=teamStatNumber(ts[0],a),bv=teamStatNumber(ts[0],b);return (av-bv)*state.teamStatSort.dir})}
+  const head='<th class="sortable" data-tsort="stat">Stat'+(state.teamStatSort.key?'<span class="sortmark">'+(state.teamStatSort.dir>0?'▲':'▼')+'</span>':'')+'</th>';
+  setTimeout(()=>document.querySelectorAll('[data-tsort]').forEach(x=>x.onclick=()=>{state.teamStatSort.key='stat';state.teamStatSort.dir*=-1;const pane=document.getElementById('detailPane');if(pane)pane.innerHTML=teamStats(s)}),0);
+  return '<div class="tablewrap"><table><thead><tr>'+head+ts.map(t=>{const tm=rememberTeam(t.team||{});return '<th><span class="teamchip entityLink" data-team="'+esc(tm.id||'')+'">'+(tm.logo?'<img src="'+esc(tm.logo)+'" alt="">':'')+esc(tm.abbreviation||tm.displayName)+'</span></th>'}).join('')+'</tr></thead><tbody>'+all.map(name=>'<tr><td><b>'+esc((ts.flatMap(t=>t.statistics||[]).find(x=>x.name===name)||{}).label||name)+'</b></td>'+ts.map(t=>{const x=(t.statistics||[]).find(z=>z.name===name);return '<td>'+esc(x?.displayValue??x?.value??'—')+'</td>'}).join('')+'</tr>').join('')+'</tbody></table></div>';
 }
+function teamStatNumber(t,name){const x=(t.statistics||[]).find(z=>z.name===name);return num(x?.value??x?.displayValue??0)}
 function gameLeaders(s){
   const ls=s.leaders||[];if(!ls.length)return '<div class="empty">Game leaders are not available yet.</div>';
   return '<div class="grid">'+ls.flatMap(team=>{const tm=rememberTeam(team.team||{});return (team.leaders||[]).map(cat=>{const a=cat.leaders?.[0],ath=rememberPlayer(a?.athlete||{},tm),head=playerHead(ath);return '<div class="metric entityLink" data-player="'+esc(ath?.id||ath?.uid||'')+'"><span><span class="teamchip entityLink" data-team="'+esc(tm.id||'')+'">'+(tm.logo?'<img src="'+esc(tm.logo)+'" alt="">':'')+esc(tm.abbreviation||'')+'</span> · '+esc(cat.displayName||cat.name)+'</span><div class="ath" style="margin-top:7px">'+(head?'<img src="'+esc(head)+'" alt="" onerror="this.style.visibility=\'hidden\'">':'')+'<div><b style="font-size:15px">'+esc(ath?.displayName||'—')+'</b><div class="sub">'+esc(ath?.position?.abbreviation||'')+' · '+esc(a?.displayValue||a?.value||'')+'</div></div></div></div>'})}).join('')+'</div>';
@@ -278,6 +292,30 @@ function scoringDrives(s){
   if(plays.length)return '<div class="tablewrap"><table><thead><tr><th>Scoring Play</th><th>Qtr</th><th>Time</th><th>Score</th></tr></thead><tbody>'+plays.map(p=>'<tr><td>'+esc(p.text)+'</td><td>'+esc(p.period?.number)+'</td><td>'+esc(p.clock?.displayValue)+'</td><td>'+esc(p.awayScore)+' - '+esc(p.homeScore)+'</td></tr>').join('')+'</tbody></table></div>';
   if(drives.length)return '<div class="tablewrap"><table><thead><tr><th>Drive</th><th>Result</th><th>Plays</th><th>Yards</th><th>Time</th></tr></thead><tbody>'+drives.map(d=>'<tr><td>'+esc(d.team?.abbreviation||'')+'</td><td>'+esc(d.displayResult||d.result)+'</td><td>'+esc(d.plays)+'</td><td>'+esc(d.yards)+'</td><td>'+esc(d.timeElapsed?.displayValue||'')+'</td></tr>').join('')+'</tbody></table></div>';
   return '<div class="empty">Drive data is not available yet.</div>';
+}
+function renderMapLoading(){$('content').innerHTML='<div class="empty">Loading conference teams, locations and travel schedule…</div>'}
+async function loadConferenceMap(){
+  const cid=$('conference').value||'4',ids=[...(confTeamSets.get(String(cid))||[])],season=$('season').value;
+  renderMapLoading();$('status').textContent='Loading conference geography and travel…';
+  const queue=[...ids],teams=[];
+  const worker=async()=>{while(queue.length){const id=queue.shift();try{
+    let p=state.mapTeams.get(String(id));if(!p){const j=await api(BASE+'/teams/'+encodeURIComponent(id));p=j.team||j;state.mapTeams.set(String(id),p)}
+    const sch=await api(BASE+'/teams/'+encodeURIComponent(id)+'/schedule?season='+encodeURIComponent(season));
+    teams.push({team:p,schedule:sch.events||[]})
+  }catch{}}};
+  await Promise.all(Array.from({length:Math.min(10,queue.length)},worker));renderConferenceMap(teams,cid)
+}
+function stateXY(stateCode){
+  const p={WA:[12,12],OR:[10,25],CA:[9,48],AZ:[21,58],UT:[27,45],CO:[38,43],NM:[32,60],TX:[47,67],OK:[48,53],KS:[47,43],NE:[47,32],SD:[48,22],ND:[49,12],MN:[59,17],IA:[58,31],MO:[60,43],AR:[61,56],LA:[62,69],WI:[67,23],IL:[66,37],MI:[75,27],IN:[72,39],OH:[78,39],KY:[75,50],TN:[76,57],MS:[69,65],AL:[75,66],GA:[82,65],FL:[87,79],SC:[87,58],NC:[88,51],VA:[88,44],WV:[82,45],PA:[84,35],NY:[88,24],NJ:[92,34],MD:[91,41],MA:[96,23],CT:[94,28],RI:[97,28],DE:[93,39],ID:[21,27],MT:[32,14],WY:[36,29],NV:[16,43],AK:[10,88],HI:[25,88]};
+  return p[stateCode]||[50,50]
+}
+function renderConferenceMap(rows,cid){
+  const name=Object.entries(confIds).find(([,id])=>String(id)===String(cid))?.[0]||'Conference';
+  const dots=rows.map((r,i)=>{const t=r.team||{},a=t.venue?.address||{},xy=stateXY(a.state),j=(i%4)*1.2;return '<g class="mapdot entityLink" data-team="'+esc(t.id||'')+'" transform="translate('+(xy[0]+j)+' '+(xy[1]+j)+')"><circle r="2.3" fill="#f4b400" stroke="#08111f" stroke-width=".8"/><text class="maplabel" x="3.5" y="1">'+esc(t.abbreviation||'')+'</text></g>'}).join('');
+  const travel=rows.map(r=>{const t=r.team||{},away=(r.schedule||[]).filter(e=>{const c=e.competitions?.[0],me=(c?.competitors||[]).find(x=>String(x.team?.id)===String(t.id));return me?.homeAway==='away'});return {t,away:away.length}}).sort((a,b)=>b.away-a.away);
+  $('status').textContent=name+' · '+rows.length+' teams mapped · '+seasonLabel();
+  $('content').innerHTML='<div class="section"><h3 style="font-size:18px">'+esc(name)+' Geography</h3><div class="sub">Approximate campus/stadium geography from ESPN team venue state. Tap a team to open its profile.</div></div><div class="mapbox"><svg viewBox="0 0 105 100" preserveAspectRatio="xMidYMid meet"><rect width="105" height="100" fill="#08111f"/><path d="M7 10 L32 7 L48 10 L61 13 L74 19 L91 20 L99 29 L96 42 L91 48 L92 59 L86 70 L88 83 L80 87 L72 73 L62 72 L53 66 L43 62 L35 59 L25 59 L18 51 L11 48 Z" fill="#101c2b" stroke="#2a3d57" stroke-width=".8"/>'+dots+'</svg></div>'+
+  '<div class="section"><h3>Travel Schedule Snapshot</h3><div class="tablewrap"><table><thead><tr><th>Team</th><th>Away Games</th><th>Home / Neutral</th></tr></thead><tbody>'+travel.map(x=>{const logo=x.t.logos?.[0]?.href||x.t.logo||'';return '<tr><td><span class="teamchip entityLink" data-team="'+esc(x.t.id||'')+'">'+(logo?'<img src="'+esc(logo)+'" alt="">':'')+esc(x.t.displayName||x.t.name||'')+'</span></td><td><b>'+x.away+'</b></td><td>'+Math.max(0,(rows.find(r=>String(r.team?.id)===String(x.t.id))?.schedule?.length||0)-x.away)+'</td></tr>'}).join('')+'</tbody></table></div></div>'
 }
 function renderStandingsLoading(){
   $('content').innerHTML='<div class="empty">Loading conference standings…</div>'
