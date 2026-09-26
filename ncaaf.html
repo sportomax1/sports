@@ -40,7 +40,7 @@ button,select,input{font:inherit;color:inherit}.shell{width:min(1500px,calc(100%
     <div class="progress"><i id="progress"></i></div>
   </div>
 
-  <nav class="tabs"><button data-view="games" class="active">Games</button><button data-view="leaders">Weekly Leaders</button></nav>
+  <nav class="tabs"><button data-view="games" class="active">Games</button><button data-view="standings">Conference Standings</button><button data-view="leaders">Weekly Leaders</button></nav>
   <div class="uxbar" id="uxbar">
     <div class="weeknav"><button id="prevWeek" title="Previous week">‹</button><button id="nextWeek" title="Next week">›</button></div>
     <button class="chip" data-qf="live">Live</button>
@@ -67,7 +67,7 @@ const BASE='https://site.api.espn.com/apis/site/v2/sports/football/college-footb
 const FBS_GROUP=80;
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const state={view:'games',games:[],filtered:[],summaryCache:new Map(),weeklyRows:[],leaderMetric:'passYds',loadToken:0,playerCache:new Map(),teamCache:new Map(),playerContext:new Map(),teamContext:new Map(),quickFilter:'',sort:'time',favorites:new Set(JSON.parse(localStorage.getItem('ncaafFavTeams')||'[]')),compact:localStorage.getItem('ncaafCompact')==='1',autoRefresh:false,autoTimer:null};
+const state={view:'games',games:[],filtered:[],summaryCache:new Map(),weeklyRows:[],leaderMetric:'passYds',loadToken:0,playerCache:new Map(),teamCache:new Map(),playerContext:new Map(),teamContext:new Map(),quickFilter:'',sort:'time',favorites:new Set(JSON.parse(localStorage.getItem('ncaafFavTeams')||'[]')),compact:localStorage.getItem('ncaafCompact')==='1',autoRefresh:false,autoTimer:null,standingsCache:new Map()};
 const confIds={ACC:'1','American':'151','Big 12':'4','Big Ten':'5','Conference USA':'12','MAC':'15','Mountain West':'17','Pac-12':'9','SEC':'8','Sun Belt':'37','Independents':'18'};
 const confTeamSets=new Map();
 const leaderDefs={
@@ -93,11 +93,11 @@ function init(){
 }
 function guessWeek(){const d=new Date(),y=d.getFullYear(),start=new Date(y,7,22);return String(Math.max(1,Math.min(18,Math.floor((d-start)/604800000)+1)))}
 function bind(){
-  document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{state.view=b.dataset.view;document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x===b));render();if(state.view==='leaders'&&!state.weeklyRows.length)loadWeeklyLeaders()});
+  document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{state.view=b.dataset.view;document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x===b));render();if(state.view==='leaders'&&!state.weeklyRows.length)loadWeeklyLeaders();if(state.view==='standings')loadStandings()});
   $('season').onchange=async()=>{localStorage.setItem('ncaafSeason',$('season').value);state.weeklyRows=[];await loadConferenceTeams();loadGames()};
   $('seasonType').onchange=()=>{state.weeklyRows=[];loadGames()};
   $('week').onchange=()=>{localStorage.setItem('ncaafWeek',$('week').value);state.weeklyRows=[];loadGames()};
-  $('conference').onchange=applyFilters;$('search').oninput=applyFilters;$('refresh').onclick=()=>{state.summaryCache.clear();state.weeklyRows=[];loadGames(true)};
+  $('conference').onchange=()=>{applyFilters();if(state.view==='standings')loadStandings()};$('search').oninput=applyFilters;$('refresh').onclick=()=>{state.summaryCache.clear();state.weeklyRows=[];loadGames(true)};
   $('closeModal').onclick=()=>$('modal').classList.remove('open');$('modal').onclick=e=>{if(e.target===$('modal'))$('modal').classList.remove('open')};
   $('closeEntity').onclick=()=>$('entityModal').classList.remove('open');$('entityModal').onclick=e=>{if(e.target===$('entityModal'))$('entityModal').classList.remove('open')};
   document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('entityModal').classList.contains('open'))$('entityModal').classList.remove('open');else $('modal').classList.remove('open')}});
@@ -127,8 +127,30 @@ async function loadConferenceTeams(){
 function scoreboardUrl(){return BASE+'/scoreboard?groups='+FBS_GROUP+'&limit=1000&dates='+$('season').value+'&seasontype='+$('seasonType').value+'&week='+$('week').value}
 async function loadGames(force=false){
   const token=++state.loadToken;$('status').textContent='Loading all FBS games from ESPN…';$('progress').style.width='30%';showSkeletons();
-  try{const j=await api(scoreboardUrl(),force);if(token!==state.loadToken)return;state.games=(j.events||[]).map(normalizeGame).filter(Boolean).sort((a,b)=>a.date-b.date);$('progress').style.width='100%';setTimeout(()=>$('progress').style.width='0',350);applyFilters();$('status').textContent='ESPN · '+state.games.length+' FBS games loaded for '+$('season').value+' Week '+$('week').value+'.';if(state.view==='leaders')loadWeeklyLeaders()}
+  try{const j=await api(scoreboardUrl(),force);if(token!==state.loadToken)return;
+    let events=[...(j.events||[])];
+    const missing=await supplementWeekEvents(events,force);
+    if(token!==state.loadToken)return;
+    events=dedupeEvents([...events,...missing]);
+    state.games=events.map(normalizeGame).filter(Boolean).sort((a,b)=>a.date-b.date);$('progress').style.width='100%';setTimeout(()=>$('progress').style.width='0',350);applyFilters();$('status').textContent='ESPN · '+state.games.length+' FBS games loaded for '+$('season').value+' Week '+$('week').value+'.';if(state.view==='leaders')loadWeeklyLeaders()}
   catch(e){$('progress').style.width='0';$('status').innerHTML='<span class="error">Could not load ESPN scoreboard: '+esc(e.message)+'</span>';$('content').innerHTML='<div class="empty">No games available.</div>'}
+}
+function dedupeEvents(events){const m=new Map();for(const e of events){if(e?.id)m.set(String(e.id),e)}return [...m.values()]}
+async function supplementWeekEvents(existing,force=false){
+  const season=$('season').value,week=Number($('week').value),type=Number($('seasonType').value);
+  const existingIds=new Set(existing.map(e=>String(e.id)));
+  const allTeamIds=new Set([...confTeamSets.values()].flatMap(s=>[...s]));
+  const queue=[...allTeamIds],found=[];
+  const worker=async()=>{while(queue.length){const id=queue.shift();try{
+    const j=await api(BASE+'/teams/'+encodeURIComponent(id)+'/schedule?season='+encodeURIComponent(season),force);
+    for(const e of j.events||[]){
+      const wk=Number(e.week?.number||e.week||e.competitions?.[0]?.week?.number||0);
+      const st=Number(e.season?.type||e.seasonType||e.competitions?.[0]?.season?.type||2);
+      if(wk===week&&st===type&&!existingIds.has(String(e.id))){existingIds.add(String(e.id));found.push(e)}
+    }
+  }catch{}}};
+  await Promise.all(Array.from({length:Math.min(12,queue.length)},worker));
+  return found
 }
 function normalizeGame(e){
   const c=e.competitions?.[0],comps=c?.competitors;if(!c||!comps?.length)return null;const home=comps.find(x=>x.homeAway==='home')||comps[0],away=comps.find(x=>x.homeAway==='away')||comps[1];
@@ -155,7 +177,7 @@ function metrics(){
   const ranked=a.filter(g=>g.home.rank||g.away.rank).length;
   $('metrics').innerHTML=[['Games',a.length],['Live',live],['Final',done],['Upcoming',up],['Ranked Matchups',ranked]].map(([k,v])=>'<div class="metric"><b>'+v+'</b><span>'+k+'</span></div>').join('');
 }
-function render(){metrics();state.view==='games'?renderGames():renderLeaders()}
+function render(){metrics();if(state.view==='games')renderGames();else if(state.view==='leaders')renderLeaders();else renderStandingsLoading()}
 function logo(t){return t.logo?'<img src="'+esc(t.logo)+'" alt="" onerror="this.style.visibility=\'hidden\'">':'<span></span>'}
 function rankName(t){return (t.rank?'#'+t.rank+' ':'')+esc(t.short||t.name)}
 function playerHead(a){const id=a?.id||a?.uid||'';return a?.headshot?.href||(id?'https://a.espncdn.com/i/headshots/college-football/players/full/'+encodeURIComponent(id)+'.png':'')}
@@ -232,6 +254,44 @@ function scoringDrives(s){
   if(drives.length)return '<div class="tablewrap"><table><thead><tr><th>Drive</th><th>Result</th><th>Plays</th><th>Yards</th><th>Time</th></tr></thead><tbody>'+drives.map(d=>'<tr><td>'+esc(d.team?.abbreviation||'')+'</td><td>'+esc(d.displayResult||d.result)+'</td><td>'+esc(d.plays)+'</td><td>'+esc(d.yards)+'</td><td>'+esc(d.timeElapsed?.displayValue||'')+'</td></tr>').join('')+'</tbody></table></div>';
   return '<div class="empty">Drive data is not available yet.</div>';
 }
+function renderStandingsLoading(){
+  $('content').innerHTML='<div class="empty">Loading conference standings…</div>'
+}
+async function loadStandings(){
+  const cid=$('conference').value||'4',season=$('season').value,key=season+'|'+cid;
+  $('status').textContent='Loading conference standings from ESPN…';renderStandingsLoading();
+  try{
+    let j=state.standingsCache.get(key);
+    if(!j){
+      j=await firstJson([
+        BASE+'/standings?season='+encodeURIComponent(season)+'&group='+encodeURIComponent(cid),
+        'https://site.api.espn.com/apis/v2/sports/football/college-football/standings?region=us&lang=en&contentorigin=espn&season='+encodeURIComponent(season)+'&type=0&level=2&sort=playoffseed%3Aasc&group='+encodeURIComponent(cid)
+      ]);
+      state.standingsCache.set(key,j)
+    }
+    renderStandings(j,cid)
+  }catch(e){$('content').innerHTML='<div class="empty error">Standings were not available from ESPN for this conference.</div>'}
+}
+function renderStandings(j,cid){
+  const confName=Object.entries(confIds).find(([,id])=>String(id)===String(cid))?.[0]||'Conference';
+  const groups=j.children||j.groups||j.standings?.children||[];
+  let entries=[];
+  const collect=x=>{if(Array.isArray(x?.standings?.entries))entries.push(...x.standings.entries);for(const y of x?.children||[])collect(y)};
+  if(Array.isArray(j.standings?.entries))entries.push(...j.standings.entries);
+  for(const g of groups)collect(g);
+  if(!entries.length&&Array.isArray(j.entries))entries=j.entries;
+  const members=confTeamSets.get(String(cid));
+  const seen=new Set();
+  entries=entries.filter(e=>{const id=String(e.team?.id||'');if(!id||seen.has(id))return false;seen.add(id);return !members?.size||members.has(id)});
+  const stat=(e,names)=>{for(const s of e.stats||[]){if(names.includes(String(s.name||s.abbreviation||'').toLowerCase()))return s.displayValue??s.value??'—'}return '—'};
+  entries.sort((a,b)=>(Number(stat(b,['winpercent','pct']))||0)-(Number(stat(a,['winpercent','pct']))||0));
+  $('status').textContent=confName+' standings · '+seasonLabel();
+  $('content').innerHTML='<div class="section"><h3 style="font-size:18px">'+esc(confName)+' Standings</h3><div class="sub" style="margin-bottom:10px">Select a conference above to switch standings. Team names are clickable.</div></div>'+
+  (entries.length?'<div class="tablewrap"><table><thead><tr><th>Team</th><th>CONF</th><th>Overall</th><th>W</th><th>L</th><th>PCT</th><th>PF</th><th>PA</th><th>Streak</th></tr></thead><tbody>'+
+  entries.map((e,i)=>{const t=rememberTeam(e.team||{}),logoUrl=t.logos?.[0]?.href||t.logo||'';return '<tr><td><span class="teamchip entityLink" data-team="'+esc(t.id||'')+'">'+(logoUrl?'<img src="'+esc(logoUrl)+'" alt="">':'')+'<b><span class="rank">'+(i+1)+'.</span> '+esc(t.displayName||t.name||t.abbreviation||'Team')+'</b></span></td><td>'+esc(stat(e,['conference','confrecord','conferenceoverall']))+'</td><td>'+esc(stat(e,['overall','overallrecord']))+'</td><td>'+esc(stat(e,['wins','w']))+'</td><td>'+esc(stat(e,['losses','l']))+'</td><td>'+esc(stat(e,['winpercent','pct']))+'</td><td>'+esc(stat(e,['pointsfor','pf']))+'</td><td>'+esc(stat(e,['pointsagainst','pa']))+'</td><td>'+esc(stat(e,['streak']))+'</td></tr>'}).join('')+
+  '</tbody></table></div>':'<div class="empty">No standings rows returned for '+esc(confName)+'.</div>')
+}
+function seasonLabel(){return $('season').value+' season'}
 function renderLeaders(){
   const buttons=Object.entries(leaderDefs).map(([k,d])=>'<button data-leader="'+k+'" class="'+(state.leaderMetric===k?'active':'')+'">'+d.label+'</button>').join('');
   if(!state.weeklyRows.length){$('content').innerHTML='<div class="leadersbar">'+buttons+'</div><div class="empty">Weekly leaders will be calculated from every completed ESPN FBS box score in this week.</div>';wireLeaderButtons();return}
