@@ -347,21 +347,19 @@ async function loadPlayerData(id,season,view){
       const webRows=Array.isArray(j?.events)?j.events:Object.values(j?.events||{});if(!webRows.length){const all=await fetchAllPlayerEvents(id,season);j={items:all.items}}
       pane.innerHTML=renderPlayerGamelog(j)
     }else if(view==='stats'){
-      const j=await firstJson([
-        'https://site.web.api.espn.com/apis/common/v3/sports/football/college-football/athletes/'+encodeURIComponent(id)+'/stats?season='+season+'&seasontype=2',
-        'https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/'+season+'/athletes/'+encodeURIComponent(id)+'/statistics'
-      ]);
+      const j=await api('https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/'+season+'/types/2/athletes/'+encodeURIComponent(id)+'/statistics');
       pane.innerHTML=renderPlayerSeasonStats(j)
     }else{
-      const years=Array.from({length:5},(_,i)=>season-i),blocks=[];
-      for(const y of years){try{const j=await firstJson([
-        'https://site.web.api.espn.com/apis/common/v3/sports/football/college-football/athletes/'+encodeURIComponent(id)+'/stats?season='+y+'&seasontype=2',
-        'https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/'+y+'/athletes/'+encodeURIComponent(id)+'/statistics'
-      ]);blocks.push('<div class="section"><h3>'+y+'</h3>'+renderPlayerSeasonStats(j)+'</div>')}catch{}}
+      let log=null;try{log=await api('https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/'+encodeURIComponent(id)+'/statisticslog')}catch{}
+      const refs=(log?.entries||[]).map(e=>({year:Number(String(e.season?.$ref||'').match(/seasons\/(\d{4})/)?.[1]),ref:(e.statistics||[]).find(x=>x.type==='total')?.statistics?.$ref})).filter(x=>x.year&&x.ref).sort((x,y)=>y.year-x.year);
+      const targets=refs.length?refs:Array.from({length:6},(_,i)=>({year:season-i,ref:'https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/'+(season-i)+'/types/2/athletes/'+encodeURIComponent(id)+'/statistics'}));
+      const blocks=[];
+      for(const x of targets){try{const j=await api(String(x.ref).replace(/^http:/,'https:'));blocks.push('<div class="section"><h3>'+x.year+'</h3>'+renderPlayerSeasonStats(j)+'</div>')}catch{}}
       pane.innerHTML=blocks.join('')||'<div class="empty">No prior-season statistics were returned by ESPN.</div>'
     }
   }catch(e){pane.innerHTML='<div class="empty">No '+esc(view)+' data was returned for '+season+'.</div>'}
 }
+
 function renderPlayerGamelog(j){
   const labels=j.labels||j.names||[],events=j.events||{},cats=j.categories||[];
   let rows=j.seasonTypes?.flatMap(x=>x.categories||[]).flatMap(x=>x.events||[])||j.games||j.items||[];
@@ -370,13 +368,16 @@ function renderPlayerGamelog(j){
   const cols=labels.length?labels.slice(0,12):['Opponent','Result','Stats'];
   return '<div class="tablewrap"><table><thead><tr><th>Game</th>'+cols.map(x=>'<th>'+esc(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.map((r,i)=>{const vals=r.stats||r.statistics||r.values||[];const opp=r.opponent?.displayName||r.opponent?.abbreviation||r.opponent||r.name||r.event?.name||('Game '+(i+1));return '<tr><td><b>'+esc(opp)+'</b></td>'+cols.map((x,k)=>'<td>'+esc(vals[k]?.displayValue??vals[k]?.value??vals[k]??'—')+'</td>').join('')+'</tr>'}).join('')+'</tbody></table></div>'
 }
-function collectStatCategories(j){
-  const out=[];const walk=x=>{if(!x||typeof x!=='object')return;if(Array.isArray(x)){x.forEach(walk);return}if((x.stats||x.statistics)&&x.displayName)out.push(x);for(const [k,v] of Object.entries(x))if(!['athlete','team'].includes(k))walk(v)};walk(j);return out
-}
 function renderPlayerSeasonStats(j){
-  const cats=collectStatCategories(j);if(!cats.length)return '<div class="empty">No season statistics were returned.</div>';
-  return cats.slice(0,8).map(cat=>{const stats=cat.stats||cat.statistics||[];return '<div class="section"><h3>'+esc(cat.displayName||cat.name||'Stats')+'</h3><div class="tablewrap"><table><thead><tr>'+stats.map(s=>'<th>'+esc(s.abbreviation||s.shortDisplayName||s.name)+'</th>').join('')+'</tr></thead><tbody><tr>'+stats.map(s=>'<td>'+esc(s.displayValue??s.value??'—')+'</td>').join('')+'</tr></tbody></table></div></div>'}).join('')
+  const cats=j?.splits?.categories||j?.categories||[];
+  if(!cats.length)return '<div class="empty">No season statistics were returned.</div>';
+  return cats.map(cat=>{
+    const stats=(cat.stats||[]).filter(s=>s.displayValue!=null||s.value!=null);
+    if(!stats.length)return '';
+    return '<div class="section"><h3>'+esc(cat.displayName||cat.name||'Stats')+'</h3><div class="tablewrap"><table><thead><tr><th>Statistic</th><th>Total</th><th>Per Game</th></tr></thead><tbody>'+stats.map(s=>'<tr><td><b>'+esc(s.displayName||s.shortDisplayName||s.name||s.abbreviation||'Stat')+'</b></td><td>'+esc(s.displayValue??s.value??'—')+'</td><td>'+esc(s.perGameDisplayValue??s.perGameValue??s.per_game_value??'—')+'</td></tr>').join('')+'</tbody></table></div></div>'
+  }).join('')||'<div class="empty">No season statistics were returned.</div>'
 }
+
 async function openTeam(id){
   if(!id)return;const base=state.teamContext.get(String(id))||findTeamContext(id)||{};
   $('entityModal').classList.add('open');$('entityTitle').textContent=base.displayName||base.name||base.short||'Team Profile';$('entityBody').innerHTML=renderTeamProfile(base,null,true);
