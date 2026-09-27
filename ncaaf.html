@@ -134,6 +134,15 @@ td,th{overflow-wrap:anywhere}
  .seasonStatsTable td:before{content:attr(data-label);font-size:10px;color:var(--muted)}
  .seasonStatsTable td b{font-size:14px}
 }
+
+.careerSeasonTable th,.careerSeasonTable td{text-align:center;white-space:nowrap}
+.careerSeasonTable th:first-child,.careerSeasonTable td:first-child{text-align:left;position:sticky;left:0;z-index:2;background:#0d1623}
+@media(max-width:650px){
+ .careerSeasonTable{overflow-x:auto!important;-webkit-overflow-scrolling:touch}
+ .careerSeasonTable table{width:max-content;min-width:100%;max-width:none}
+ .careerSeasonTable th,.careerSeasonTable td{padding:8px 9px!important;font-size:12px!important}
+ .careerSeasonTable th:first-child,.careerSeasonTable td:first-child{min-width:68px}
+}
 </style>
 </head>
 <body>
@@ -443,7 +452,7 @@ async function fetchAllPlayerEvents(id,season){
 }
 function playerDataShell(id,season){
   const opts=Array.from({length:6},(_,i)=>season-i).map(y=>'<option value="'+y+'">'+y+'</option>').join('');
-  return '<div class="section"><div class="playerSeasonBar"><b>Season</b><select id="playerSeason">'+opts+'</select></div><div class="playerDataTabs"><button class="active" data-pview="gamelog">Game Log</button><button data-pview="stats">Season Stats</button><button data-pview="history">Prior Seasons</button><button data-pview="career">Career Totals</button></div><div id="playerDataPane"><div class="empty">Loading player game log…</div></div></div>'
+  return '<div class="section"><div class="playerSeasonBar"><b>Season</b><select id="playerSeason">'+opts+'</select></div><div class="playerDataTabs"><button class="active" data-pview="gamelog">Game Log</button><button data-pview="stats">Seasons Stats</button><button data-pview="career">Career Totals</button></div><div id="playerDataPane"><div class="empty">Loading player game log…</div></div></div>'
 }
 function wirePlayerData(id,season){
   const sel=$('playerSeason');if(sel)sel.value=String(season);
@@ -451,6 +460,27 @@ function wirePlayerData(id,season){
   const load=async()=>{document.querySelectorAll('[data-pview]').forEach(b=>b.classList.toggle('active',b.dataset.pview===view));await loadPlayerData(id,Number(sel?.value||season),view)};
   document.querySelectorAll('[data-pview]').forEach(b=>b.onclick=()=>{view=b.dataset.pview;load()});
   if(sel)sel.onchange=load;load()
+}
+function flattenSeasonStats(j){
+  const out=new Map();
+  for(const cat of j?.splits?.categories||j?.categories||[]){for(const s of cat.stats||[]){if(!meaningfulPlayerStat(s))continue;const key=String(s.name||s.abbreviation||s.shortDisplayName||s.displayName||'').toLowerCase().replace(/[^a-z0-9]/g,'');if(!key)continue;out.set(key,{key,label:seasonStatLabel(s),full:s.displayName||s.shortDisplayName||s.name||s.abbreviation||'Stat',value:s.displayValue??s.value??'—'})}}
+  return out
+}
+function renderSeasonHistoryTable(rows){
+  if(!rows.length)return '<div class="empty">No season statistics were returned.</div>';
+  const counts=new Map(),meta=new Map();
+  rows.forEach(r=>r.stats.forEach((v,k)=>{counts.set(k,(counts.get(k)||0)+(meaningfulPlayerStat({value:v.value})?1:0));if(!meta.has(k))meta.set(k,v)}));
+  const keys=[...counts.entries()].filter(([,n])=>n>0).sort((a,b)=>b[1]-a[1]).map(([k])=>k).slice(0,18);
+  if(!keys.length)return '<div class="empty">No non-zero season statistics were returned.</div>';
+  return '<div class="extraControls"><span class="sub">One row per season · '+rows.length+' seasons</span></div><div class="tablewrap careerSeasonTable"><table><thead><tr><th>Season</th>'+keys.map(k=>'<th title="'+esc(meta.get(k)?.full||k)+'">'+esc(meta.get(k)?.label||k)+'</th>').join('')+'</tr></thead><tbody>'+rows.sort((a,b)=>b.year-a.year).map(r=>'<tr><td><b>'+r.year+'</b></td>'+keys.map(k=>'<td>'+esc(r.stats.get(k)?.value??'—')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'
+}
+async function loadSeasonHistory(id,selectedSeason){
+  let log=null;try{log=await api('https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/'+encodeURIComponent(id)+'/statisticslog')}catch{}
+  let refs=(log?.entries||[]).map(e=>({year:Number(String(e.season?.$ref||'').match(/seasons\/(\d{4})/)?.[1]),ref:(e.statistics||[]).find(x=>x.type==='total')?.statistics?.$ref})).filter(x=>x.year&&x.ref);
+  if(!refs.length)refs=Array.from({length:6},(_,i)=>({year:selectedSeason-i,ref:'https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/'+(selectedSeason-i)+'/types/2/athletes/'+encodeURIComponent(id)+'/statistics'}));
+  const seen=new Set(),targets=refs.filter(x=>!seen.has(x.year)&&seen.add(x.year)).sort((a,b)=>b.year-a.year).slice(0,10),rows=[];
+  await Promise.all(targets.map(async x=>{try{const j=await api(String(x.ref).replace(/^http:/,'https:'));const stats=flattenSeasonStats(j);if(stats.size)rows.push({year:x.year,stats})}catch{}}));
+  return rows
 }
 async function loadPlayerData(id,season,view){
   const pane=$('playerDataPane');if(!pane)return;pane.innerHTML='<div class="empty">Loading '+esc(String(season))+' '+esc(view)+'…</div>';
@@ -460,8 +490,7 @@ async function loadPlayerData(id,season,view){
       const webRows=Array.isArray(j?.events)?j.events:Object.values(j?.events||{});if(!webRows.length){const all=await fetchAllPlayerEvents(id,season);j={items:all.items}}
       pane.innerHTML=renderPlayerGamelog(j);wirePlayerGameLog()
     }else if(view==='stats'){
-      const j=await api('https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/'+season+'/types/2/athletes/'+encodeURIComponent(id)+'/statistics');
-      pane.innerHTML=renderPlayerSeasonStats(j)
+      const rows=await loadSeasonHistory(id,season);pane.innerHTML=renderSeasonHistoryTable(rows)
     }else if(view==='history'){
       let log=null;try{log=await api('https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/'+encodeURIComponent(id)+'/statisticslog')}catch{}
       const refs=(log?.entries||[]).map(e=>({year:Number(String(e.season?.$ref||'').match(/seasons\/(\d{4})/)?.[1]),ref:(e.statistics||[]).find(x=>x.type==='total')?.statistics?.$ref})).filter(x=>x.year&&x.ref).sort((x,y)=>y.year-x.year);
