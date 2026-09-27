@@ -48,7 +48,7 @@ body{font-size:15px}.sub,.status{font-size:13px}.controls label{font-size:12px}.
     <div class="progress"><i id="progress"></i></div>
   </div>
 
-  <nav class="tabs"><button data-view="games" class="active">Games</button><button data-view="standings">Standings</button><button data-view="teamcompare">Team Stats</button><button data-view="travel">Conference Map</button><button data-view="leaders">Weekly Leaders</button></nav>
+  <nav class="tabs"><button data-view="games" class="active">Games</button><button data-view="standings">Standings</button><button data-view="teamcompare">Team Stats</button><button data-view="travel">Conference Map</button><button data-view="rankings">Rankings</button><button data-view="leaders">Weekly Leaders</button></nav>
   <div class="uxbar" id="uxbar">
     <div class="weeknav"><button id="prevWeek" title="Previous week">‹</button><button id="nextWeek" title="Next week">›</button></div>
     <button class="chip" data-qf="live">Live</button>
@@ -75,7 +75,7 @@ const BASE='https://site.api.espn.com/apis/site/v2/sports/football/college-footb
 const FBS_GROUP=80;
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const state={view:'games',games:[],filtered:[],summaryCache:new Map(),weeklyRows:[],leaderMetric:'passYds',loadToken:0,playerCache:new Map(),teamCache:new Map(),playerContext:new Map(),teamContext:new Map(),quickFilter:'',sort:'time',favorites:new Set(JSON.parse(localStorage.getItem('ncaafFavTeams')||'[]')),compact:localStorage.getItem('ncaafCompact')==='1',autoRefresh:false,autoTimer:null,extraCache:new Map(),teamCompareRows:[],extraLoading:false};
+const state={view:'games',games:[],filtered:[],summaryCache:new Map(),weeklyRows:[],leaderMetric:'passYds',loadToken:0,playerCache:new Map(),teamCache:new Map(),playerContext:new Map(),teamContext:new Map(),quickFilter:'',sort:'time',favorites:new Set(JSON.parse(localStorage.getItem('ncaafFavTeams')||'[]')),compact:localStorage.getItem('ncaafCompact')==='1',autoRefresh:false,autoTimer:null,extraCache:new Map(),teamCompareRows:[],extraLoading:false,rankingsData:null,rankingsLoading:false};
 const confIds={ACC:'1','American':'151','Big 12':'4','Big Ten':'5','Conference USA':'12','MAC':'15','Mountain West':'17','Pac-12':'9','SEC':'8','Sun Belt':'37','Independents':'18'};
 const leaderDefs={
   passYds:{label:'Passing Yards',cat:['passing'],stat:['YDS']},
@@ -100,10 +100,10 @@ function init(){
 }
 function guessWeek(){const d=new Date(),y=d.getFullYear(),start=new Date(y,7,22);return String(Math.max(1,Math.min(18,Math.floor((d-start)/604800000)+1)))}
 function bind(){
-  document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{state.view=b.dataset.view;document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x===b));render();if(state.view==='leaders'&&!state.weeklyRows.length)loadWeeklyLeaders();if(['standings','teamcompare','travel'].includes(state.view))loadExtraView()});
+  document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{state.view=b.dataset.view;document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x===b));render();if(state.view==='leaders'&&!state.weeklyRows.length)loadWeeklyLeaders();if(['standings','teamcompare','travel'].includes(state.view))loadExtraView();if(state.view==='rankings')loadRankings()});
   $('season').onchange=()=>{localStorage.setItem('ncaafSeason',$('season').value);state.weeklyRows=[];loadGames()};
   $('seasonType').onchange=()=>{state.weeklyRows=[];loadGames()};
-  $('week').onchange=()=>{localStorage.setItem('ncaafWeek',$('week').value);state.weeklyRows=[];loadGames()};
+  $('week').onchange=()=>{localStorage.setItem('ncaafWeek',$('week').value);state.weeklyRows=[];loadGames();if(state.view==='rankings')loadRankings(true)};
   $('conference').onchange=applyFilters;$('search').oninput=applyFilters;$('refresh').onclick=()=>{state.summaryCache.clear();state.weeklyRows=[];loadGames(true)};
   $('closeModal').onclick=()=>$('modal').classList.remove('open');$('modal').onclick=e=>{if(e.target===$('modal'))$('modal').classList.remove('open')};
   $('closeEntity').onclick=()=>$('entityModal').classList.remove('open');$('entityModal').onclick=e=>{if(e.target===$('entityModal'))$('entityModal').classList.remove('open')};
@@ -152,7 +152,7 @@ function metrics(){
   const ranked=a.filter(g=>g.home.rank||g.away.rank).length;
   $('metrics').innerHTML=[['Games',a.length],['Live',live],['Final',done],['Upcoming',up],['Ranked Matchups',ranked]].map(([k,v])=>'<div class="metric"><b>'+v+'</b><span>'+k+'</span></div>').join('');
 }
-function render(){metrics();state.view==='games'?renderGames():renderLeaders()}
+function render(){metrics();if(state.view==='games')renderGames();else if(state.view==='leaders')renderLeaders();else if(state.view==='rankings')renderRankings();else renderExtraShell()}
 function logo(t){return t.logo?'<img src="'+esc(t.logo)+'" alt="" onerror="this.style.visibility=\'hidden\'">':'<span></span>'}
 function rankName(t){return (t.rank?'#'+t.rank+' ':'')+esc(t.short||t.name)}
 function playerHead(a){const id=a?.id||a?.uid||'';return a?.headshot?.href||(id?'https://a.espncdn.com/i/headshots/college-football/players/full/'+encodeURIComponent(id)+'.png':'')}
@@ -330,7 +330,7 @@ async function fetchAllPlayerEvents(id,season){
 }
 function playerDataShell(id,season){
   const opts=Array.from({length:6},(_,i)=>season-i).map(y=>'<option value="'+y+'">'+y+'</option>').join('');
-  return '<div class="section"><div class="playerSeasonBar"><b>Season</b><select id="playerSeason">'+opts+'</select></div><div class="playerDataTabs"><button class="active" data-pview="gamelog">Game Log</button><button data-pview="stats">Season Stats</button><button data-pview="history">Prior Seasons</button></div><div id="playerDataPane"><div class="empty">Loading player game log…</div></div></div>'
+  return '<div class="section"><div class="playerSeasonBar"><b>Season</b><select id="playerSeason">'+opts+'</select></div><div class="playerDataTabs"><button class="active" data-pview="gamelog">Game Log</button><button data-pview="stats">Season Stats</button><button data-pview="history">Prior Seasons</button><button data-pview="career">Career Totals</button></div><div id="playerDataPane"><div class="empty">Loading player game log…</div></div></div>'
 }
 function wirePlayerData(id,season){
   const sel=$('playerSeason');if(sel)sel.value=String(season);
@@ -345,29 +345,40 @@ async function loadPlayerData(id,season,view){
     if(view==='gamelog'){
       let j=await api('https://site.web.api.espn.com/apis/common/v3/sports/football/college-football/athletes/'+encodeURIComponent(id)+'/gamelog?season='+season);
       const webRows=Array.isArray(j?.events)?j.events:Object.values(j?.events||{});if(!webRows.length){const all=await fetchAllPlayerEvents(id,season);j={items:all.items}}
-      pane.innerHTML=renderPlayerGamelog(j)
+      pane.innerHTML=renderPlayerGamelog(j);wirePlayerGameLog()
     }else if(view==='stats'){
       const j=await api('https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/'+season+'/types/2/athletes/'+encodeURIComponent(id)+'/statistics');
       pane.innerHTML=renderPlayerSeasonStats(j)
-    }else{
+    }else if(view==='history'){
       let log=null;try{log=await api('https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/'+encodeURIComponent(id)+'/statisticslog')}catch{}
       const refs=(log?.entries||[]).map(e=>({year:Number(String(e.season?.$ref||'').match(/seasons\/(\d{4})/)?.[1]),ref:(e.statistics||[]).find(x=>x.type==='total')?.statistics?.$ref})).filter(x=>x.year&&x.ref).sort((x,y)=>y.year-x.year);
       const targets=refs.length?refs:Array.from({length:6},(_,i)=>({year:season-i,ref:'https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/'+(season-i)+'/types/2/athletes/'+encodeURIComponent(id)+'/statistics'}));
       const blocks=[];
       for(const x of targets){try{const j=await api(String(x.ref).replace(/^http:/,'https:'));blocks.push('<div class="section"><h3>'+x.year+'</h3>'+renderPlayerSeasonStats(j)+'</div>')}catch{}}
       pane.innerHTML=blocks.join('')||'<div class="empty">No prior-season statistics were returned by ESPN.</div>'
+    }else if(view==='career'){
+      try{const j=await api('https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/'+encodeURIComponent(id)+'/statistics');pane.innerHTML=renderPlayerSeasonStats(j)}catch{pane.innerHTML='<div class="empty">Career totals were not returned by ESPN.</div>'}
     }
   }catch(e){pane.innerHTML='<div class="empty">No '+esc(view)+' data was returned for '+season+'.</div>'}
 }
 
 function renderPlayerGamelog(j){
-  const labels=j.labels||j.names||[],events=j.events||{},cats=j.categories||[];
+  const labels=j.labels||j.names||[],events=j.events||{};
   let rows=j.seasonTypes?.flatMap(x=>x.categories||[]).flatMap(x=>x.events||[])||j.games||j.items||[];
   if(!rows.length&&events&&typeof events==='object')rows=Object.entries(events).map(([id,e])=>({...e,id}));
   if(!rows.length)return '<div class="empty">No game log was returned for this season.</div>';
-  const cols=labels.length?labels.slice(0,12):['Opponent','Result','Stats'];
-  return '<div class="tablewrap"><table><thead><tr><th>Game</th>'+cols.map(x=>'<th>'+esc(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.map((r,i)=>{const vals=r.stats||r.statistics||r.values||[];const op=r.opponent?.team||r.opponent||r.event?.opponent||{},opp=op.displayName||op.shortDisplayName||op.abbreviation||(typeof r.opponent==='string'?r.opponent:'')||r.name||r.event?.name||('Game '+(i+1)),opId=op.id||r.opponentId||r.opponent?.id||'',opLogo=op.logo||op.logos?.[0]?.href||(opId?'https://a.espncdn.com/i/teamlogos/ncaa/500/'+encodeURIComponent(opId)+'.png':'');return '<tr><td><span class="teamchip">'+(opLogo?'<img src="'+esc(opLogo)+'" alt="" onerror="this.style.display=\'none\'">':'')+'<b>'+esc(opp)+'</b></span></td>'+cols.map((x,k)=>'<td>'+esc(vals[k]?.displayValue??vals[k]?.value??vals[k]??'—')+'</td>').join('')+'</tr>'}).join('')+'</tbody></table></div>'
+  const cols=labels.length?labels.slice(0,12):[],normRows=rows.map((r,i)=>{const vals=r.stats||r.statistics||r.values||[],op=r.opponent?.team||r.opponent||r.event?.opponent||{},opId=op.id||r.opponentId||r.opponent?.id||'',opp=op.displayName||op.shortDisplayName||op.abbreviation||(typeof r.opponent==='string'?r.opponent:'')||r.name||r.event?.name||('Game '+(i+1)),opLogo=op.logo||op.logos?.[0]?.href||(opId?'https://a.espncdn.com/i/teamlogos/ncaa/500/'+encodeURIComponent(opId)+'.png':''),date=r.date||r.event?.date||'',result=r.result||r.gameResult||r.event?.result||'',score=r.score||r.scoreDisplay||r.event?.score||'',homeAway=r.homeAway||r.event?.homeAway||'';return {r,vals,opp,opId,opLogo,date,result,score,homeAway}}); 
+  const chartCols=cols.map((x,i)=>({x,i})).filter(o=>normRows.some(r=>Number(String(r.vals[o.i]?.value??r.vals[o.i]??'').replace(/,/g,''))||0)).slice(0,8);
+  return '<div class="extraControls"><select id="pgSort"><option value="new">Newest First</option><option value="old">Oldest First</option>'+cols.map((x,i)=>'<option value="s'+i+'">'+esc(x)+' High→Low</option>').join('')+'</select>'+(chartCols.length?'<select id="pgChart"><option value="">Trend Chart…</option>'+chartCols.map(o=>'<option value="'+o.i+'">'+esc(o.x)+'</option>').join('')+'</select>':'')+'</div><div id="pgChartPane"></div><div id="pgTable"></div><script type="application/json" id="pgData">'+esc(JSON.stringify({cols,rows:normRows.map(x=>({opp:x.opp,opId:x.opId,opLogo:x.opLogo,date:x.date,result:x.result,score:x.score,homeAway:x.homeAway,vals:x.vals.map(v=>v?.displayValue??v?.value??v)}))}))+'<\/script>'
 }
+function wirePlayerGameLog(){
+  const raw=$('pgData');if(!raw)return;let data;try{data=JSON.parse(raw.textContent)}catch{return}
+  const draw=()=>{let rows=[...data.rows],v=$('pgSort')?.value||'new';if(v==='old')rows.reverse();else if(v.startsWith('s')){const k=Number(v.slice(1));rows.sort((a,b)=>num(b.vals[k])-num(a.vals[k]))}
+    $('pgTable').innerHTML='<div class="tablewrap"><table><thead><tr><th>Opponent</th><th>Date</th><th>Site</th><th>Result</th>'+data.cols.map(x=>'<th>'+esc(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr><td><span class="teamchip '+(r.opId?'entityLink':'')+'" '+(r.opId?'data-team="'+esc(r.opId)+'"':'')+'>'+(r.opLogo?'<img src="'+esc(r.opLogo)+'" alt="" onerror="this.style.display=\'none\'">':'')+'<b>'+esc(r.opp)+'</b></span></td><td>'+esc(r.date?new Date(r.date).toLocaleDateString():'—')+'</td><td>'+esc(r.homeAway==='away'?'Away':r.homeAway==='home'?'Home':r.homeAway||'—')+'</td><td><b>'+esc([r.result,r.score].filter(Boolean).join(' ' )||'—')+'</b></td>'+r.vals.map(x=>'<td>'+esc(x??'—')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'};
+  const chart=()=>{const k=Number($('pgChart')?.value);if(!Number.isInteger(k)||$('pgChart').value===''){$('pgChartPane').innerHTML='';return}const vals=data.rows.map(r=>num(r.vals[k])),mx=Math.max(1,...vals),w=760,h=220,p=30,pts=vals.map((v,i)=>[(p+i*(w-2*p)/Math.max(1,vals.length-1)),h-p-v*(h-2*p)/mx]);$('pgChartPane').innerHTML='<div class="section"><h3>'+esc(data.cols[k])+' by Game</h3><svg viewBox="0 0 '+w+' '+h+'" style="width:100%;max-height:260px;background:#0d1623;border:1px solid var(--line);border-radius:12px"><polyline fill="none" stroke="currentColor" stroke-width="3" points="'+pts.map(x=>x.join(',')).join(' ')+'"></polyline>'+pts.map((x,i)=>'<circle cx="'+x[0]+'" cy="'+x[1]+'" r="4" fill="currentColor"><title>'+esc(data.rows[i].opp)+': '+vals[i]+'</title></circle>').join('')+'</svg></div>'};
+  if($('pgSort'))$('pgSort').onchange=draw;if($('pgChart'))$('pgChart').onchange=chart;draw()
+}
+
 function renderPlayerSeasonStats(j){
   const cats=j?.splits?.categories||j?.categories||[];
   if(!cats.length)return '<div class="empty">No season statistics were returned.</div>';
@@ -383,10 +394,11 @@ async function openTeam(id){
   $('entityModal').classList.add('open');$('entityTitle').textContent=base.displayName||base.name||base.short||'Team Profile';$('entityBody').innerHTML=renderTeamProfile(base,null,true);
   try{
     let data=state.teamCache.get(String(id));
-    if(!data){const season=$('season').value;const [profile,roster]=await Promise.all([
+    if(!data){const season=$('season').value;const [profile,roster,schedule]=await Promise.all([
       firstJson([BASE+'/teams/'+encodeURIComponent(id)]).catch(()=>null),
-      firstJson([BASE+'/teams/'+encodeURIComponent(id)+'/roster?season='+encodeURIComponent(season)]).catch(()=>null)
-    ]);data={profile,roster};state.teamCache.set(String(id),data)}
+      firstJson([BASE+'/teams/'+encodeURIComponent(id)+'/roster?season='+encodeURIComponent(season)]).catch(()=>null),
+      api(BASE+'/teams/'+encodeURIComponent(id)+'/schedule?season='+encodeURIComponent(season)).catch(()=>null)
+    ]);data={profile,roster,schedule};state.teamCache.set(String(id),data)}
     $('entityBody').innerHTML=renderTeamProfile(base,data,false);wireTeamRosterContext(data?.roster,base)
   }catch(e){$('entityBody').innerHTML=renderTeamProfile(base,null,false)+'<div class="sub" style="margin-top:10px">Additional ESPN team details were not available.</div>'}
 }
@@ -398,10 +410,28 @@ function renderTeamProfile(base,data,loading){
   return '<div class="profileHero">'+(logoUrl?'<img src="'+esc(logoUrl)+'" alt="">':'<div></div>')+'<div><h2>'+esc(name)+'</h2><div class="sub">'+esc([location,nickname,abbr].filter(Boolean).join(' · '))+'</div><div class="profileMeta">'+(record?'<span class="pill">'+esc(record)+'</span>':'')+(color?'<span class="pill">Team color '+esc(color)+'</span>':'')+'</div></div></div>'+
   '<div class="profileGrid">'+[['Record',record],['Abbreviation',abbr],['Conference',p.conference?.name||p.conferenceName||''],['Roster',roster.length?roster.length+' players':''],['Week',$('week').value],['Games this view',games.length]].map(([k,v])=>'<div class="profileCard"><span>'+k+'</span><b>'+esc(profileValue(v))+'</b></div>').join('')+'</div>'+
   (roster.length?'<div class="section"><h3>Roster</h3><div class="grid">'+roster.slice(0,80).map(x=>{const a=x.athlete||x,head=playerHead(a);rememberPlayer(a,p);return '<div class="metric entityLink" data-player="'+esc(a.id||a.uid||'')+'"><div class="ath">'+(head?'<img src="'+esc(head)+'" alt="" onerror="this.style.visibility=\'hidden\'">':'')+'<div><b style="font-size:13px">'+esc(a.displayName||a.fullName||a.shortName||'Player')+'</b><div class="sub">'+esc([a.position?.abbreviation,a.jersey?'#'+a.jersey:''].filter(Boolean).join(' · '))+'</div></div></div></div>'}).join('')+'</div></div>':'')+
-  (loading?'<div class="sub">Loading team profile and roster…</div>':'')
+  (loading?'<div class="sub">Loading team profile and roster…</div>':'')+renderTeamSchedule(data?.schedule,base.id||p.id)
+}
+function renderTeamSchedule(schedule,teamId){
+  const events=schedule?.events||[];if(!events.length)return '';
+  return '<div class="section"><h3>Full Season Schedule</h3><div class="tablewrap"><table><thead><tr><th>Date</th><th>Opponent</th><th>Site</th><th>Result</th><th>Score</th></tr></thead><tbody>'+events.map(e=>{const c=e.competitions?.[0],cs=c?.competitors||[],me=cs.find(x=>String(x.team?.id)===String(teamId)),op=cs.find(x=>String(x.team?.id)!==String(teamId))||{},ms=Number(me?.score?.value??me?.score??0),os=Number(op?.score?.value??op?.score??0),done=c?.status?.type?.completed,res=done?(ms>os?'W':'L'):'',logo=op.team?.logo||op.team?.logos?.[0]?.href||'';return '<tr><td>'+esc(new Date(e.date).toLocaleDateString())+'</td><td><span class="teamchip entityLink" data-team="'+esc(op.team?.id||'')+'">'+(logo?'<img src="'+esc(logo)+'" alt="">':'')+'<b>'+esc(op.team?.displayName||op.team?.shortDisplayName||'Opponent')+'</b></span></td><td>'+esc(c?.neutralSite?'Neutral':me?.homeAway==='away'?'Away':'Home')+'</td><td><b>'+res+'</b></td><td>'+esc(done?(ms+'–'+os):(c?.status?.type?.shortDetail||''))+'</td></tr>'}).join('')+'</tbody></table></div></div>'
 }
 function wireTeamRosterContext(roster,base){for(const x of roster?.athletes||[]){const a=x.athlete||x;rememberPlayer(a,roster.team||base)}}
 
+async function loadRankings(force=false){
+  if(state.rankingsLoading)return;state.rankingsLoading=true;renderRankings();
+  const season=$('season').value,week=$('week').value,type=$('seasonType').value;
+  try{state.rankingsData=await api(BASE+'/rankings?season='+encodeURIComponent(season)+'&week='+encodeURIComponent(week)+'&seasontype='+encodeURIComponent(type),force);$('status').textContent='ESPN rankings · requested '+season+' Week '+week}
+  catch(e){state.rankingsData={error:e.message}}finally{state.rankingsLoading=false;renderRankings()}
+}
+function renderRankings(){
+  if(state.rankingsLoading){$('content').innerHTML='<div class="empty">Loading rankings…</div>';return}
+  const j=state.rankingsData;if(!j){$('content').innerHTML='<div class="empty">Open Rankings to load the selected season/week polls.</div>';return}
+  if(j.error){$('content').innerHTML='<div class="empty error">'+esc(j.error)+'</div>';return}
+  const polls=j.rankings||[];if(!polls.length){$('content').innerHTML='<div class="empty">ESPN returned no rankings for this selection.</div>';return}
+  $('content').innerHTML='<div class="extraControls"><button class="chip" id="rankPrev">← Prior Week</button><button class="chip" id="rankNext">Next Week →</button><button class="chip" id="rankReload">Reload</button></div>'+polls.map(p=>'<div class="section"><h3>'+esc(p.name||p.shortName||'Poll')+' · '+esc(p.occurrence?.displayValue||('Week '+$('week').value))+'</h3><div class="tablewrap"><table><thead><tr><th>Rank</th><th>Team</th><th>Record</th><th>Previous</th><th>Change</th><th>Points</th><th>1st</th></tr></thead><tbody>'+(p.ranks||[]).map(x=>{const t=x.team||{},chg=Number(x.previous||x.current)-Number(x.current);return '<tr><td><b class="rank">#'+esc(x.current)+'</b></td><td><span class="teamchip entityLink" data-team="'+esc(t.id||'')+'">'+(t.logo?'<img src="'+esc(t.logo)+'" alt="">':'')+'<b>'+esc(t.displayName||t.name)+'</b></span></td><td>'+esc(t.record?.summary||x.record?.summary||'')+'</td><td>'+esc(x.previous||'—')+'</td><td>'+esc(chg>0?'▲ '+chg:chg<0?'▼ '+Math.abs(chg):'—')+'</td><td>'+esc(x.points??'—')+'</td><td>'+esc(x.firstPlaceVotes??'—')+'</td></tr>'}).join('')+'</tbody></table></div></div>').join('');
+  $('rankPrev').onclick=()=>{changeWeek(-1);setTimeout(()=>{state.view='rankings';loadRankings(true)},0)};$('rankNext').onclick=()=>{changeWeek(1);setTimeout(()=>{state.view='rankings';loadRankings(true)},0)};$('rankReload').onclick=()=>loadRankings(true)
+}
 function renderExtraShell(){
   if(state.extraLoading){$('content').innerHTML='<div class="empty">Loading '+esc(state.view)+' data…</div>';return}
   if(!state.teamCompareRows.length){$('content').innerHTML='<div class="empty">Open this view to load season data. It is isolated from the main scoreboard so a failed request cannot break the app.</div>';return}
