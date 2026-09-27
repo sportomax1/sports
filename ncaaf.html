@@ -305,19 +305,28 @@ async function openPlayer(id){
       BASE+'/athletes/'+encodeURIComponent(id),
       'https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/'+encodeURIComponent(id)
     ]);state.playerCache.set(String(id),data)}
-    $('entityBody').innerHTML=renderPlayerProfile(base,data,false)+playerDataShell(id,season);
+    let seasonBio=null;
+    try{seasonBio=await api('https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/'+season+'/athletes/'+encodeURIComponent(id)+'?lang=en&region=us')}catch{}
+    $('entityBody').innerHTML=renderPlayerProfile(base,{...(data||{}),seasonBio},false)+playerDataShell(id,season);
     wirePlayerData(id,season)
   }catch(e){$('entityBody').innerHTML=renderPlayerProfile(base,null,false)+playerDataShell(id,season);wirePlayerData(id,season)}
 }
 
 function renderPlayerProfile(base,data,loading){
-  const a=data?.athlete||data||base||{},team=base._team||a.team||{},name=a.displayName||a.fullName||base.displayName||'Player',head=playerHead({...base,...a});
-  const pos=a.position?.displayName||a.position?.abbreviation||base.position?.displayName||base.position?.abbreviation||'',jersey=a.jersey||base.jersey||'',height=a.displayHeight||a.height||'',weight=a.displayWeight||a.weight||'',year=a.experience?.displayValue||a.class||a.year||'',hometown=a.birthPlace?.city||a.birthPlace?.state||a.birthPlace?.country? [a.birthPlace?.city,a.birthPlace?.state,a.birthPlace?.country].filter(Boolean).join(', '):'';
+  const sb=data?.seasonBio||{},a=data?.athlete||data||base||{},team=base._team||sb.team||a.team||{},name=sb.displayName||a.displayName||a.fullName||base.displayName||'Player',head=playerHead({...base,...a,...sb});
+  const pos=sb.position?.displayName||sb.position?.abbreviation||a.position?.displayName||a.position?.abbreviation||base.position?.displayName||base.position?.abbreviation||'',jersey=sb.jersey||a.jersey||base.jersey||'',height=sb.displayHeight||a.displayHeight||a.height||'',weight=sb.displayWeight||a.displayWeight||a.weight||'',exp=sb.experience||a.experience||{},year=exp.displayValue||exp.name||exp.abbreviation||sb.class||a.class||a.year||'',bp=sb.birthPlace||a.birthPlace||{},hometown=[bp.city,bp.state,bp.country].filter(Boolean).join(', ');
   if(team?.id)rememberTeam(team);
   $('entityTitle').textContent=name;
   return '<div class="profileHero player">'+(head?'<img src="'+esc(head)+'" alt="" onerror="this.style.visibility=\'hidden\'">':'<div></div>')+'<div><h2>'+esc(name)+'</h2><div class="sub">'+esc([pos,jersey?'#'+jersey:''].filter(Boolean).join(' · '))+'</div><div class="profileMeta">'+(team?.id?'<span class="pill entityLink" data-team="'+esc(team.id)+'">'+esc(team.displayName||team.shortDisplayName||team.name||team.abbreviation||'Team')+'</span>':'')+(year?'<span class="pill">'+esc(year)+'</span>':'')+'</div></div></div>'+
-  '<div class="profileGrid">'+[['Position',pos],['Jersey',jersey?('#'+jersey):''],['Height',height],['Weight',weight],['Hometown',hometown],['Status',a.status?.name||a.status?.type||'']].map(([k,v])=>'<div class="profileCard"><span>'+k+'</span><b>'+esc(profileValue(v))+'</b></div>').join('')+'</div>'+
+  '<div class="profileGrid">'+[['Position',pos],['Year',year],['Hometown',hometown],['Jersey',jersey?('#'+jersey):''],['Height',height],['Weight',weight],['Status',sb.status?.name||sb.status?.type||a.status?.name||a.status?.type||'']].map(([k,v])=>'<div class="profileCard"><span>'+k+'</span><b>'+esc(profileValue(v))+'</b></div>').join('')+'</div>'+
   (loading?'<div class="sub">Loading additional ESPN player data…</div>':'')
+}
+async function fetchAllPlayerEvents(id,season){
+  const base='https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/'+season+'/athletes/'+encodeURIComponent(id)+'/eventlog';
+  const first=await api(base+'?limit=100&page=1');
+  const ev=first.events||first,items=[...(ev.items||[])],pages=Number(ev.pageCount||first.pageCount||1);
+  for(let p=2;p<=pages;p++){try{const j=await api(base+'?limit=100&page='+p),x=j.events||j;items.push(...(x.items||[]))}catch{}}
+  return {items,count:Number(ev.count||first.count||items.length)}
 }
 function playerDataShell(id,season){
   const opts=Array.from({length:6},(_,i)=>season-i).map(y=>'<option value="'+y+'">'+y+'</option>').join('');
@@ -334,7 +343,8 @@ async function loadPlayerData(id,season,view){
   const pane=$('playerDataPane');if(!pane)return;pane.innerHTML='<div class="empty">Loading '+esc(String(season))+' '+esc(view)+'…</div>';
   try{
     if(view==='gamelog'){
-      const j=await api('https://site.web.api.espn.com/apis/common/v3/sports/football/college-football/athletes/'+encodeURIComponent(id)+'/gamelog?season='+season);
+      let j=await api('https://site.web.api.espn.com/apis/common/v3/sports/football/college-football/athletes/'+encodeURIComponent(id)+'/gamelog?season='+season);
+      const webRows=Array.isArray(j?.events)?j.events:Object.values(j?.events||{});if(!webRows.length){const all=await fetchAllPlayerEvents(id,season);j={items:all.items}}
       pane.innerHTML=renderPlayerGamelog(j)
     }else if(view==='stats'){
       const j=await firstJson([
