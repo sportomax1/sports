@@ -109,6 +109,17 @@ td,th{overflow-wrap:anywhere}
  .rankingsTable th:nth-child(7),.rankingsTable td:nth-child(7){display:none!important}
  .rankingsTable th:nth-child(5),.rankingsTable td:nth-child(5){display:table-cell!important}
 }
+
+.boxTeamToggle{display:flex;gap:6px;align-items:center;margin:0 0 12px;flex-wrap:wrap}
+.boxTeamToggle button{border:1px solid var(--line);background:#101c2b;color:inherit;border-radius:999px;min-height:38px;padding:7px 13px;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-weight:800}
+.boxTeamToggle button.active{background:var(--accent);color:#111;border-color:var(--accent)}
+.boxTeamToggle img{width:22px;height:22px;object-fit:contain}
+.boxTeamSection[hidden]{display:none!important}
+@media(max-width:520px){
+ .boxTeamToggle{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;position:sticky;top:0;z-index:5;background:#0b1420;padding:6px 0}
+ .boxTeamToggle button{min-width:0;padding:7px 5px;font-size:13px}
+ .boxTeamToggle img{width:20px;height:20px}
+}
 </style>
 </head>
 <body>
@@ -281,20 +292,27 @@ function renderGameDetail(g,s,tab){
   const tabs=['box','team','leaders','drives'].map(x=>'<button data-dtab="'+x+'" class="'+(x===tab?'active':'')+'">'+({box:'Box Score',team:'Team Stats',leaders:'Game Leaders',drives:'Scoring / Drives'}[x])+'</button>').join('');
   $('modalBody').innerHTML=hero+'<div class="detailtabs">'+tabs+'</div><div id="detailPane">'+detailPane(s,tab)+'</div>';
   document.querySelectorAll('[data-dtab]').forEach(b=>b.onclick=()=>renderGameDetail(g,s,b.dataset.dtab));
-  hydrateVisiblePlayerImages();
+  hydrateVisiblePlayerImages();if(tab==='box')wireBoxTeamToggle();
 }
-function detailPane(s,tab){
-  if(tab==='box')return playerBox(s);
+function detailPane(s,tab,g){
+  if(tab==='box')return playerBox(s,g);
   if(tab==='team')return teamStats(s);
   if(tab==='leaders')return gameLeaders(s);
   return scoringDrives(s);
 }
-function playerBox(s){
+function playerBox(s,g){
   const teams=s.boxscore?.players||[];if(!teams.length)return '<div class="empty">Player box score is not available yet.</div>';
-  return teams.map(tp=>{const tm=rememberTeam(tp.team||{});return '<div class="section"><h3 class="entityLink" style="display:inline-flex;align-items:center;gap:7px;padding:5px 7px;margin-left:-7px" data-team="'+esc(tm.id||'')+'">'+(tm.logo?'<img src="'+esc(tm.logo)+'" style="width:24px;height:24px;object-fit:contain" alt="">':'')+esc(tm.displayName||tm.name||'Team')+'</h3>'+tp.statistics.map(cat=>{
-    const labels=cat.labels||[],rows=cat.athletes||[];return '<div class="mini" style="margin-bottom:9px"><table><thead><tr><th>'+esc(cat.displayName||cat.name)+'</th>'+labels.map(l=>'<th>'+esc(l)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(a=>{const ath=rememberPlayer(a.athlete||{},tm),id=ath.id||ath.uid||'',head=playerHead(ath);return '<tr><td><div class="ath entityLink" data-player="'+esc(id)+'">'+(id?'<img data-athlete-img="'+esc(id)+'" src="'+esc(head||'')+'" alt="" style="'+(head?'':'visibility:hidden')+'">':'')+'<div><b>'+esc(ath.displayName||ath.shortName)+'</b><div class="sub">'+esc(ath.position?.abbreviation||'')+'</div></div></div></td>'+(a.stats||[]).map(v=>'<td>'+esc(v)+'</td>').join('')+'</tr>'}).join('')+'</tbody></table></div>'
-  }).join('')+'</div>'}).join('');
+  const teamId=tp=>String(tp.team?.id||'');
+  const away=teams.find(tp=>teamId(tp)===String(g?.away?.id))||teams[0],home=teams.find(tp=>teamId(tp)===String(g?.home?.id))||teams[1];
+  const toggle='<div class="boxTeamToggle" role="group" aria-label="Box score team filter"><button class="active" data-boxteam="both">Both</button>'+(away?'<button data-boxteam="'+esc(teamId(away))+'">'+(away.team?.logo?'<img src="'+esc(away.team.logo)+'" alt="">':'')+'<span>'+esc(away.team?.abbreviation||g?.away?.abbr||'Away')+'</span></button>':'')+(home?'<button data-boxteam="'+esc(teamId(home))+'">'+(home.team?.logo?'<img src="'+esc(home.team.logo)+'" alt="">':'')+'<span>'+esc(home.team?.abbreviation||g?.home?.abbr||'Home')+'</span></button>':'')+'</div>';
+  const body=teams.map(tp=>{const tm=rememberTeam(tp.team||{});return '<div class="section boxTeamSection" data-boxsection="'+esc(tm.id||'')+'"><h3 class="entityLink" style="display:inline-flex;align-items:center;gap:7px;padding:5px 7px;margin-left:-7px" data-team="'+esc(tm.id||'')+'">'+(tm.logo?'<img src="'+esc(tm.logo)+'" style="width:24px;height:24px;object-fit:contain" alt="">':'')+esc(tm.displayName||tm.name||'Team')+'</h3>'+tp.statistics.map(cat=>{const labels=cat.labels||[],rows=cat.athletes||[];return '<div class="mini" style="margin-bottom:9px"><table><thead><tr><th>'+esc(cat.displayName||cat.name)+'</th>'+labels.map(l=>'<th>'+esc(l)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(a=>{const ath=rememberPlayer(a.athlete||{},tm),id=ath.id||ath.uid||'',head=playerHead(ath);return '<tr><td><div class="ath entityLink" data-player="'+esc(id)+'">'+(id?'<img data-athlete-img="'+esc(id)+'" src="'+esc(head||'')+'" alt="" style="'+(head?'':'visibility:hidden')+'">':'')+'<div><b>'+esc(ath.displayName||ath.shortName)+'</b><div class="sub">'+esc(ath.position?.abbreviation||'')+'</div></div></div></td>'+(a.stats||[]).map(v=>'<td>'+esc(v)+'</td>').join('')+'</tr>'}).join('')+'</tbody></table></div>'}).join('')+'</div>'}).join('');
+  return toggle+body
 }
+function wireBoxTeamToggle(){
+  const buttons=[...document.querySelectorAll('[data-boxteam]')];if(!buttons.length)return;
+  buttons.forEach(btn=>btn.onclick=()=>{const id=btn.dataset.boxteam;buttons.forEach(x=>x.classList.toggle('active',x===btn));document.querySelectorAll('.boxTeamSection').forEach(sec=>sec.hidden=id!=='both'&&sec.dataset.boxsection!==id)})
+}
+
 function teamStats(s){
   const ts=s.boxscore?.teams||[];if(!ts.length)return '<div class="empty">Team statistics are not available yet.</div>';
   const all=[...new Set(ts.flatMap(t=>(t.statistics||[]).map(x=>x.name)))];
