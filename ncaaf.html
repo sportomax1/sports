@@ -57,6 +57,58 @@ body{font-size:15px}.sub,.status{font-size:13px}.controls label{font-size:12px}.
  #playerDataPane .extraControls{margin:0 0 8px;overflow-x:auto;display:flex;flex-wrap:nowrap}
  #playerDataPane .extraControls select{min-height:40px;font-size:13px;flex:0 0 auto}
 }
+
+/* Reduce horizontal scrolling across the application */
+html,body{max-width:100%;overflow-x:hidden}
+main,.dialog,.dialogbody,#content,.section,.grid,.metrics,.controls,.uxbar{min-width:0;max-width:100%}
+.controls,.uxbar,.extraControls{flex-wrap:wrap}
+.controls>*{min-width:0}
+table{width:100%;max-width:100%}
+td,th{overflow-wrap:anywhere}
+.teamchip{min-width:0}
+.teamchip b{overflow:hidden;text-overflow:ellipsis}
+@media(max-width:760px){
+  .controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .controls label,.controls select,.controls input,.controls .btn{width:100%;min-width:0}
+  .uxbar{display:flex;gap:6px;overflow:visible}
+  .uxbar .chip,.uxbar select{flex:1 1 auto;min-width:0}
+  .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid{grid-template-columns:1fr}
+  .tablewrap{max-width:100%;overflow-x:auto}
+  table{table-layout:auto}
+  th,td{white-space:normal}
+  .teamchip{max-width:100%}
+  .teamchip img{flex:0 0 auto}
+}
+@media(max-width:520px){
+  .controls{grid-template-columns:1fr 1fr}
+  .tabs{display:flex;flex-wrap:wrap;overflow:visible}
+  .tabs button{flex:1 1 calc(33.333% - 6px);min-width:88px}
+  .uxbar .weeknav{flex:0 0 auto}
+  .game{min-width:0}
+  .team{grid-template-columns:34px minmax(0,1fr) auto}
+  .teamname{min-width:0}
+  .teamname strong,.teamname span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .gamefoot{gap:6px;flex-wrap:wrap}
+  .profileMeta{flex-wrap:wrap}
+  /* Most summary tables fit the viewport; dense player stat tables remain scrollable. */
+  #content .tablewrap table{font-size:12px}
+  #content .tablewrap th,#content .tablewrap td{padding:7px 5px}
+  #content .tablewrap th:nth-child(n+6),#content .tablewrap td:nth-child(n+6){display:none}
+  #content .tablewrap th:first-child,#content .tablewrap td:first-child{min-width:0}
+  #entityModal .section:not(:has(#playerDataPane)) .tablewrap th:nth-child(n+5),
+  #entityModal .section:not(:has(#playerDataPane)) .tablewrap td:nth-child(n+5){display:none}
+  #playerDataPane .tablewrap{overflow-x:auto}
+  #playerDataPane table{width:max-content;min-width:100%;max-width:none}
+  #playerDataPane th,#playerDataPane td{white-space:nowrap}
+}
+
+@media(max-width:520px){
+ .rankingsTable th:nth-child(4),.rankingsTable td:nth-child(4),
+ .rankingsTable th:nth-child(6),.rankingsTable td:nth-child(6),
+ .rankingsTable th:nth-child(7),.rankingsTable td:nth-child(7){display:none!important}
+ .rankingsTable th:nth-child(5),.rankingsTable td:nth-child(5){display:table-cell!important}
+}
 </style>
 </head>
 <body>
