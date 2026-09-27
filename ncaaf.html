@@ -20,6 +20,14 @@ button,select,input{font:inherit;color:inherit}.shell{width:min(1500px,calc(100%
 .empty{padding:32px;text-align:center;color:var(--muted);border:1px dashed #33455f;border-radius:12px}
 .modal{position:fixed;inset:0;z-index:100;background:#02060bd9;display:none;align-items:center;justify-content:center;padding:14px}.modal.open{display:flex}.dialog{width:min(1160px,100%);max-height:94vh;overflow:hidden;background:#0a121e;border:1px solid #33465f;border-radius:16px;box-shadow:0 24px 80px #000a;display:flex;flex-direction:column}.dialoghead{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}.dialoghead h2{font-size:17px;margin:0}.close{margin-left:auto;border:1px solid var(--line);background:#111d2b;border-radius:8px;padding:6px 10px;cursor:pointer}.dialogbody{padding:13px;overflow:auto}.scorehero{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:18px;padding:10px 4px 16px}.heroTeam{display:flex;align-items:center;gap:10px}.heroTeam.right{justify-content:flex-end;text-align:right}.heroTeam img{width:54px;height:54px;object-fit:contain}.bigscore{font-size:34px;font-weight:950;text-align:center}.detailtabs{display:flex;gap:6px;overflow:auto;margin-bottom:10px}.detailtabs button{padding:7px 10px;border:1px solid var(--line);background:#0f1b29;border-radius:8px;cursor:pointer;white-space:nowrap}.detailtabs button.active{background:#f4b400;color:#111;border-color:#f4b400;font-weight:900}.section{margin:12px 0}.section h3{font-size:13px;margin:0 0 7px;color:#dce6f5}.twocol{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mini{border:1px solid var(--line);border-radius:10px;overflow:auto}.mini table{min-width:540px}.leadersbar{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}.leadersbar button{background:#101c2b;border:1px solid var(--line);padding:7px 9px;border-radius:8px;cursor:pointer}.leadersbar button.active{background:#f4b400;color:#111;font-weight:900}.progress{height:3px;background:#192536;overflow:hidden;border-radius:99px;margin:5px 0}.progress>i{display:block;height:100%;background:#f4b400;width:0;transition:.2s}
 @media(max-width:1000px){.grid{grid-template-columns:repeat(2,1fr)}.metrics{grid-template-columns:repeat(3,1fr)}}@media(max-width:650px){.shell{width:100%;padding:8px 10px 28px}.topbar{margin:-8px -10px 8px;padding:10px}.titleline h1{font-size:18px}.brand .sub{display:none}.controls{display:grid;grid-template-columns:1fr 1fr;gap:6px}.controls label{font-size:10px}.controls select{width:100%;display:block;margin-top:3px}.controls input,.controls #refresh{grid-column:1/-1;width:100%;min-width:0}.tabs,.uxbar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.tabs button,.uxbar>*{flex:0 0 auto}.grid{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(3,1fr);gap:5px}.metric{padding:8px}.metric b{font-size:17px}.twocol{grid-template-columns:1fr}.scorehero{gap:6px}.heroTeam img{width:34px;height:34px}.bigscore{font-size:23px}.dialog{width:100%;height:100dvh;max-height:100dvh;border-radius:0}.modal{padding:0}.tablewrap{margin:0 -10px;border-radius:0}.extraControls{overflow-x:auto;flex-wrap:nowrap!important}.mapFrame{height:58vh!important}}.extraControls{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}.extraControls select,.extraControls input{background:#101c2b;border:1px solid var(--line);border-radius:9px;padding:8px}.mapFrame{width:100%;height:560px;border:1px solid var(--line);border-radius:12px;background:#0d1623}.sorthead{cursor:pointer}.sorthead:hover{color:#fff}
+
+/* Readability pass */
+body{font-size:15px}.sub,.status{font-size:13px}.controls label{font-size:12px}.controls select,.controls input,.btn{font-size:14px}
+.tabs button{font-size:13px}.chip,.uxbar select{font-size:12px}.gamehead,.gamefoot{font-size:12px}.teamname strong{font-size:15px}.teamname span{font-size:12px}
+.flag{font-size:10px}.metric span{font-size:11px}th{font-size:11px}td{font-size:13px}.profileCard span{font-size:10px}.profileCard b{font-size:15px}.pill{font-size:12px}
+.playerDataTabs{display:flex;gap:6px;overflow-x:auto;margin:14px 0 10px}.playerDataTabs button{border:1px solid var(--line);background:#101c2b;border-radius:8px;padding:8px 11px;white-space:nowrap;cursor:pointer}.playerDataTabs button.active{background:var(--accent);color:#111;font-weight:900}
+.playerSeasonBar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}.playerSeasonBar select{background:#101c2b;border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+@media(max-width:650px){body{font-size:15px}.sub,.status{font-size:12px}.teamname strong{font-size:15px}.teamname span,.gamehead,.gamefoot{font-size:11px}td{font-size:13px}th{font-size:11px}.chip{font-size:12px;padding:8px 11px}.tabs button{font-size:13px;padding:9px 13px}.profileGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 </head>
 <body>
@@ -49,7 +57,7 @@ button,select,input{font:inherit;color:inherit}.shell{width:min(1500px,calc(100%
     <button class="chip" data-qf="ranked">Ranked</button><button class="chip" data-qf="top25">Top 25</button>
     <button class="chip" data-qf="favorites">★ Favorites</button>
     <select id="sortGames" title="Sort games"><option value="time">Sort: Kickoff</option><option value="close">Sort: Closest</option><option value="ranked">Sort: Ranked</option></select>
-    <button class="chip" id="density">Compact</button>
+    <button class="chip" id="currentWeek">Current Week</button><button class="chip" id="density">Compact</button>
     <button class="chip" id="autoRefresh">Auto Refresh</button>
     <button class="chip" id="resetFilters">Reset</button>
   </div>
@@ -107,7 +115,7 @@ function bind(){
   document.querySelectorAll('[data-qf]').forEach(b=>b.onclick=()=>{state.quickFilter=state.quickFilter===b.dataset.qf?'':b.dataset.qf;syncQuickFilterButtons();applyFilters()});
   $('sortGames').onchange=()=>{state.sort=$('sortGames').value;render()};
   $('density').onclick=()=>{state.compact=!state.compact;localStorage.setItem('ncaafCompact',state.compact?'1':'0');document.body.classList.toggle('compact',state.compact);$('density').classList.toggle('active',state.compact)};
-  $('prevWeek').onclick=()=>changeWeek(-1);$('nextWeek').onclick=()=>changeWeek(1);
+  $('prevWeek').onclick=()=>changeWeek(-1);$('nextWeek').onclick=()=>changeWeek(1);$('currentWeek').onclick=jumpCurrentWeek;
   $('resetFilters').onclick=resetFilters;
   $('autoRefresh').onclick=toggleAutoRefresh;
   document.addEventListener('keydown',e=>{if(e.target.matches('input,select,textarea'))return;if(e.key==='/'){e.preventDefault();$('search').focus()}else if(e.key==='ArrowLeft')changeWeek(-1);else if(e.key==='ArrowRight')changeWeek(1)});
@@ -264,6 +272,19 @@ async function hydrateVisiblePlayerImages(){
 function syncQuickFilterButtons(){document.querySelectorAll('[data-qf]').forEach(b=>b.classList.toggle('active',b.dataset.qf===state.quickFilter))}
 function toggleFavorite(id){id=String(id);state.favorites.has(id)?state.favorites.delete(id):state.favorites.add(id);localStorage.setItem('ncaafFavTeams',JSON.stringify([...state.favorites]));applyFilters()}
 function changeWeek(delta){const next=Math.max(1,Math.min(18,Number($('week').value)+delta));if(next===Number($('week').value))return;$('week').value=String(next);localStorage.setItem('ncaafWeek',$('week').value);state.weeklyRows=[];loadGames()}
+async function jumpCurrentWeek(){
+  const now=new Date(),season=currentSeason();
+  if(String($('season').value)!==String(season)){$('season').value=String(season);localStorage.setItem('ncaafSeason',String(season))}
+  $('seasonType').value='2';$('status').textContent='Finding the current ESPN week…';
+  let week=Number(guessWeek());
+  try{
+    const cal=await api(BASE+'/calendar?dates='+season+'&seasontype=2',true);
+    const items=Array.isArray(cal)?cal:(cal.calendar||cal.leagues?.[0]?.calendar||[]);
+    const hit=items.find(x=>{const a=new Date(x.startDate||x.start),b=new Date(x.endDate||x.end);return !isNaN(a)&&!isNaN(b)&&now>=a&&now<=b});
+    const n=Number(hit?.value||hit?.week?.number||hit?.number);if(n>=1&&n<=18)week=n
+  }catch{}
+  $('week').value=String(Math.max(1,Math.min(18,week)));localStorage.setItem('ncaafWeek',$('week').value);state.weeklyRows=[];loadGames()
+}
 function resetFilters(){$('conference').value='';$('search').value='';state.quickFilter='';state.sort='time';$('sortGames').value='time';syncQuickFilterButtons();applyFilters()}
 function toggleAutoRefresh(){state.autoRefresh=!state.autoRefresh;$('autoRefresh').classList.toggle('active',state.autoRefresh);clearInterval(state.autoTimer);if(state.autoRefresh){state.autoTimer=setInterval(()=>{if(state.games.some(g=>g.status==='in'))loadGames(true)},30000)}}
 function showSkeletons(){if(state.view!=='games')return;$('content').innerHTML='<div class="grid">'+Array.from({length:9},()=>'<div class="skeleton"></div>').join('')+'</div>'}
@@ -274,7 +295,7 @@ async function firstJson(urls){
 }
 function profileValue(v,fallback='—'){return v==null||v===''?fallback:v}
 async function openPlayer(id){
-  if(!id)return;const base=state.playerContext.get(String(id))||{};
+  if(!id)return;const base=state.playerContext.get(String(id))||{},season=Number($('season').value);
   $('entityModal').classList.add('open');$('entityTitle').textContent=base.displayName||base.shortName||'Player Profile';
   $('entityBody').innerHTML=renderPlayerProfile(base,null,true);
   try{
@@ -284,9 +305,11 @@ async function openPlayer(id){
       BASE+'/athletes/'+encodeURIComponent(id),
       'https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/'+encodeURIComponent(id)
     ]);state.playerCache.set(String(id),data)}
-    $('entityBody').innerHTML=renderPlayerProfile(base,data,false)
-  }catch(e){$('entityBody').innerHTML=renderPlayerProfile(base,null,false)+'<div class="sub" style="margin-top:10px">Additional ESPN profile details were not available for this player.</div>'}
+    $('entityBody').innerHTML=renderPlayerProfile(base,data,false)+playerDataShell(id,season);
+    wirePlayerData(id,season)
+  }catch(e){$('entityBody').innerHTML=renderPlayerProfile(base,null,false)+playerDataShell(id,season);wirePlayerData(id,season)}
 }
+
 function renderPlayerProfile(base,data,loading){
   const a=data?.athlete||data||base||{},team=base._team||a.team||{},name=a.displayName||a.fullName||base.displayName||'Player',head=playerHead({...base,...a});
   const pos=a.position?.displayName||a.position?.abbreviation||base.position?.displayName||base.position?.abbreviation||'',jersey=a.jersey||base.jersey||'',height=a.displayHeight||a.height||'',weight=a.displayWeight||a.weight||'',year=a.experience?.displayValue||a.class||a.year||'',hometown=a.birthPlace?.city||a.birthPlace?.state||a.birthPlace?.country? [a.birthPlace?.city,a.birthPlace?.state,a.birthPlace?.country].filter(Boolean).join(', '):'';
@@ -295,6 +318,54 @@ function renderPlayerProfile(base,data,loading){
   return '<div class="profileHero player">'+(head?'<img src="'+esc(head)+'" alt="" onerror="this.style.visibility=\'hidden\'">':'<div></div>')+'<div><h2>'+esc(name)+'</h2><div class="sub">'+esc([pos,jersey?'#'+jersey:''].filter(Boolean).join(' · '))+'</div><div class="profileMeta">'+(team?.id?'<span class="pill entityLink" data-team="'+esc(team.id)+'">'+esc(team.displayName||team.shortDisplayName||team.name||team.abbreviation||'Team')+'</span>':'')+(year?'<span class="pill">'+esc(year)+'</span>':'')+'</div></div></div>'+
   '<div class="profileGrid">'+[['Position',pos],['Jersey',jersey?('#'+jersey):''],['Height',height],['Weight',weight],['Hometown',hometown],['Status',a.status?.name||a.status?.type||'']].map(([k,v])=>'<div class="profileCard"><span>'+k+'</span><b>'+esc(profileValue(v))+'</b></div>').join('')+'</div>'+
   (loading?'<div class="sub">Loading additional ESPN player data…</div>':'')
+}
+function playerDataShell(id,season){
+  const opts=Array.from({length:6},(_,i)=>season-i).map(y=>'<option value="'+y+'">'+y+'</option>').join('');
+  return '<div class="section"><div class="playerSeasonBar"><b>Season</b><select id="playerSeason">'+opts+'</select></div><div class="playerDataTabs"><button class="active" data-pview="gamelog">Game Log</button><button data-pview="stats">Season Stats</button><button data-pview="history">Prior Seasons</button></div><div id="playerDataPane"><div class="empty">Loading player game log…</div></div></div>'
+}
+function wirePlayerData(id,season){
+  const sel=$('playerSeason');if(sel)sel.value=String(season);
+  let view='gamelog';
+  const load=async()=>{document.querySelectorAll('[data-pview]').forEach(b=>b.classList.toggle('active',b.dataset.pview===view));await loadPlayerData(id,Number(sel?.value||season),view)};
+  document.querySelectorAll('[data-pview]').forEach(b=>b.onclick=()=>{view=b.dataset.pview;load()});
+  if(sel)sel.onchange=load;load()
+}
+async function loadPlayerData(id,season,view){
+  const pane=$('playerDataPane');if(!pane)return;pane.innerHTML='<div class="empty">Loading '+esc(String(season))+' '+esc(view)+'…</div>';
+  try{
+    if(view==='gamelog'){
+      const j=await api('https://site.web.api.espn.com/apis/common/v3/sports/football/college-football/athletes/'+encodeURIComponent(id)+'/gamelog?season='+season);
+      pane.innerHTML=renderPlayerGamelog(j)
+    }else if(view==='stats'){
+      const j=await firstJson([
+        'https://site.web.api.espn.com/apis/common/v3/sports/football/college-football/athletes/'+encodeURIComponent(id)+'/stats?season='+season+'&seasontype=2',
+        'https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/'+season+'/athletes/'+encodeURIComponent(id)+'/statistics'
+      ]);
+      pane.innerHTML=renderPlayerSeasonStats(j)
+    }else{
+      const years=Array.from({length:5},(_,i)=>season-i),blocks=[];
+      for(const y of years){try{const j=await firstJson([
+        'https://site.web.api.espn.com/apis/common/v3/sports/football/college-football/athletes/'+encodeURIComponent(id)+'/stats?season='+y+'&seasontype=2',
+        'https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/'+y+'/athletes/'+encodeURIComponent(id)+'/statistics'
+      ]);blocks.push('<div class="section"><h3>'+y+'</h3>'+renderPlayerSeasonStats(j)+'</div>')}catch{}}
+      pane.innerHTML=blocks.join('')||'<div class="empty">No prior-season statistics were returned by ESPN.</div>'
+    }
+  }catch(e){pane.innerHTML='<div class="empty">No '+esc(view)+' data was returned for '+season+'.</div>'}
+}
+function renderPlayerGamelog(j){
+  const labels=j.labels||j.names||[],events=j.events||{},cats=j.categories||[];
+  let rows=j.seasonTypes?.flatMap(x=>x.categories||[]).flatMap(x=>x.events||[])||j.games||j.items||[];
+  if(!rows.length&&events&&typeof events==='object')rows=Object.entries(events).map(([id,e])=>({...e,id}));
+  if(!rows.length)return '<div class="empty">No game log was returned for this season.</div>';
+  const cols=labels.length?labels.slice(0,12):['Opponent','Result','Stats'];
+  return '<div class="tablewrap"><table><thead><tr><th>Game</th>'+cols.map(x=>'<th>'+esc(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.map((r,i)=>{const vals=r.stats||r.statistics||r.values||[];const opp=r.opponent?.displayName||r.opponent?.abbreviation||r.opponent||r.name||r.event?.name||('Game '+(i+1));return '<tr><td><b>'+esc(opp)+'</b></td>'+cols.map((x,k)=>'<td>'+esc(vals[k]?.displayValue??vals[k]?.value??vals[k]??'—')+'</td>').join('')+'</tr>'}).join('')+'</tbody></table></div>'
+}
+function collectStatCategories(j){
+  const out=[];const walk=x=>{if(!x||typeof x!=='object')return;if(Array.isArray(x)){x.forEach(walk);return}if((x.stats||x.statistics)&&x.displayName)out.push(x);for(const [k,v] of Object.entries(x))if(!['athlete','team'].includes(k))walk(v)};walk(j);return out
+}
+function renderPlayerSeasonStats(j){
+  const cats=collectStatCategories(j);if(!cats.length)return '<div class="empty">No season statistics were returned.</div>';
+  return cats.slice(0,8).map(cat=>{const stats=cat.stats||cat.statistics||[];return '<div class="section"><h3>'+esc(cat.displayName||cat.name||'Stats')+'</h3><div class="tablewrap"><table><thead><tr>'+stats.map(s=>'<th>'+esc(s.abbreviation||s.shortDisplayName||s.name)+'</th>').join('')+'</tr></thead><tbody><tr>'+stats.map(s=>'<td>'+esc(s.displayValue??s.value??'—')+'</td>').join('')+'</tr></tbody></table></div></div>'}).join('')
 }
 async function openTeam(id){
   if(!id)return;const base=state.teamContext.get(String(id))||findTeamContext(id)||{};
