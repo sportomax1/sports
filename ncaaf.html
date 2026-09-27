@@ -28,6 +28,35 @@ body{font-size:15px}.sub,.status{font-size:13px}.controls label{font-size:12px}.
 .playerDataTabs{display:flex;gap:6px;overflow-x:auto;margin:14px 0 10px}.playerDataTabs button{border:1px solid var(--line);background:#101c2b;border-radius:8px;padding:8px 11px;white-space:nowrap;cursor:pointer}.playerDataTabs button.active{background:var(--accent);color:#111;font-weight:900}
 .playerSeasonBar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}.playerSeasonBar select{background:#101c2b;border:1px solid var(--line);border-radius:8px;padding:8px 10px}
 @media(max-width:650px){body{font-size:15px}.sub,.status{font-size:12px}.teamname strong{font-size:15px}.teamname span,.gamehead,.gamefoot{font-size:11px}td{font-size:13px}th{font-size:11px}.chip{font-size:12px;padding:8px 11px}.tabs button{font-size:13px;padding:9px 13px}.profileGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.entityModal .dialogbody{overflow-x:hidden}
+.playerDataTabs{scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+.playerDataTabs button,.playerSeasonBar select{min-height:40px}
+#playerDataPane .tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+#playerDataPane table{min-width:max-content}
+#playerDataPane th,#playerDataPane td{white-space:nowrap}
+@media(max-width:650px){
+ #entityModal .dialoghead{position:sticky;top:0;z-index:8;background:#0b1420;border-bottom:1px solid var(--line);padding:10px 12px}
+ #entityModal .dialogbody{padding:12px}
+ #entityModal .profileHero{gap:10px;margin-bottom:10px}
+ #entityModal .profileHero.player img{width:72px;height:72px}
+ #entityModal .profileHero h2{font-size:20px;line-height:1.15;margin-bottom:4px}
+ #entityModal .profileGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ #entityModal .profileCard{padding:9px}
+ #entityModal .profileCard b{font-size:14px;overflow-wrap:anywhere}
+ #entityModal .section{margin-top:12px}
+ .playerSeasonBar{position:sticky;top:51px;z-index:6;background:#0b1420;padding:7px 0;margin:0}
+ .playerSeasonBar select{flex:1;min-width:110px;font-size:14px}
+ .playerDataTabs{margin:6px -12px 9px;padding:0 12px 5px;gap:6px;overflow-x:auto;flex-wrap:nowrap}
+ .playerDataTabs button{font-size:13px;padding:9px 11px;scroll-snap-align:start;flex:0 0 auto}
+ #playerDataPane .tablewrap{margin-left:-12px;margin-right:-12px;border-left:0;border-right:0}
+ #playerDataPane th,#playerDataPane td{padding:9px 10px;font-size:13px}
+ #playerDataPane .teamchip img{width:25px;height:25px}
+ #pgChartPane{overflow-x:auto;-webkit-overflow-scrolling:touch}
+ #pgChartPane svg{min-width:560px}
+ #playerDataPane .extraControls{margin:0 0 8px;overflow-x:auto;display:flex;flex-wrap:nowrap}
+ #playerDataPane .extraControls select{min-height:40px;font-size:13px;flex:0 0 auto}
+}
 </style>
 </head>
 <body>
@@ -368,8 +397,10 @@ function renderPlayerGamelog(j){
   let rows=j.seasonTypes?.flatMap(x=>x.categories||[]).flatMap(x=>x.events||[])||j.games||j.items||[];
   if(!rows.length&&events&&typeof events==='object')rows=Object.entries(events).map(([id,e])=>({...e,id}));
   if(!rows.length)return '<div class="empty">No game log was returned for this season.</div>';
-  const cols=labels.length?labels.slice(0,12):[];
-  playerGameLogData={cols,rows:rows.map((r,i)=>{const vals=r.stats||r.statistics||r.values||[],op=r.opponent?.team||r.opponent||r.event?.opponent||{},opId=op.id||r.opponentId||r.opponent?.id||'',opp=op.displayName||op.shortDisplayName||op.abbreviation||(typeof r.opponent==='string'?r.opponent:'')||r.name||r.event?.name||('Game '+(i+1)),opLogo=op.logo||op.logos?.[0]?.href||(opId?'https://a.espncdn.com/i/teamlogos/ncaa/500/'+encodeURIComponent(opId)+'.png':''),date=r.date||r.event?.date||'',result=r.result||r.gameResult||r.event?.result||'',score=r.score||r.scoreDisplay||r.event?.score||'',homeAway=r.homeAway||r.event?.homeAway||'';return {opp,opId,opLogo,date,result,score,homeAway,vals:vals.map(v=>v?.displayValue??v?.value??v)}})};
+  const rawCols=labels.length?labels.slice(0,12):[];
+  const allRows=rows.map((r,i)=>{const vals=r.stats||r.statistics||r.values||[],op=r.opponent?.team||r.opponent||r.event?.opponent||{},opId=op.id||r.opponentId||r.opponent?.id||'',opp=op.displayName||op.shortDisplayName||op.abbreviation||(typeof r.opponent==='string'?r.opponent:'')||r.name||r.event?.name||('Game '+(i+1)),opLogo=op.logo||op.logos?.[0]?.href||(opId?'https://a.espncdn.com/i/teamlogos/ncaa/500/'+encodeURIComponent(opId)+'.png':''),date=r.date||r.event?.date||'',result=r.result||r.gameResult||r.event?.result||'',score=r.score||r.scoreDisplay||r.event?.score||'',homeAway=r.homeAway||r.event?.homeAway||'';return {opp,opId,opLogo,date,result,score,homeAway,vals:vals.map(v=>v?.displayValue??v?.value??v)}});
+  const keep=rawCols.map((_,k)=>k).filter(k=>allRows.some(r=>{const v=r.vals[k];if(v==null||v===''||v==='—'||v==='-')return false;const n=Number(String(v).replace(/[%,$,]/g,''));return Number.isFinite(n)?n!==0:true}));
+  const cols=keep.map(k=>rawCols[k]);playerGameLogData={cols,rows:allRows.map(r=>({...r,vals:keep.map(k=>r.vals[k])}))};
   const chartCols=cols.map((x,i)=>({x,i})).filter(o=>playerGameLogData.rows.some(r=>num(r.vals[o.i])!==0)).slice(0,12);
   return '<div class="extraControls"><select id="pgSort"><option value="new">Newest First</option><option value="old">Oldest First</option>'+cols.map((x,i)=>'<option value="s'+i+'">'+esc(x)+' High→Low</option>').join('')+'</select>'+(chartCols.length?'<select id="pgChart"><option value="">Trend Chart…</option>'+chartCols.map(o=>'<option value="'+o.i+'">'+esc(o.x)+'</option>').join('')+'</select>':'')+'</div><div id="pgChartPane"></div><div id="pgTable"></div>'
 }
@@ -382,11 +413,12 @@ function wirePlayerGameLog(){
   if($('pgSort'))$('pgSort').onchange=draw;if($('pgChart'))$('pgChart').onchange=chart;draw()
 }
 
+function meaningfulPlayerStat(s){const raw=s?.value??s?.displayValue;if(raw==null||raw==='')return false;if(typeof raw==='number')return raw!==0;const str=String(raw).trim();if(!str||str==='—'||str==='-')return false;const n=Number(str.replace(/[%,$,]/g,''));return Number.isFinite(n)?n!==0:true}
 function renderPlayerSeasonStats(j){
   const cats=j?.splits?.categories||j?.categories||[];
   if(!cats.length)return '<div class="empty">No season statistics were returned.</div>';
   return cats.map(cat=>{
-    const stats=(cat.stats||[]).filter(s=>s.displayValue!=null||s.value!=null);
+    const stats=(cat.stats||[]).filter(meaningfulPlayerStat);
     if(!stats.length)return '';
     return '<div class="section"><h3>'+esc(cat.displayName||cat.name||'Stats')+'</h3><div class="tablewrap"><table><thead><tr><th>Statistic</th><th>Total</th><th>Per Game</th></tr></thead><tbody>'+stats.map(s=>'<tr><td><b>'+esc(s.displayName||s.shortDisplayName||s.name||s.abbreviation||'Stat')+'</b></td><td>'+esc(s.displayValue??s.value??'—')+'</td><td>'+esc(s.perGameDisplayValue??s.perGameValue??s.per_game_value??'—')+'</td></tr>').join('')+'</tbody></table></div></div>'
   }).join('')||'<div class="empty">No season statistics were returned.</div>'
