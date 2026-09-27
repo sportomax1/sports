@@ -120,6 +120,20 @@ td,th{overflow-wrap:anywhere}
  .boxTeamToggle button{min-width:0;padding:7px 5px;font-size:13px}
  .boxTeamToggle img{width:20px;height:20px}
 }
+
+.seasonStatsTable table{table-layout:fixed}
+.seasonStatsTable th{text-align:center;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seasonStatsTable td{text-align:center;font-size:15px;white-space:nowrap}
+.seasonPg{display:block;font-size:10px;color:var(--muted);font-weight:600;margin-top:2px}
+@media(max-width:650px){
+ .seasonStatsTable{overflow:visible!important;margin:0!important;border:0!important}
+ .seasonStatsTable table,.seasonStatsTable thead,.seasonStatsTable tbody,.seasonStatsTable tr{display:block;width:100%;min-width:0!important}
+ .seasonStatsTable thead{display:none}
+ .seasonStatsTable tbody tr{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+ .seasonStatsTable td{display:flex;min-width:0;min-height:54px;padding:7px 4px!important;border:1px solid var(--line);border-radius:8px;flex-direction:column;justify-content:center;overflow:hidden}
+ .seasonStatsTable td:before{content:attr(data-label);font-size:10px;color:var(--muted)}
+ .seasonStatsTable td b{font-size:14px}
+}
 </style>
 </head>
 <body>
@@ -484,14 +498,23 @@ function wirePlayerGameLog(){
 }
 
 function meaningfulPlayerStat(s){const raw=s?.value??s?.displayValue;if(raw==null||raw==='')return false;if(typeof raw==='number')return raw!==0;const str=String(raw).trim();if(!str||str==='—'||str==='-')return false;const n=Number(str.replace(/[%,$,]/g,''));return Number.isFinite(n)?n!==0:true}
+function seasonStatLabel(s){
+  const ab=String(s.abbreviation||'').trim();if(ab&&ab.length<=8)return ab;
+  const short=String(s.shortDisplayName||'').trim();if(short&&short.length<=9)return short;
+  const name=String(s.name||'').trim();
+  const known={gamesPlayed:'GP',gamesStarted:'GS',completions:'CMP',passingAttempts:'ATT',passingYards:'YDS',passingTouchdowns:'TD',interceptions:'INT',completionPct:'CMP%',yardsPerPassAttempt:'AVG',QBRating:'RTG',rushingAttempts:'CAR',rushingYards:'YDS',rushingTouchdowns:'TD',yardsPerRushAttempt:'AVG',receptions:'REC',receivingYards:'YDS',receivingTouchdowns:'TD',yardsPerReception:'AVG',totalTackles:'TOT',soloTackles:'SOLO',sacks:'SACK',passesDefended:'PD',forcedFumbles:'FF',fumblesRecovered:'FR'};
+  return known[name]||String(s.displayName||short||name||'STAT').replace(/[^A-Za-z0-9%]/g,'').slice(0,7).toUpperCase()
+}
 function renderPlayerSeasonStats(j){
   const cats=j?.splits?.categories||j?.categories||[];
   if(!cats.length)return '<div class="empty">No season statistics were returned.</div>';
-  return cats.map(cat=>{
+  const blocks=cats.map(cat=>{
     const stats=(cat.stats||[]).filter(meaningfulPlayerStat);
     if(!stats.length)return '';
-    return '<div class="section"><h3>'+esc(cat.displayName||cat.name||'Stats')+'</h3><div class="tablewrap"><table><thead><tr><th>Statistic</th><th>Total</th><th>Per Game</th></tr></thead><tbody>'+stats.map(s=>'<tr><td><b>'+esc(s.displayName||s.shortDisplayName||s.name||s.abbreviation||'Stat')+'</b></td><td>'+esc(s.displayValue??s.value??'—')+'</td><td>'+esc(s.perGameDisplayValue??s.perGameValue??s.per_game_value??'—')+'</td></tr>').join('')+'</tbody></table></div></div>'
-  }).join('')||'<div class="empty">No season statistics were returned.</div>'
+    const cells=stats.map(s=>({label:seasonStatLabel(s),full:s.displayName||s.shortDisplayName||s.name||s.abbreviation||'Stat',value:s.displayValue??s.value??'—',pg:s.perGameDisplayValue??s.perGameValue??s.per_game_value}));
+    return '<div class="section seasonStatSection"><h3>'+esc(cat.displayName||cat.name||'Stats')+'</h3><div class="tablewrap seasonStatsTable"><table><thead><tr>'+cells.map(x=>'<th title="'+esc(x.full)+'">'+esc(x.label)+'</th>').join('')+'</tr></thead><tbody><tr>'+cells.map(x=>'<td data-label="'+esc(x.label)+'"><b>'+esc(x.value)+'</b>'+(x.pg!=null&&String(x.pg)!=='0'?'<span class="seasonPg">'+esc(x.pg)+'/G</span>':'')+'</td>').join('')+'</tr></tbody></table></div></div>'
+  }).filter(Boolean);
+  return blocks.join('')||'<div class="empty">No season statistics were returned.</div>'
 }
 
 async function openTeam(id){
