@@ -15,7 +15,7 @@
 <div class="panel"><div class="head"><div class="headTop"><h2>Oldest → Youngest</h2><div><select id="agePos" class="posFilter" data-panel="age"><option value="">All positions</option></select> <button id="ageMatrixBtn" class="miniBtn">Age Matrix</button></div></div><p>Current active roster, sorted by age.</p></div><div id="ageList" class="list"></div></div>
 <div class="panel"><div class="head"><div class="headTop"><h2>Most Teams → Least</h2><select id="teamsPos" class="posFilter" data-panel="teams"><option value="">All positions</option></select></div><p>Current active-player IDs matched against prior-season ESPN game rosters, year by year.</p></div><div id="teamsList" class="list"></div></div>
 <div class="panel"><div class="head"><div class="headTop"><h2>Longest on One Team</h2><select id="onePos" class="posFilter" data-panel="one"><option value="">All positions</option></select></div><p>Current active players with one franchise across ESPN game-roster history.</p></div><div id="oneList" class="list"></div></div>
-<div class="panel"><div class="head"><div class="headTop"><h2>Longest Current-Team Tenure</h2><select id="currentPos" class="posFilter" data-panel="current"><option value="">All positions</option></select></div><p>Consecutive seasons on the player's current team, including the current season.</p></div><div id="currentList" class="list"></div></div>
+<div class="panel"><div class="head"><div class="headTop"><h2>Longest Current-Team Tenure (2+ Teams)</h2><select id="currentPos" class="posFilter" data-panel="current"><option value="">All positions</option></select></div><p>Consecutive seasons on the player's current team, limited to active players who have played for 2+ franchises.</p></div><div id="currentList" class="list"></div></div>
 </section>
 <div class="note">This version intentionally uses only the same browser-friendly ESPN <code>site.api.espn.com</code> roster family already used elsewhere in this repo. Career franchise history is reconstructed from ESPN historical game rosters. Historical seasons are cached in IndexedDB.</div></main>
 <div id="ageMatrixModal" class="modal hide"><div class="dialog"><div class="mhead"><div><h2>Age × Position Matrix</h2><div class="sub">Active-player counts by age and position.</div></div><button id="ageMatrixClose" class="miniBtn">Close</button></div><div id="ageMatrixBody"></div></div></div>
@@ -94,7 +94,7 @@ function render(){
  ages=panelFiltered('age').filter(p=>Number.isFinite(Number(p.age))).sort((x,y)=>Number(y.age)-Number(x.age)||x.name.localeCompare(y.name)),
  teams=panelFiltered('teams').filter(p=>Number.isFinite(p.teamCount)).sort((x,y)=>y.teamCount-x.teamCount||y.exp-x.exp||y.age-x.age),
  one=panelFiltered('one').filter(p=>p.teamCount===1).sort((x,y)=>y.tenureSeasons-x.tenureSeasons||y.exp-x.exp||y.age-x.age),
- current=panelFiltered('current').filter(p=>Number.isFinite(p.currentTeamTenure)).sort((x,y)=>y.currentTeamTenure-x.currentTeamTenure||y.exp-x.exp||y.age-x.age);
+ current=panelFiltered('current').filter(p=>p.teamCount>=2&&Number.isFinite(p.currentTeamTenure)).sort((x,y)=>y.currentTeamTenure-x.currentTeamTenure||y.teamCount-x.teamCount||y.exp-x.exp||y.age-x.age);
  fill('ageList',ages,(p,i)=>row(p,i,p.age,'years old'));
  fill('teamsList',teams,(p,i)=>row(p,i,p.teamCount,p.teamCount===1?'team':'teams',true));
  fill('oneList',one,(p,i)=>row(p,i,p.tenureSeasons,p.tenureSeasons===1?'season':'seasons',true));
