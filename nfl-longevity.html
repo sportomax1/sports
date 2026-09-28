@@ -11,11 +11,11 @@
 <body>
 <header><div class="wrap"><div class="top"><div><h1>🏈 NFL Longevity Lab</h1><div class="sub">Active NFL players · ESPN rosters · age, teams played for, and one-team tenure</div></div></div><div class="controls"><input id="search" placeholder="Search player, team, position"><button id="reload">Refresh ESPN</button><button id="clear">Clear cache</button></div><div class="status"><span id="status">Ready</span><div class="bar"><i id="bar"></i></div><span id="progress"></span></div></div></header>
 <main class="wrap"><section class="stats"><div class="stat"><b id="count">—</b><span>Active players</span></div><div class="stat"><b id="oldest">—</b><span>Oldest active player</span></div><div class="stat"><b id="mostteams">—</b><span>Most teams played for</span></div><div class="stat"><b id="oneclub">—</b><span>Longest one-team tenure</span></div></section>
-<section class="grid"><div class="panel"><div class="head"><h2>Oldest → Youngest</h2><p>Current active roster, sorted by age.</p></div><div id="ageList" class="list"></div></div><div class="panel"><div class="head"><h2>Most Teams → Least</h2><p>Starts with today's active-player library, then checks prior seasons until a season has zero current active players.</p></div><div id="teamsList" class="list"></div></div><div class="panel"><div class="head"><h2>Longest on One Team</h2><p>Current active players with one franchise across the year-by-year historical scan.</p></div><div id="oneList" class="list"></div></div></section>
-<div class="note">This version intentionally uses only the same browser-friendly ESPN <code>site.api.espn.com</code> roster family already used elsewhere in this repo. Career franchise history is inferred from historical ESPN roster snapshots and cached locally for 24 hours.</div></main>
+<section class="grid"><div class="panel"><div class="head"><h2>Oldest → Youngest</h2><p>Current active roster, sorted by age.</p></div><div id="ageList" class="list"></div></div><div class="panel"><div class="head"><h2>Most Teams → Least</h2><p>Starts with today's active-player library, then checks prior seasons until a season has zero current active players.</p></div><div id="teamsList" class="list"></div></div><div class="panel"><div class="head"><h2>Longest on One Team</h2><p>Current active players with one franchise across ESPN game-roster history.</p></div><div id="oneList" class="list"></div></div></section>
+<div class="note">This version intentionally uses only the same browser-friendly ESPN <code>site.api.espn.com</code> roster family already used elsewhere in this repo. Career franchise history is reconstructed from ESPN historical game rosters. Historical seasons are cached in IndexedDB.</div></main>
 <script>
 (()=>{'use strict';
-const $=id=>document.getElementById(id), TEAM_IDS=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,33,34], SITE='https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/', CACHE='nfl_longevity_lab_v6', CACHE_MS=24*60*60*1000, state={players:[],q:'',loading:false};
+const $=id=>document.getElementById(id), TEAM_IDS=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,33,34], SITE='https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/', CACHE='nfl_longevity_lab_v7', CACHE_MS=24*60*60*1000, state={players:[],q:'',loading:false};
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 function status(msg,pct,extra=''){ $('status').textContent=msg; $('bar').style.width=(pct||0)+'%'; $('progress').textContent=extra; }
 async function json(url,timeout=18000){const c=new AbortController(),t=setTimeout(()=>c.abort(),timeout);try{const r=await fetch(url,{signal:c.signal,cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);return await r.json()}finally{clearTimeout(t)}}
@@ -23,39 +23,58 @@ async function pool(items,limit,fn,onDone){let i=0,d=0;const out=[];async functi
 function ageFromDob(dob){if(!dob)return null;const d=new Date(dob);if(Number.isNaN(+d))return null,n=new Date();let a=n.getFullYear()-d.getFullYear();const m=n.getMonth()-d.getMonth();if(m<0||(m===0&&n.getDate()<d.getDate()))a--;return a}
 function rosterPlayers(j,team,season){return (j?.athletes||[]).flatMap(g=>(g.items||[]).map(a=>({id:String(a.id),name:a.fullName||a.displayName||'',dob:a.dateOfBirth||null,age:Number.isFinite(a.age)?a.age:ageFromDob(a.dateOfBirth),exp:Number(a.experience?.years??0)||0,pos:a.position?.abbreviation||g.position||'',head:a.headshot?.href||`https://a.espncdn.com/i/headshots/nfl/players/full/${a.id}.png`,teamId:String(team.id),abbr:team.abbr,nameTeam:team.name,logo:team.logo,season}))).filter(p=>p.id)}
 async function currentRoster(id){const j=await json(SITE+id+'/roster');const t=j.team||{},team={id:String(t.id||id),abbr:t.abbreviation||String(id),name:t.displayName||t.name||String(id),logo:t.logo||t.logos?.[0]?.href||''};return {team,players:rosterPlayers(j,team,new Date().getFullYear())}}
-async function histRoster(team,season){const j=await json(`${SITE}${team.id}/roster?season=${season}`);return rosterPlayers(j,team,season)}
+const HIST_CONCURRENCY=100;let dbp=null;
+function db(){return dbp||(dbp=new Promise((ok,no)=>{const r=indexedDB.open('nfl-longevity-history',1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains('kv'))r.result.createObjectStore('kv')};r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)}))}
+async function idbGet(k){try{const d=await db();return await new Promise(ok=>{const r=d.transaction('kv').objectStore('kv').get(k);r.onsuccess=()=>ok(r.result);r.onerror=()=>ok(null)})}catch{return null}}
+async function idbSet(k,v){try{const d=await db();await new Promise(ok=>{const tx=d.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=ok;tx.onerror=ok})}catch{}}
+async function seasonGames(year){
+ const saved=await idbGet('games-'+year);if(saved?.length)return saved;
+ const urls=[];for(let w=1;w<=18;w++)urls.push(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${year}&seasontype=2&week=${w}`);
+ const js=await pool(urls,18,u=>json(u));const games=[];
+ for(const j of js)for(const e of j?.events||[]){const comp=e?.competitions?.[0];if(!comp)continue;for(const x of comp.competitors||[])games.push({eventId:String(e.id),competitionId:String(comp.id||e.id),teamId:String(x.id||x.team?.id||'')})}
+ await idbSet('games-'+year,games);return games
+}
+async function gameRoster(g){
+ const u=`https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/${g.eventId}/competitions/${g.competitionId}/competitors/${g.teamId}/roster`;
+ const j=await json(u);return j?.entries||[]
+}
+function rosterAthleteId(e){const ref=e?.athlete?.$ref||'';return String(e?.playerId||ref.match(/\/athletes\/(\d+)/)?.[1]||e?.athlete?.id||'')}
+async function historicalActiveMatches(year,activeIds){
+ const cached=await idbGet('active-year-'+year);if(cached?.matches)return cached;
+ const games=await seasonGames(year), seen=new Set(), matches=[];
+ let done=0;
+ await pool(games,HIST_CONCURRENCY,async g=>{
+   const entries=await gameRoster(g);
+   for(const e of entries){const id=rosterAthleteId(e);if(!id||!activeIds.has(id))continue;const key=id+'|'+g.teamId;if(seen.has(key))continue;seen.add(key);matches.push({id,teamId:String(g.teamId)})}
+ },()=>{done++;status(`Checking ${year} game rosters for today's active players…`,0,`${done}/${games.length}`)});
+ const packed={matches};await idbSet('active-year-'+year,packed);return packed
+}
 async function load(force=false){if(state.loading)return;state.loading=true;$('reload').disabled=true;try{if(!force){try{const c=JSON.parse(localStorage.getItem(CACHE)||'null');if(c&&Date.now()-c.savedAt<CACHE_MS&&c.players?.length){state.players=c.players;status(`Loaded ${c.players.length} players from cache`,100);render();return}}catch{}}
  status('Loading current ESPN rosters…',3,'0/32');const current=await pool(TEAM_IDS,10,currentRoster,(d,n)=>status('Loading current ESPN rosters…',3+22*d/n,`${d}/${n}`));
  const teams=current.map(x=>x.team), map=new Map();current.flatMap(x=>x.players).forEach(p=>map.set(p.id,{...p,teams:{[p.teamId]:{id:p.teamId,abbr:p.abbr,name:p.nameTeam,logo:p.logo}},firstSeason:new Date().getFullYear(),lastSeason:new Date().getFullYear()}));
  state.players=[...map.values()];render();
- const currentYear=new Date().getFullYear(), activeIds=new Set(map.keys());
+ const currentYear=new Date().getFullYear(), activeIds=new Set(map.keys()), teamById=new Map(teams.map(t=>[String(t.id),t]));
  let year=currentYear-1, totalCalls=0, oldestMatchedYear=currentYear, yearsScanned=0;
  while(year>=1970){
-   let matchedThisYear=0;
-   status(`Checking ${year} rosters for today's active players…`,Math.min(96,27+yearsScanned*4),`${year} · 0/32`);
-   await pool(teams,16,async t=>{
-     const ps=await histRoster(t,year);
-     for(const p of ps){
-       if(!activeIds.has(p.id))continue;
-       const cur=map.get(p.id); if(!cur)continue;
-       matchedThisYear++;
-       cur.teams[t.id]={id:t.id,abbr:t.abbr,name:t.name,logo:t.logo};
-       cur.firstSeason=Math.min(cur.firstSeason,year);
-       cur.lastSeason=Math.max(cur.lastSeason,year);
-     }
-   },(d,n)=>status(`Checking ${year} rosters for today's active players…`,Math.min(96,27+yearsScanned*4),`${year} · ${d}/${n}`));
-   totalCalls+=teams.length; yearsScanned++;
-   state.players=[...map.values()].map(p=>({...p,teamList:Object.values(p.teams),teamCount:Object.keys(p.teams).length,tenureSeasons:currentYear-p.firstSeason+1}));
-   render();
-   if(matchedThisYear===0)break;
+   status(`Building ${year} season history from ESPN game rosters…`,Math.min(96,27+yearsScanned*4),year);
+   const result=await historicalActiveMatches(year,activeIds), matches=result.matches||[];
+   totalCalls+=1; yearsScanned++;
+   if(matches.length===0)break;
+   for(const m of matches){
+     const cur=map.get(m.id);if(!cur)continue;
+     const t=teamById.get(String(m.teamId))||{id:String(m.teamId),abbr:String(m.teamId),name:'Team '+m.teamId,logo:''};
+     cur.teams[String(m.teamId)]={id:String(m.teamId),abbr:t.abbr,name:t.name,logo:t.logo};
+     cur.firstSeason=Math.min(cur.firstSeason,year);cur.lastSeason=Math.max(cur.lastSeason,year);
+   }
    oldestMatchedYear=year;
-   year--;
+   state.players=[...map.values()].map(p=>({...p,teamList:Object.values(p.teams),teamCount:Object.keys(p.teams).length,tenureSeasons:currentYear-p.firstSeason+1}));
+   render();year--;
  }
  const stopYear=year, historyRange=oldestMatchedYear<currentYear?`${oldestMatchedYear}–${currentYear}`:`${currentYear}`;
  const cachePlayers=state.players.map(p=>({id:p.id,name:p.name,age:p.age,exp:p.exp,pos:p.pos,head:p.head,teamId:p.teamId,abbr:p.abbr,nameTeam:p.nameTeam,logo:p.logo,teamList:(p.teamList||[]).map(t=>({id:t.id,abbr:t.abbr,name:t.name})),teamCount:p.teamCount,tenureSeasons:p.tenureSeasons}));
  let cacheNote='';
  try{localStorage.setItem(CACHE,JSON.stringify({savedAt:Date.now(),players:cachePlayers,historyRange,stopYear}))}catch(err){console.warn('NFL Longevity cache skipped:',err);cacheNote=' · cache skipped'}
- status(`Complete · ${state.players.length} active players`,100,`history ${historyRange} · stopped at ${stopYear} (0 active matches) · ${totalCalls} calls${cacheNote}`);render();
+ status(`Complete · ${state.players.length} active players`,100,`history ${historyRange} · stopped at ${stopYear} (0 active matches) · IndexedDB history cache${cacheNote}`);render();
  }catch(e){console.error(e);status('Failed: '+e.message,0,'');for(const id of ['ageList','teamsList','oneList'])$(id).innerHTML='<div class="empty error">'+esc(e.message)+'<br>Retry with Refresh ESPN.</div>'}finally{state.loading=false;$('reload').disabled=false}}
 function filtered(){const q=state.q.trim().toLowerCase();return !q?state.players:state.players.filter(p=>[p.name,p.pos,p.nameTeam,p.abbr,...(p.teamList||[]).flatMap(t=>[t.name,t.abbr])].join(' ').toLowerCase().includes(q))}
 function row(p,i,val,label,teams=false){const chips=teams&&p.teamList?.length?'<div class="chips">'+p.teamList.map(t=>'<span class="chip">'+esc(t.abbr)+'</span>').join('')+'</div>':'';return `<div class="row"><div class="rank">${i}</div><img class="face" src="${esc(p.head)}" loading="lazy" onerror="this.style.opacity=.2"><div><div class="name">${esc(p.name)}</div><div class="meta">${p.logo?`<img class="logo" src="${esc(p.logo)}">`:''}${esc(p.abbr)} · ${esc(p.pos||'—')}</div>${chips}</div><div class="value"><b>${esc(val)}</b><small>${esc(label)}</small></div></div>`}
