@@ -8,113 +8,62 @@
 <div class="controls">
  <div class="control"><label>League</label><div class="leagues" id="leagues"></div></div>
  <div class="control"><label>Season</label><select id="season"></select></div>
- <div class="control"><label>View</label><div class="mode"><button id="gameMode" class="active">Game #</button><button id="dateMode">Date</button></div></div>
 </div>
-<div class="control" style="margin-bottom:8px"><label id="stepLabel">Games played by each team</label><div class="stepper"><button id="prev">‹</button><div class="step" id="step"></div><button id="next">›</button></div><input id="datePick" type="date" hidden></div>
+<div class="control" style="margin-bottom:8px"><label id="stepLabel">Games played by each team</label><div class="stepper"><button id="prev">‹</button><div class="step" id="step"></div><button id="next">›</button></div></div>
 <div class="status"><span id="status">Choose a league and season.</span><div class="bar"><i id="progress"></i></div></div>
 <section class="summary">
  <article class="heroCard good"><div class="heroTitle"><h2>🟢 Undefeated</h2><div class="count" id="uCount">–</div></div><div class="teams" id="undefeated"></div></article>
  <article class="heroCard bad"><div class="heroTitle"><h2>🔴 Winless</h2><div class="count" id="wCount">–</div></div><div class="teams" id="winless"></div></article>
 </section>
-<section class="chartCard"><div class="chartHead"><h3>Season survival curve</h3><div class="legend">🟢 undefeated · 🔴 winless</div></div><canvas id="chart"></canvas><div class="facts"><div class="fact"><b id="lastU">–</b><span>Last unbeaten reached</span></div><div class="fact"><b id="lastW">–</b><span>Last winless reached</span></div><div class="fact"><b id="gamesLoaded">–</b><span>Unique games loaded</span></div><div class="fact"><b id="teamsLoaded">–</b><span>Teams analyzed</span></div></div></section>
-<p class="note">Game # mode compares every club after its own Nth completed regular-season game, so bye weeks and schedule timing do not distort the comparison. A tie preserves both “undefeated” (no losses) and “winless” (no wins). Date mode uses all completed regular-season games through the selected date.</p>
+<p class="note">Each step compares every team after its own Nth completed regular-season game. Undefeated means zero losses. Winless means zero wins. Ties preserve both statuses.</p>
 </main>
 <script>
-(function () {
-  "use strict";
-  var LEAGUES = {
-    NFL:{sport:"football",slug:"nfl"},
-    NBA:{sport:"basketball",slug:"nba"},
-    MLB:{sport:"baseball",slug:"mlb"},
-    NHL:{sport:"hockey",slug:"nhl"}
-  };
-  var league="NFL", mode="game", gameN=1, teamData=[], allGames=[], season=2025;
-  function el(id){return document.getElementById(id);}
-  function api(path){var l=LEAGUES[league];return "https://site.api.espn.com/apis/site/v2/sports/"+l.sport+"/"+l.slug+"/"+path;}
-  function getJSON(url){return fetch(url).then(function(r){if(!r.ok)throw new Error(r.status+" "+r.statusText);return r.json();});}
-  function finalEvent(ev){var t=ev&&ev.status&&ev.status.type;return !!(t&&(t.completed||t.state==="post"));}
-  function scoreOf(c){var s=c&&c.score;if(s&&typeof s==="object"&&s.value!=null)s=s.value;var n=Number(s);return Number.isFinite(n)?n:null;}
-  function parseGame(ev){
-    var comp=ev&&ev.competitions&&ev.competitions[0], cs=comp&&comp.competitors;
-    if(!cs||cs.length<2)return null;
-    var a=cs[0],b=cs[1],as=scoreOf(a),bs=scoreOf(b);
-    if(as===null||bs===null||!a.team||!b.team)return null;
-    function result(x,y){return x>y?"W":x<y?"L":"T";}
-    return {id:String(ev.id),date:new Date(ev.date),sides:[
-      {id:String(a.team.id),result:result(as,bs),opp:b.team.abbreviation||b.team.shortDisplayName||"",score:as,oppScore:bs},
-      {id:String(b.team.id),result:result(bs,as),opp:a.team.abbreviation||a.team.shortDisplayName||"",score:bs,oppScore:as}
-    ]};
-  }
-  function iso(d){return new Date(d).toISOString().slice(0,10);}
-  function maxGP(){var m=1;teamData.forEach(function(t){m=Math.max(m,t.games.length);});return m;}
-  function record(gs){var r={w:0,l:0,t:0};gs.forEach(function(g){if(g.result==="W")r.w++;else if(g.result==="L")r.l++;else r.t++;});r.text=r.w+"-"+r.l+(r.t?"-"+r.t:"");return r;}
-  function selectedGames(t){
-    if(mode==="game")return t.games.slice(0,gameN);
-    var v=el("datePick").value;if(!v)return t.games;
-    var end=new Date(v+"T23:59:59");return t.games.filter(function(g){return g.date<=end;});
-  }
-  function classify(){
-    var u=[],w=[];
-    teamData.forEach(function(t){
-      var gs=selectedGames(t);if(!gs.length)return;if(mode==="game"&&gs.length<gameN)return;
-      var r=record(gs),row={id:t.id,name:t.name,abbr:t.abbr,logo:t.logo,games:t.games,r:r,gs:gs};
-      if(r.l===0)u.push(row);if(r.w===0)w.push(row);
-    });
-    return {u:u,w:w};
-  }
-  function card(t){
-    var last=t.gs[t.gs.length-1], detail=last?("Last: "+last.result+" "+last.score+"-"+last.oppScore+" vs "+last.opp):"";
-    return '<div class="team"><img src="'+t.logo+'" alt=""><div><div class="name">'+t.abbr+'</div><div class="detail">'+detail+'</div></div><div class="record">'+t.r.text+'</div></div>';
-  }
-  function survivalAt(n,type){
-    var count=0;teamData.forEach(function(t){var gs=t.games.slice(0,n);if(gs.length<n)return;var r=record(gs);if(type==="u"?r.l===0:r.w===0)count++;});return count;
-  }
-  function facts(){var m=maxGP(),lu=0,lw=0,n;for(n=1;n<=m;n++){if(survivalAt(n,"u"))lu=n;if(survivalAt(n,"w"))lw=n;}el("lastU").textContent=lu?"Game "+lu:"–";el("lastW").textContent=lw?"Game "+lw:"–";}
-  function drawChart(){
-    var c=el("chart"),dpr=window.devicePixelRatio||1,w=c.clientWidth||300,h=180;c.width=w*dpr;c.height=h*dpr;
-    var x=c.getContext("2d");x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,w,h);
-    var m=maxGP(),step=Math.max(1,Math.ceil(m/100)),pts=[],n;for(n=1;n<=m;n+=step)pts.push(n);if(pts[pts.length-1]!==m)pts.push(m);
-    var ymax=1;pts.forEach(function(p){ymax=Math.max(ymax,survivalAt(p,"u"),survivalAt(p,"w"));});
-    x.strokeStyle="#243448";x.lineWidth=1;for(var i=0;i<4;i++){var gy=12+(h-30)*i/3;x.beginPath();x.moveTo(28,gy);x.lineTo(w-8,gy);x.stroke();}
-    function line(type,color){x.strokeStyle=color;x.lineWidth=2.5;x.beginPath();pts.forEach(function(p,i){var px=28+(w-40)*(p-1)/Math.max(1,m-1),py=12+(h-30)*(1-survivalAt(p,type)/ymax);if(i)x.lineTo(px,py);else x.moveTo(px,py);});x.stroke();}
-    line("u","#35d07f");line("w","#ff5d6c");x.fillStyle="#91a0b5";x.font="9px system-ui";x.fillText("1",28,h-5);x.fillText(String(m),w-22,h-5);x.fillText(String(ymax),3,16);x.fillText("0",12,h-18);
-  }
-  function render(){
-    if(!teamData.length)return;var c=classify();el("uCount").textContent=c.u.length;el("wCount").textContent=c.w.length;
-    el("undefeated").innerHTML=c.u.length?c.u.map(card).join(""):'<div class="empty">No undefeated teams remain.</div>';
-    el("winless").innerHTML=c.w.length?c.w.map(card).join(""):'<div class="empty">No winless teams remain.</div>';
-    if(mode==="game")el("step").innerHTML="Game "+gameN+"<small>of "+maxGP()+" max team games</small>";drawChart();facts();
-  }
-  function renderLeague(){Array.prototype.forEach.call(document.querySelectorAll(".league"),function(b){b.classList.toggle("active",b.getAttribute("data-l")===league);});}
-  function setMode(m){mode=m;el("gameMode").classList.toggle("active",m==="game");el("dateMode").classList.toggle("active",m==="date");el("datePick").hidden=m!=="date";document.querySelector(".stepper").style.display=m==="game"?"grid":"none";el("stepLabel").textContent=m==="game"?"Games played by each team":"Games completed through date";render();}
-  function load(){
-    teamData=[];allGames=[];el("status").textContent="Loading "+league+" "+season+" teams…";el("progress").style.width="4%";
-    getJSON(api("teams?limit=500")).then(function(tj){
-      var sports=tj.sports||[],teams=(((sports[0]||{}).leagues||[])[0]||{}).teams||[];teams=teams.map(function(x){return x.team;}).filter(Boolean);
-      if(!teams.length)throw new Error("No teams returned by ESPN");
-      el("teamsLoaded").textContent=teams.length;el("status").textContent="Loading "+teams.length+" team schedules in parallel…";
-      var done=0,seen=new Map();
-      return Promise.all(teams.map(function(t){return getJSON(api("teams/"+t.id+"/schedule?season="+season+"&seasontype=2")).then(function(j){
-        (j.events||[]).forEach(function(ev){if(!finalEvent(ev))return;var g=parseGame(ev);if(g)seen.set(g.id,g);});
-      }).catch(function(e){console.warn("Schedule failed",t.id,e);}).then(function(){done++;el("progress").style.width=(5+90*done/teams.length)+"%";});})).then(function(){return {teams:teams,seen:seen};});
-    }).then(function(data){
-      allGames=Array.from(data.seen.values()).sort(function(a,b){return a.date-b.date;});
-      var map=new Map();data.teams.forEach(function(t){var logos=t.logos||[];map.set(String(t.id),{id:String(t.id),name:t.displayName||t.name||"",abbr:t.abbreviation||t.shortDisplayName||"",logo:(logos[0]&&logos[0].href)||"",games:[]});});
-      allGames.forEach(function(g){g.sides.forEach(function(s){var t=map.get(s.id);if(t)t.games.push({date:g.date,result:s.result,opp:s.opp,score:s.score,oppScore:s.oppScore});});});
-      teamData=Array.from(map.values());teamData.forEach(function(t){t.games.sort(function(a,b){return a.date-b.date;});});el("gamesLoaded").textContent=allGames.length;
-      if(allGames.length){el("datePick").min=iso(allGames[0].date);el("datePick").max=iso(allGames[allGames.length-1].date);el("datePick").value=iso(allGames[allGames.length-1].date);}
-      gameN=Math.min(gameN,maxGP());el("status").textContent="Loaded "+allGames.length+" completed regular-season games.";el("progress").style.width="100%";render();
-    }).catch(function(e){console.error(e);el("status").textContent="Load failed: "+e.message;el("progress").style.width="0";});
-  }
-  function init(){
-    el("leagues").innerHTML=Object.keys(LEAGUES).map(function(x){return '<button class="league '+(x===league?"active":"")+'" data-l="'+x+'">'+x+"</button>";}).join("");
-    el("leagues").onclick=function(e){var b=e.target.closest?e.target.closest("[data-l]"):null;if(!b)return;league=b.getAttribute("data-l");gameN=1;renderLeague();load();};
-    var y=new Date().getFullYear(),opts=[];for(var yr=y;yr>=2002;yr--)opts.push("<option>"+yr+"</option>");el("season").innerHTML=opts.join("");el("season").value=String(season);
-    el("season").onchange=function(){season=Number(el("season").value);gameN=1;load();};el("gameMode").onclick=function(){setMode("game");};el("dateMode").onclick=function(){setMode("date");};
-    el("prev").onclick=function(){gameN=Math.max(1,gameN-1);render();};el("next").onclick=function(){gameN=Math.min(maxGP(),gameN+1);render();};el("datePick").onchange=render;
-    renderLeague();load();
-  }
-  window.addEventListener("resize",function(){if(teamData.length)drawChart();});
-  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
-}());
+(function(){
+"use strict";
+var LEAGUES={NFL:{sport:"football",slug:"nfl"},NBA:{sport:"basketball",slug:"nba"},MLB:{sport:"baseball",slug:"mlb"},NHL:{sport:"hockey",slug:"nhl"}};
+var league="NFL",season=2025,gameN=1,teams=[];
+function E(id){return document.getElementById(id)}
+function url(){var l=LEAGUES[league];return "https://site.api.espn.com/apis/site/v2/sports/"+l.sport+"/"+l.slug+"/scoreboard?dates="+season+"&seasontype=2&limit=5000";}
+function score(c){var s=c.score;if(s&&typeof s==="object")s=s.value;var n=Number(s);return Number.isFinite(n)?n:null}
+function final(ev){var t=ev&&ev.status&&ev.status.type;return !!(t&&(t.completed||t.state==="post"))}
+function load(){
+ teams=[];E("status").textContent="Loading "+league+" "+season+" season…";E("progress").style.width="15%";
+ fetch(url()).then(function(r){if(!r.ok)throw Error("ESPN "+r.status);return r.json()}).then(function(j){
+  var map=new Map(),events=j.events||[];
+  events.forEach(function(ev){
+   if(!final(ev))return;
+   var cs=ev.competitions&&ev.competitions[0]&&ev.competitions[0].competitors;if(!cs||cs.length<2)return;
+   var a=cs[0],b=cs[1],as=score(a),bs=score(b);if(as===null||bs===null||!a.team||!b.team)return;
+   [a,b].forEach(function(x){var id=String(x.team.id);if(!map.has(id)){var logos=x.team.logo?[x.team.logo]:(x.team.logos||[]).map(function(z){return z.href});map.set(id,{id:id,name:x.team.displayName||x.team.name||"",abbr:x.team.abbreviation||x.team.shortDisplayName||"",logo:logos[0]||"",games:[]})}});
+   var d=new Date(ev.date);
+   map.get(String(a.team.id)).games.push({date:d,result:as>bs?"W":as<bs?"L":"T",score:as,oppScore:bs,opp:b.team.abbreviation||b.team.shortDisplayName||""});
+   map.get(String(b.team.id)).games.push({date:d,result:bs>as?"W":bs<as?"L":"T",score:bs,oppScore:as,opp:a.team.abbreviation||a.team.shortDisplayName||""});
+  });
+  teams=Array.from(map.values());teams.forEach(function(t){t.games.sort(function(a,b){return a.date-b.date})});
+  if(!teams.length)throw Error("No completed regular-season games returned");
+  gameN=Math.min(gameN,maxGames());E("status").textContent="Loaded "+events.filter(final).length+" completed games · "+teams.length+" teams";E("progress").style.width="100%";render();
+ }).catch(function(err){console.error(err);E("status").textContent="Load failed: "+err.message;E("progress").style.width="0";E("uCount").textContent="–";E("wCount").textContent="–";E("undefeated").innerHTML='<div class="empty">Could not load season data.</div>';E("winless").innerHTML='<div class="empty">Could not load season data.</div>'});
+}
+function maxGames(){var m=1;teams.forEach(function(t){m=Math.max(m,t.games.length)});return m}
+function rec(gs){var w=0,l=0,t=0;gs.forEach(function(g){if(g.result==="W")w++;else if(g.result==="L")l++;else t++});return {w:w,l:l,t:t,text:w+"-"+l+(t?"-"+t:"")}}
+function card(t,r,gs){var g=gs[gs.length-1];return '<div class="team"><img src="'+t.logo+'" alt=""><div><div class="name">'+t.abbr+'</div><div class="detail">'+g.result+" "+g.score+"-"+g.oppScore+" vs "+g.opp+'</div></div><div class="record">'+r.text+'</div></div>'}
+function render(){
+ if(!teams.length)return;
+ var u=[],w=[];
+ teams.forEach(function(t){if(t.games.length<gameN)return;var gs=t.games.slice(0,gameN),r=rec(gs);if(r.l===0)u.push({t:t,r:r,gs:gs});if(r.w===0)w.push({t:t,r:r,gs:gs})});
+ E("step").innerHTML="Game "+gameN+"<small>after each team’s "+gameN+(gameN===1?"st":gameN===2?"nd":gameN===3?"rd":"th")+" game</small>";
+ E("uCount").textContent=u.length;E("wCount").textContent=w.length;
+ E("undefeated").innerHTML=u.length?u.map(function(x){return card(x.t,x.r,x.gs)}).join(""):'<div class="empty">No undefeated teams remain.</div>';
+ E("winless").innerHTML=w.length?w.map(function(x){return card(x.t,x.r,x.gs)}).join(""):'<div class="empty">No winless teams remain.</div>';
+}
+function init(){
+ E("leagues").innerHTML=Object.keys(LEAGUES).map(function(x){return '<button class="league '+(x===league?"active":"")+'" data-l="'+x+'">'+x+"</button>"}).join("");
+ E("leagues").onclick=function(e){var b=e.target.closest("[data-l]");if(!b)return;league=b.getAttribute("data-l");gameN=1;document.querySelectorAll(".league").forEach(function(x){x.classList.toggle("active",x.getAttribute("data-l")===league)});load()};
+ var y=new Date().getFullYear(),o=[];for(var n=y;n>=2002;n--)o.push("<option>"+n+"</option>");E("season").innerHTML=o.join("");E("season").value=String(season);
+ E("season").onchange=function(){season=Number(this.value);gameN=1;load()};
+ E("prev").onclick=function(){gameN=Math.max(1,gameN-1);render()};E("next").onclick=function(){gameN=Math.min(maxGames(),gameN+1);render()};
+ load();
+}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
+})();
 </script></body></html>
