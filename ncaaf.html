@@ -280,10 +280,32 @@ function bind(){
 }
 async function api(url,force=false){const key='ncaaf:'+url;try{if(!force){const c=JSON.parse(sessionStorage.getItem(key)||'null');if(c&&Date.now()-c.t<300000)return c.v}}catch{}const r=await fetch(url,{cache:'no-store',headers:{Accept:'application/json'}});if(!r.ok)throw Error('ESPN HTTP '+r.status);const j=await r.json();try{sessionStorage.setItem(key,JSON.stringify({t:Date.now(),v:j}))}catch{}return j}
 function scoreboardUrl(){return BASE+'/scoreboard?groups='+FBS_GROUP+'&limit=1000&dates='+$('season').value+'&seasontype='+$('seasonType').value+'&week='+$('week').value}
+function scoreboardPageUrl(page){return scoreboardUrl()+'&page='+page}
+async function loadAllScoreboardEvents(force=false){
+  const first=await api(scoreboardPageUrl(1),force),all=[...(first.events||[])],seen=new Set(all.map(e=>String(e.id)));
+  const pageSize=Math.max(1,(first.events||[]).length),reported=Number(first?.leagues?.[0]?.calendar?.length||first?.count||first?.pageCount||0);
+  // ESPN can hard-cap a scoreboard response at 25 even when limit is larger.
+  // Walk pages until a page is empty, shorter than the first page, or contributes no new event IDs.
+  if(pageSize>=25){
+    for(let page=2;page<=20;page++){
+      const j=await api(scoreboardPageUrl(page),force),events=j.events||[];
+      if(!events.length)break;
+      let added=0;
+      for(const e of events){const id=String(e.id);if(!seen.has(id)){seen.add(id);all.push(e);added++}}
+      if(!added||events.length<pageSize)break
+    }
+  }
+  return all
+}
 async function loadGames(force=false){
-  const token=++state.loadToken;$('status').textContent='Loading all FBS games from ESPN…';$('progress').style.width='30%';showSkeletons();
-  try{const j=await api(scoreboardUrl(),force);if(token!==state.loadToken)return;state.games=(j.events||[]).map(normalizeGame).filter(Boolean).sort((a,b)=>a.date-b.date);$('progress').style.width='100%';setTimeout(()=>$('progress').style.width='0',350);applyFilters();$('status').textContent='ESPN · '+state.games.length+' FBS games loaded for '+$('season').value+' Week '+$('week').value+'.';if(state.view==='leaders')loadWeeklyLeaders()}
-  catch(e){$('progress').style.width='0';$('status').innerHTML='<span class="error">Could not load ESPN scoreboard: '+esc(e.message)+'</span>';$('content').innerHTML='<div class="empty">No games available.</div>'}
+  const token=++state.loadToken;$('status').textContent='Loading every FBS game from ESPN…';$('progress').style.width='20%';showSkeletons();
+  try{
+    const events=await loadAllScoreboardEvents(force);if(token!==state.loadToken)return;
+    state.games=events.map(normalizeGame).filter(Boolean).sort((a,b)=>a.date-b.date);
+    $('progress').style.width='100%';setTimeout(()=>$('progress').style.width='0',350);applyFilters();
+    $('status').textContent='ESPN · '+state.games.length+' FBS games loaded for '+$('season').value+' Week '+$('week').value+' · exhaustive paging.';
+    if(state.view==='leaders')loadWeeklyLeaders()
+  }catch(e){$('progress').style.width='0';$('status').innerHTML='<span class="error">Could not load ESPN scoreboard: '+esc(e.message)+'</span>';$('content').innerHTML='<div class="empty">No games available.</div>'}
 }
 function normalizeGame(e){
   const c=e.competitions?.[0],comps=c?.competitors;if(!c||!comps?.length)return null;const home=comps.find(x=>x.homeAway==='home')||comps[0],away=comps.find(x=>x.homeAway==='away')||comps[1];
