@@ -20,7 +20,7 @@ select,input{width:100%;height:40px;padding:0 10px}.go{align-self:end;height:40p
 .status{font-size:10px;color:var(--muted);margin-top:6px;min-height:14px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
 .stat{padding:12px;background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:13px}.stat b{display:block;font-size:22px}.stat span{font-size:9px;color:var(--muted);text-transform:uppercase;font-weight:900}
 .toolbar{display:flex;gap:8px;align-items:center;margin:10px 0}.search{flex:1}.toggle{padding:10px;font-size:11px;font-weight:800}.toggle.active{border-color:var(--accent);color:#ffd45c}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(135px,1fr));gap:7px}.score{position:relative;min-height:94px;padding:11px;background:linear-gradient(180deg,#151f2d,#0d1520);border:1px solid var(--line);border-radius:13px;cursor:pointer}
+.viewSwitch{display:flex;gap:5px}.matrixWrap{display:none;overflow:auto;max-height:72vh;border:1px solid var(--line);border-radius:13px;background:#0b121c}.matrixWrap.show{display:block}.matrix{border-collapse:separate;border-spacing:1px;min-width:max-content;background:#111b28}.matrix th,.matrix td{width:42px;min-width:42px;height:38px;text-align:center;font-size:10px}.matrix th{position:sticky;background:#111b28;color:var(--muted);font-weight:900;z-index:2}.matrix thead th{top:0}.matrix tbody th{left:0;z-index:3}.matrix .corner{left:0;z-index:4;min-width:62px;width:62px}.matrix td{background:#0d1520;color:#42516a}.matrix td.hit{cursor:pointer;color:var(--text);font-weight:950;background:#17283a}.matrix td.once{background:#2a2141;color:#d8c8ff}.matrix td.common{background:#24402f;color:#bdf5d3}.matrix td.impossible{background:#090e15;color:#202b3a}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(135px,1fr));gap:7px}.grid.hide{display:none}.score{position:relative;min-height:94px;padding:11px;background:linear-gradient(180deg,#151f2d,#0d1520);border:1px solid var(--line);border-radius:13px;cursor:pointer}
 .score:hover{border-color:#4b6384}.score .num{font-size:25px;font-weight:950;letter-spacing:-1px}.score .count{font-size:10px;color:var(--muted);margin-top:2px}.score .date{font-size:9px;color:#718096;margin-top:9px}.badge{position:absolute;right:8px;top:8px;font-size:8px;font-weight:950;padding:4px 6px;border-radius:999px;background:#17251f;color:var(--good)}
 .badge.rare{background:#211a35;color:#c4b5fd}.empty{text-align:center;color:var(--muted);padding:50px 10px;border:1px dashed var(--line);border-radius:14px}
 dialog{width:min(620px,calc(100% - 22px));border:1px solid var(--line);border-radius:16px;background:#0d1520;color:var(--text);padding:0}dialog::backdrop{background:#000a}.modalHead{display:flex;justify-content:space-between;align-items:center;padding:15px;border-bottom:1px solid var(--line)}.modalBody{padding:14px;max-height:65vh;overflow:auto}.game{padding:9px 0;border-bottom:1px solid #1c293a;font-size:12px}.game small{display:block;color:var(--muted);margin-top:3px}.close{padding:7px 10px}
@@ -40,8 +40,8 @@ dialog{width:min(620px,calc(100% - 22px));border:1px solid var(--line);border-ra
 <div class="progress"><div class="bar" id="bar"></div></div><div class="status" id="status">Choose a league and scope, then build.</div>
 </section>
 <div class="stats"><div class="stat"><b id="gamesN">0</b><span>Games scanned</span></div><div class="stat"><b id="scoresN">0</b><span>Unique scores</span></div><div class="stat"><b id="onesN">0</b><span>One-time scores</span></div><div class="stat"><b id="yearsN">0</b><span>Seasons loaded</span></div></div>
-<div class="toolbar"><input class="search" id="search" placeholder="Filter score, team, year…"><button class="toggle active" id="rare">All scores</button><select id="sort" style="width:auto"><option value="recent">Latest</option><option value="rare">Rarest</option><option value="common">Most common</option><option value="score">Score</option></select></div>
-<div id="grid" class="grid"><div class="empty">No data loaded yet.</div></div>
+<div class="toolbar"><input class="search" id="search" placeholder="Filter score, team, year…"><div class="viewSwitch"><button class="toggle active" id="listView">List</button><button class="toggle" id="matrixView">Matrix</button></div><button class="toggle active" id="rare">All scores</button><select id="sort" style="width:auto"><option value="recent">Latest</option><option value="rare">Rarest</option><option value="common">Most common</option><option value="score">Score</option></select></div>
+<div id="grid" class="grid"><div class="empty">No data loaded yet.</div></div><div id="matrixWrap" class="matrixWrap"></div>
 </main>
 <dialog id="detail"><div class="modalHead"><b id="detailTitle"></b><button class="close" onclick="detail.close()">Close</button></div><div class="modalBody" id="detailBody"></div></dialog>
 <script>
@@ -55,7 +55,7 @@ const LEAGUES={
  ncaam:{name:'NCAAM',icon:'🏀',sport:'basketball',league:'mens-college-basketball',start:1939},
  ncaaw:{name:'NCAAW',icon:'🏀',sport:'basketball',league:'womens-college-basketball',start:1982}
 };
-const $=s=>document.querySelector(s), state={league:'nfl',scope:'year',games:[],scores:new Map(),years:0,teamId:'',oneOnly:false};
+const $=s=>document.querySelector(s), state={league:'nfl',scope:'year',games:[],scores:new Map(),years:0,teamId:'',oneOnly:false,view:'list'};
 const currentYear=new Date().getFullYear();
 function init(){
  $('#leagues').innerHTML=Object.entries(LEAGUES).map(([k,v])=>'<button class="pill '+(k===state.league?'active':'')+'" data-league="'+k+'">'+v.icon+' '+v.name+'</button>').join('');
@@ -119,6 +119,16 @@ function render(){
  $('#gamesN').textContent=state.games.length.toLocaleString();$('#scoresN').textContent=state.scores.size.toLocaleString();$('#onesN').textContent=[...state.scores.values()].filter(x=>x.games.length===1).length.toLocaleString();$('#yearsN').textContent=state.years;
  $('#grid').innerHTML=arr.length?arr.map(x=>{const sorted=[...x.games].sort((a,b)=>new Date(a.date)-new Date(b.date)),last=sorted.at(-1);return '<article class="score" data-score="'+x.key+'"><span class="badge '+(x.games.length===1?'rare':'')+'">'+(x.games.length===1?'SCORIGAMI':x.games.length+'×')+'</span><div class="num">'+x.key+'</div><div class="count">'+x.games.length+' occurrence'+(x.games.length===1?'':'s')+'</div><div class="date">Latest '+fmt(last.date)+' · '+last.a.abbr+' '+last.a.score+', '+last.b.abbr+' '+last.b.score+'</div></article>'}).join(''):'<div class="empty">No matching scores.</div>';
  document.querySelectorAll('[data-score]').forEach(el=>el.onclick=()=>openScore(el.dataset.score));
+ renderMatrix();
+}
+function renderMatrix(){
+ const wrap=$('#matrixWrap'); if(state.view!=='matrix'){wrap.classList.remove('show');return} wrap.classList.add('show');
+ if(!state.games.length){wrap.innerHTML='<div class="empty">No data loaded yet.</div>';return}
+ let maxWin=0,maxLose=0; for(const x of state.scores.values()){maxWin=Math.max(maxWin,x.hi);maxLose=Math.max(maxLose,x.lo)}
+ const cap=state.league==='nfl'||state.league==='ncaaf'?Math.min(maxWin,100):state.league==='nba'||state.league==='wnba'||state.league==='ncaam'||state.league==='ncaaw'?Math.min(maxWin,180):Math.min(maxWin,40);
+ maxLose=Math.min(maxLose,cap); let head='<tr><th class="corner">W\\L</th>';for(let l=0;l<=maxLose;l++)head+='<th>'+l+'</th>';head+='</tr>';
+ let body='';for(let w=0;w<=cap;w++){body+='<tr><th>'+w+'</th>';for(let l=0;l<=maxLose;l++){if(l>w){body+='<td class="impossible">·</td>';continue}const key=w+'–'+l,x=state.scores.get(key),n=x?.games.length||0;const cls=n===1?' once':n>=10?' common':'';body+='<td '+(n?'class="hit'+cls+'" data-matrix-score="'+key+'"':'')+'>'+(n||'')+'</td>'}body+='</tr>'}
+ wrap.innerHTML='<table class="matrix"><thead>'+head+'</thead><tbody>'+body+'</tbody></table>';wrap.querySelectorAll('[data-matrix-score]').forEach(el=>el.onclick=()=>openScore(el.dataset.matrixScore));
 }
 function fmt(d){return new Date(d).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'})}
 function openScore(key){
@@ -127,6 +137,6 @@ function openScore(key){
  $('#detailBody').innerHTML=games.map(g=>'<div class="game"><b>'+g.a.name+' '+g.a.score+' · '+g.b.name+' '+g.b.score+'</b><small>'+fmt(g.date)+' · '+g.season+'</small></div>').join('');
  $('#detail').showModal();
 }
-$('#go').onclick=build;$('#search').oninput=render;$('#sort').onchange=render;$('#rare').onclick=()=>{state.oneOnly=!state.oneOnly;$('#rare').classList.toggle('active',!state.oneOnly);$('#rare').textContent=state.oneOnly?'Scorigamis only':'All scores';render()};
+$('#listView').onclick=()=>setView('list');$('#matrixView').onclick=()=>setView('matrix');function setView(v){state.view=v;$('#listView').classList.toggle('active',v==='list');$('#matrixView').classList.toggle('active',v==='matrix');$('#grid').classList.toggle('hide',v==='matrix');renderMatrix()}$('#go').onclick=build;$('#search').oninput=render;$('#sort').onchange=render;$('#rare').onclick=()=>{state.oneOnly=!state.oneOnly;$('#rare').classList.toggle('active',!state.oneOnly);$('#rare').textContent=state.oneOnly?'Scorigamis only':'All scores';render()};
 init();
 </script></body></html>
