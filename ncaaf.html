@@ -143,6 +143,28 @@ td,th{overflow-wrap:anywhere}
  .careerSeasonTable th,.careerSeasonTable td{padding:8px 9px!important;font-size:12px!important}
  .careerSeasonTable th:first-child,.careerSeasonTable td:first-child{min-width:68px}
 }
+
+/* 2026-10 mobile-first navigation/layout refactor */
+.mobileNavLabel{display:none}
+@media(max-width:700px){
+ .shell{padding:0 10px 28px}
+ .topbar{position:sticky;top:0;margin:0 -10px 8px;padding:max(8px,env(safe-area-inset-top)) 10px 8px}
+ .titleline{gap:7px}.ball{width:30px;height:30px;font-size:17px}.titleline h1{font-size:17px}
+ .controls{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:8px}
+ .controls label{min-width:0}.controls select,.controls input,.controls .btn{min-height:42px}
+ .controls input,.controls #refresh{grid-column:1/-1}
+ .mobileNavLabel{display:block;color:var(--muted);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;margin:8px 1px 5px}
+ .tabs{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:0 0 8px;overflow:visible!important}
+ .tabs button{min-width:0!important;width:100%;padding:9px 5px!important;border-radius:9px!important;font-size:11px!important;overflow:hidden;text-overflow:ellipsis}
+ .tabs button.active{box-shadow:inset 0 0 0 1px #fff3}
+ .uxbar{gap:5px;margin-bottom:8px}.uxbar .chip,.uxbar select{min-height:38px}
+ .metrics{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .metric b{font-size:18px}.game{border-radius:11px}
+ .leadersbar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+ .leadersbar button{min-width:0;min-height:40px;padding:7px 5px;font-size:11px}
+ #content>.tablewrap{margin:0 -10px;border-left:0;border-right:0}
+}
+@media(max-width:390px){.tabs{grid-template-columns:repeat(2,minmax(0,1fr))}.leadersbar{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
@@ -366,10 +388,30 @@ function extractLeaderRows(summary){
   const out=[];for(const tp of summary.boxscore?.players||[]){const team=tp.team||{};for(const cat of tp.statistics||[]){const c=norm(cat.name||cat.displayName);for(const [metric,d] of Object.entries(leaderDefs)){if(!d.cat.some(x=>c.includes(norm(x))))continue;const idx=statIndex(cat.labels||[],d.stat);if(idx<0)continue;for(const a of cat.athletes||[]){const value=num(a.stats?.[idx]);if(value<=0)continue;const ath=rememberPlayer(a.athlete||{},team);rememberTeam(team);out.push({metric,value,id:ath?.id||ath?.uid||ath?.displayName,name:ath?.displayName||ath?.shortName||'Unknown',head:playerHead(ath),position:ath?.position?.abbreviation||'',teamId:team.id||'',team:team.abbreviation||team.shortDisplayName||team.displayName||'',teamLogo:team.logo||''})}}}}return out
 }
 async function loadWeeklyLeaders(){
-  const completed=state.games.filter(g=>g.completed);if(!completed.length){state.weeklyRows=[];renderLeaders();$('status').textContent='No completed games yet for this week, so weekly leaders cannot be calculated.';return}
-  const token=state.loadToken;$('status').textContent='Calculating weekly leaders from '+completed.length+' completed ESPN box scores…';const agg=new Map();let done=0;const queue=[...completed];
-  const worker=async()=>{while(queue.length){const g=queue.shift();try{const s=await getSummary(g.id);for(const r of extractLeaderRows(s)){const k=r.metric+'|'+r.id;const old=agg.get(k);if(old){old.value+=r.value;old.games++}else agg.set(k,{...r,games:1})}}catch{}done++;$('progress').style.width=Math.round(done/completed.length*100)+'%'}};
-  await Promise.all(Array.from({length:Math.min(10,completed.length)},worker));if(token!==state.loadToken)return;state.weeklyRows=[...agg.values()];$('progress').style.width='100%';setTimeout(()=>$('progress').style.width='0',350);$('status').textContent='Weekly leaders calculated from '+done+' completed FBS games · '+state.weeklyRows.length+' player/category rows.';renderLeaders();
+  const completed=state.games.filter(g=>g.completed);
+  if(!completed.length){state.weeklyRows=[];renderLeaders();$('status').textContent='No completed games yet for this week, so weekly leaders cannot be calculated.';return}
+  const token=state.loadToken,agg=new Map(),queue=[...completed];
+  let attempted=0,loaded=0,failed=0;
+  $('status').textContent='Weekly Leaders: loading all '+completed.length+' completed FBS box scores…';
+  const worker=async()=>{while(queue.length){
+    const g=queue.shift();if(!g)break;attempted++;
+    try{
+      const s=await getSummary(g.id), rows=extractLeaderRows(s);
+      loaded++;
+      for(const r of rows){
+        const k=r.metric+'|'+r.id,old=agg.get(k);
+        if(old){old.value+=r.value;old.games++}
+        else agg.set(k,{...r,games:1})
+      }
+    }catch(e){failed++;console.warn('Weekly Leaders summary failed',g.id,e)}
+    $('progress').style.width=Math.round(attempted/completed.length*100)+'%'
+  }};
+  await Promise.all(Array.from({length:Math.min(24,completed.length)},worker));
+  if(token!==state.loadToken)return;
+  state.weeklyRows=[...agg.values()];
+  $('progress').style.width='100%';setTimeout(()=>$('progress').style.width='0',350);
+  $('status').textContent='Weekly Leaders: '+loaded+'/'+completed.length+' completed FBS games loaded · '+state.weeklyRows.length+' player/category rows'+(failed?' · '+failed+' failed summaries':'')+'.';
+  renderLeaders()
 }
 async function hydrateVisiblePlayerImages(){
   const imgs=[...document.querySelectorAll('img[data-athlete-img]')];
