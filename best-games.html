@@ -60,19 +60,26 @@ function scoreGame(g){let s=settings(),a=g.ar,h=g.hr,games=Math.max(a.gp,h.gp),f
 function reviewMetrics(g){let a=num(g.away.score),h=num(g.home.score),total=a+h,diff=Math.abs(a-h),scale={nfl:55,ncaaf:55,nba:230,ncaam:150,mlb:10,nhl:6}[g.league.id]||50,close=Math.max(0,1-diff/Math.max(3,scale*.18)),scoring=Math.min(1.35,total/scale),lead=num(g.review?.leadChanges),ties=num(g.review?.ties),ot=g.review?.overtime?1:0,po=playoffInfo(g);return {total,diff,lead,ties,ot,po,score:Math.min(100,Math.round(22+30*close+18*Math.min(1,scoring)+Math.min(22,lead*2.75)+Math.min(6,ties*.6)+8*ot+po.bonus*.55))}}
 function thrillMetrics(g){
  let a=num(g.away.score),h=num(g.home.score),diff=Math.abs(a-h),rv=g.review||{},id=g.league.id;
- let closeScale={nfl:8,ncaaf:8,nba:7,ncaam:7,mlb:2,nhl:2}[id]||5;
- let finishClose=Math.max(0,1-diff/(closeScale*2));
- let lateClose=pct(rv.lateClose??finishClose);
+ // Thrill is intentionally dominated by closeness. Sport-specific margins represent
+ // roughly one meaningful scoring event/possession, then decay sharply beyond that.
+ let unit={nfl:8,ncaaf:8,nba:6,ncaam:6,mlb:1,nhl:1}[id]||4;
+ let close=Math.exp(-Math.pow(diff/(unit*1.35),1.35));
+ // Reward games that stayed close late. A close finish alone is not enough if the
+ // game was only briefly close; sustained late closeness is the strongest signal.
+ let lateClose=pct(rv.lateClose??close);
+ let closeCore=.72*lateClose+.28*close;
+ // Secondary drama can separate two similarly close games, but cannot overpower closeness.
  let otCount=Math.max(0,num(rv.otCount,rv.overtime?1:0));
- let ot=Math.min(1,otCount?0.72+0.14*Math.min(2,otCount-1):0);
- let lead=Math.min(1,num(rv.leadChanges)/8),ties=Math.min(1,num(rv.ties)/10);
- let lateDrama=Math.min(1,num(rv.lateLeadChanges)/3+num(rv.lateTies)/5);
- let swings=Math.min(1,num(rv.bigSwings)/4);
- let drama=Math.max(lead*.55+ties*.15+lateDrama*.30,swings*.75+lateDrama*.25);
- let score=Math.round(100*(.40*lateClose+.25*finishClose+.20*ot+.15*drama));
- return {score:Math.max(0,Math.min(100,score)),finishClose,lateClose,otCount,lead:num(rv.leadChanges),ties:num(rv.ties),lateLead:num(rv.lateLeadChanges),lateTies:num(rv.lateTies),bigSwings:num(rv.bigSwings),diff};
+ let otBonus=otCount?Math.min(10,6+2*Math.min(2,otCount-1)):0;
+ let lateAction=Math.min(1,num(rv.lateLeadChanges)/3+num(rv.lateTies)/5);
+ let action=Math.min(1,num(rv.leadChanges)/10+num(rv.ties)/16);
+ let swing=Math.min(1,num(rv.bigSwings)/5);
+ let dramaBonus=7*(.55*lateAction+.25*action+.20*swing);
+ // 83% of the available score is pure closeness; late closeness dominates that core.
+ let score=Math.round(83*closeCore+otBonus+dramaBonus);
+ return {score:Math.max(0,Math.min(100,score)),close,lateClose,closeCore,otCount,lead:num(rv.leadChanges),ties:num(rv.ties),lateLead:num(rv.lateLeadChanges),lateTies:num(rv.lateTies),bigSwings:num(rv.bigSwings),diff};
 }
-function thrillReasons(g){let m=thrillMetrics(g),r=[];if(m.otCount)r.push(m.otCount>1?m.otCount+' OT / extras':'Overtime / extras');if(m.lateClose>=.8)r.push('Close late');if(m.diff===0)r.push('Tied finish');else if(m.finishClose>=.8)r.push('One-score finish');if(m.lateLead>=2)r.push(m.lateLead+' late lead changes');else if(m.lead>=4)r.push(m.lead+' lead changes');if(m.bigSwings>=2)r.push('Big win-probability swings');if(m.lateTies>=2)r.push('Repeated late ties');if(!r.length)r.push('Game-only drama score');return r.slice(0,3)}
+function thrillReasons(g){let m=thrillMetrics(g),r=[];if(m.lateClose>=.9)r.push('Extremely close late');else if(m.lateClose>=.7)r.push('Close late');if(m.diff===0)r.push('Tied finish');else if(m.close>=.8)r.push('One-score finish');if(m.otCount)r.push(m.otCount>1?m.otCount+' OT / extras':'Overtime / extras');if(m.lateLead>=2)r.push(m.lateLead+' late lead changes');else if(m.bigSwings>=2)r.push('Late-game swings');if(!r.length)r.push('Game-only closeness score');return r.slice(0,3)}
 function classicReasons(g){let m=reviewMetrics(g),r=[];if(m.po.label)r.push(m.po.label);if(m.lead>=8)r.push(m.lead+' lead changes');else if(m.lead>=3)r.push('Back-and-forth');if(m.diff<=Math.max(2,m.total*.04))r.push('Nail-biter');if(m.ot)r.push('Overtime');if(m.total>({nfl:60,ncaaf:60,nba:235,ncaam:155,mlb:12,nhl:7}[g.league.id]||60))r.push('High scoring');return r.slice(0,3)}
 function reasons(g){let r=[],po=playoffInfo(g);if(po.label)r.push(po.label);if(g.awayRank&&g.homeRank)r.push('#'+g.awayRank+' vs #'+g.homeRank);else if(g.awayRank||g.homeRank)r.push('Ranked team');let avg=(g.ar.pct+g.hr.pct)/2;if(avg>=.7)r.push('Elite records');else if(avg>=.58)r.push('Strong records');if(Math.abs(g.ar.pct-g.hr.pct)<.1&&g.ar.gp+g.hr.gp>4)r.push('Even matchup');if(prestige(g.away.team,g.league.id)+prestige(g.home.team,g.league.id)>=1.8)r.push('Premier brands');if(priorFade(g)>.05&&(g.ap||g.hp))r.push('Prior year '+Math.round(priorFade(g)*100)+'% active');if(!r.length)r.push('Pregame record model');return r.slice(0,3)}
 function dateLabel(){let [y,m,d]=state.date.split('-').map(Number),dt=new Date(y,m-1,d);$('dateLabel').innerHTML=dt.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'})+'<small>'+y+'</small>';$('date').value=state.date}
