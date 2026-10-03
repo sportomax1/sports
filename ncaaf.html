@@ -165,6 +165,25 @@ td,th{overflow-wrap:anywhere}
  #content>.tablewrap{margin:0 -10px;border-left:0;border-right:0}
 }
 @media(max-width:390px){.tabs{grid-template-columns:repeat(2,minmax(0,1fr))}.leadersbar{grid-template-columns:1fr 1fr}}
+
+/* Dense-width pass: use viewport space without oversized blank gutters */
+.shell{width:min(1800px,calc(100% - 16px))}
+.tablewrap table{min-width:0}
+#content .tablewrap table{width:100%}
+#content th,#content td{padding-left:8px;padding-right:8px}
+#content th:first-child,#content td:first-child{width:1%;white-space:nowrap}
+#content .ath{min-width:0}
+#content .ath>div{min-width:0}
+#content .teamchip{max-width:260px}
+@media(min-width:701px){
+ .leadersbar{display:flex;gap:5px}
+ .leadersbar button{flex:1 1 0;padding:7px 5px;font-size:11px;white-space:nowrap}
+}
+@media(max-width:700px){
+ .shell{width:100%}
+ #content .tablewrap table{table-layout:auto}
+ #content .tablewrap th,#content .tablewrap td{padding-left:6px;padding-right:6px}
+}
 </style>
 </head>
 <body>
@@ -215,6 +234,8 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const state={view:'games',games:[],filtered:[],summaryCache:new Map(),weeklyRows:[],leaderMetric:'passYds',loadToken:0,playerCache:new Map(),teamCache:new Map(),playerContext:new Map(),teamContext:new Map(),quickFilter:'',sort:'time',favorites:new Set(JSON.parse(localStorage.getItem('ncaafFavTeams')||'[]')),compact:localStorage.getItem('ncaafCompact')==='1',autoRefresh:false,autoTimer:null,extraCache:new Map(),teamCompareRows:[],extraLoading:false,rankingsData:null,rankingsLoading:false};
 const confIds={ACC:'1','American':'151','Big 12':'4','Big Ten':'5','Conference USA':'12','MAC':'15','Mountain West':'17','Pac-12':'9','SEC':'8','Sun Belt':'37','Independents':'18'};
 const leaderDefs={
+  totalYds:{label:'Total Yards',combined:'yards'},
+  totalTD:{label:'Total TD',combined:'td'},
   passYds:{label:'Passing Yards',cat:['passing'],stat:['YDS']},
   passTD:{label:'Passing TD',cat:['passing'],stat:['TD']},
   rushYds:{label:'Rushing Yards',cat:['rushing'],stat:['YDS']},
@@ -385,7 +406,35 @@ function norm(s){return String(s||'').toLowerCase().replace(/[^a-z]/g,'')}
 function num(v){if(v==null)return 0;const s=String(v).replace(/,/g,'');if(s.includes('/'))return Number(s.split('/')[0])||0;const m=s.match(/-?\d+(?:\.\d+)?/);return m?Number(m[0]):0}
 function statIndex(labels,wants){const n=labels.map(x=>String(x).toUpperCase().replace(/[^A-Z]/g,''));for(const w of wants){const x=String(w).toUpperCase().replace(/[^A-Z]/g,'');let i=n.indexOf(x);if(i>=0)return i}return -1}
 function extractLeaderRows(summary){
-  const out=[];for(const tp of summary.boxscore?.players||[]){const team=tp.team||{};for(const cat of tp.statistics||[]){const c=norm(cat.name||cat.displayName);for(const [metric,d] of Object.entries(leaderDefs)){if(!d.cat.some(x=>c.includes(norm(x))))continue;const idx=statIndex(cat.labels||[],d.stat);if(idx<0)continue;for(const a of cat.athletes||[]){const value=num(a.stats?.[idx]);if(value<=0)continue;const ath=rememberPlayer(a.athlete||{},team);rememberTeam(team);out.push({metric,value,id:ath?.id||ath?.uid||ath?.displayName,name:ath?.displayName||ath?.shortName||'Unknown',head:playerHead(ath),position:ath?.position?.abbreviation||'',teamId:team.id||'',team:team.abbreviation||team.shortDisplayName||team.displayName||'',teamLogo:team.logo||''})}}}}return out
+  const out=[],combined=new Map();
+  for(const tp of summary.boxscore?.players||[]){
+    const team=tp.team||{};
+    for(const cat of tp.statistics||[]){
+      const c=norm(cat.name||cat.displayName),labels=cat.labels||[];
+      for(const [metric,d] of Object.entries(leaderDefs)){
+        if(d.combined||!d.cat.some(x=>c.includes(norm(x))))continue;
+        const idx=statIndex(labels,d.stat);if(idx<0)continue;
+        for(const a of cat.athletes||[]){
+          const value=num(a.stats?.[idx]);if(value<=0)continue;
+          const ath=rememberPlayer(a.athlete||{},team);rememberTeam(team);
+          const base={id:ath?.id||ath?.uid||ath?.displayName,name:ath?.displayName||ath?.shortName||'Unknown',head:playerHead(ath),position:ath?.position?.abbreviation||'',teamId:team.id||'',team:team.abbreviation||team.shortDisplayName||team.displayName||'',teamLogo:team.logo||''};
+          out.push({metric,value,...base});
+          const key=String(base.id),x=combined.get(key)||{...base,yards:0,td:0};
+          if(['passing','rushing','receiving'].some(k=>c.includes(k))){
+            const yi=statIndex(labels,['YDS']),ti=statIndex(labels,['TD']);
+            if(yi>=0)x.yards+=num(a.stats?.[yi]);
+            if(ti>=0)x.td+=num(a.stats?.[ti])
+          }
+          combined.set(key,x)
+        }
+      }
+    }
+  }
+  for(const x of combined.values()){
+    if(x.yards>0)out.push({metric:'totalYds',value:x.yards,...x});
+    if(x.td>0)out.push({metric:'totalTD',value:x.td,...x})
+  }
+  return out
 }
 async function loadWeeklyLeaders(){
   const completed=state.games.filter(g=>g.completed);
