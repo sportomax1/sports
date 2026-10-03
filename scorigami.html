@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#070b11"><title>Scorigami Lab</title>
+<style>
+:root{color-scheme:dark;--bg:#070b11;--panel:#0f1622;--panel2:#151f2d;--line:#253247;--text:#f5f7fb;--muted:#94a3b8;--accent:#f4b400;--good:#39d98a;--rare:#a78bfa}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,sans-serif}
+body{background:radial-gradient(circle at 12% 0%,#17305566 0,transparent 30%),var(--bg)}
+.shell{width:min(1280px,calc(100% - 24px));margin:auto;padding:22px 0 50px}.top{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.back{color:var(--muted);text-decoration:none;font-size:13px}.eyebrow{font-size:10px;font-weight:900;letter-spacing:.13em;text-transform:uppercase;color:#ffd45c}
+h1{font-size:clamp(32px,7vw,56px);line-height:.95;margin:4px 0 8px}.sub{color:var(--muted);font-size:12px;max-width:720px}
+.controls{position:sticky;top:0;z-index:5;background:#070b11ee;backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:16px;padding:10px;margin:14px 0}
+.leagues,.scopes{display:flex;gap:6px;overflow:auto;padding-bottom:2px;scrollbar-width:none}.leagues::-webkit-scrollbar,.scopes::-webkit-scrollbar{display:none}
+button,select,input{font:inherit;color:var(--text);background:#101927;border:1px solid var(--line);border-radius:10px}
+.pill{white-space:nowrap;padding:9px 12px;font-weight:800;font-size:12px}.pill.active{background:var(--accent);border-color:var(--accent);color:#111}
+.row{display:grid;grid-template-columns:1.2fr .8fr .8fr auto;gap:8px;margin-top:8px}.field{display:flex;flex-direction:column;gap:4px}.field label{font-size:9px;text-transform:uppercase;font-weight:900;color:var(--muted)}
+select,input{width:100%;height:40px;padding:0 10px}.go{align-self:end;height:40px;padding:0 16px;background:var(--accent);border-color:var(--accent);color:#111;font-weight:900}
+.go:disabled{opacity:.5}.progress{height:3px;background:#182234;border-radius:4px;overflow:hidden;margin-top:9px}.bar{height:100%;width:0;background:var(--accent);transition:width .2s}
+.status{font-size:10px;color:var(--muted);margin-top:6px;min-height:14px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+.stat{padding:12px;background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:13px}.stat b{display:block;font-size:22px}.stat span{font-size:9px;color:var(--muted);text-transform:uppercase;font-weight:900}
+.toolbar{display:flex;gap:8px;align-items:center;margin:10px 0}.search{flex:1}.toggle{padding:10px;font-size:11px;font-weight:800}.toggle.active{border-color:var(--accent);color:#ffd45c}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(135px,1fr));gap:7px}.score{position:relative;min-height:94px;padding:11px;background:linear-gradient(180deg,#151f2d,#0d1520);border:1px solid var(--line);border-radius:13px;cursor:pointer}
+.score:hover{border-color:#4b6384}.score .num{font-size:25px;font-weight:950;letter-spacing:-1px}.score .count{font-size:10px;color:var(--muted);margin-top:2px}.score .date{font-size:9px;color:#718096;margin-top:9px}.badge{position:absolute;right:8px;top:8px;font-size:8px;font-weight:950;padding:4px 6px;border-radius:999px;background:#17251f;color:var(--good)}
+.badge.rare{background:#211a35;color:#c4b5fd}.empty{text-align:center;color:var(--muted);padding:50px 10px;border:1px dashed var(--line);border-radius:14px}
+dialog{width:min(620px,calc(100% - 22px));border:1px solid var(--line);border-radius:16px;background:#0d1520;color:var(--text);padding:0}dialog::backdrop{background:#000a}.modalHead{display:flex;justify-content:space-between;align-items:center;padding:15px;border-bottom:1px solid var(--line)}.modalBody{padding:14px;max-height:65vh;overflow:auto}.game{padding:9px 0;border-bottom:1px solid #1c293a;font-size:12px}.game small{display:block;color:var(--muted);margin-top:3px}.close{padding:7px 10px}
+@media(max-width:700px){.shell{width:min(100% - 14px,1280px);padding-top:12px}.row{grid-template-columns:1fr 1fr}.go{width:100%}.stats{grid-template-columns:1fr 1fr}.controls{border-radius:12px;margin-top:10px}.grid{grid-template-columns:repeat(2,1fr)}}
+</style></head>
+<body><main class="shell">
+<div class="top"><div><div class="eyebrow">Sportomax Sports · History</div><h1>Scorigami Lab</h1><div class="sub">Find final-score combinations, how often they happened, and the first/last occurrence. Scores are normalized high-to-low so 24–17 and 17–24 are the same combination.</div></div><a class="back" href="./">← Tools</a></div>
+<section class="controls">
+<div class="leagues" id="leagues"></div>
+<div class="scopes" id="scopes" style="margin-top:7px"></div>
+<div class="row">
+<div class="field"><label>Season / start point</label><select id="year"></select></div>
+<div class="field"><label>Team</label><select id="team" disabled><option>Choose team</option></select></div>
+<div class="field"><label>Season type</label><select id="seasonType"><option value="">All games</option><option value="2">Regular season</option><option value="3">Postseason</option></select></div>
+<button class="go" id="go">Build</button>
+</div>
+<div class="progress"><div class="bar" id="bar"></div></div><div class="status" id="status">Choose a league and scope, then build.</div>
+</section>
+<div class="stats"><div class="stat"><b id="gamesN">0</b><span>Games scanned</span></div><div class="stat"><b id="scoresN">0</b><span>Unique scores</span></div><div class="stat"><b id="onesN">0</b><span>One-time scores</span></div><div class="stat"><b id="yearsN">0</b><span>Seasons loaded</span></div></div>
+<div class="toolbar"><input class="search" id="search" placeholder="Filter score, team, year…"><button class="toggle active" id="rare">All scores</button><select id="sort" style="width:auto"><option value="recent">Latest</option><option value="rare">Rarest</option><option value="common">Most common</option><option value="score">Score</option></select></div>
+<div id="grid" class="grid"><div class="empty">No data loaded yet.</div></div>
+</main>
+<dialog id="detail"><div class="modalHead"><b id="detailTitle"></b><button class="close" onclick="detail.close()">Close</button></div><div class="modalBody" id="detailBody"></div></dialog>
+<script>
+const LEAGUES={
+ nfl:{name:'NFL',icon:'🏈',sport:'football',league:'nfl',start:1920},
+ nba:{name:'NBA',icon:'🏀',sport:'basketball',league:'nba',start:1946},
+ mlb:{name:'MLB',icon:'⚾',sport:'baseball',league:'mlb',start:1903},
+ nhl:{name:'NHL',icon:'🏒',sport:'hockey',league:'nhl',start:1917},
+ wnba:{name:'WNBA',icon:'🏀',sport:'basketball',league:'wnba',start:1997},
+ ncaaf:{name:'NCAAF',icon:'🏈',sport:'football',league:'college-football',start:1869},
+ ncaam:{name:'NCAAM',icon:'🏀',sport:'basketball',league:'mens-college-basketball',start:1939},
+ ncaaw:{name:'NCAAW',icon:'🏀',sport:'basketball',league:'womens-college-basketball',start:1982}
+};
+const $=s=>document.querySelector(s), state={league:'nfl',scope:'year',games:[],scores:new Map(),years:0,teamId:'',oneOnly:false};
+const currentYear=new Date().getFullYear();
+function init(){
+ $('#leagues').innerHTML=Object.entries(LEAGUES).map(([k,v])=>'<button class="pill '+(k===state.league?'active':'')+'" data-league="'+k+'">'+v.icon+' '+v.name+'</button>').join('');
+ $('#scopes').innerHTML=[['year','Year'],['all','All time'],['team','All time · team']].map(([k,n])=>'<button class="pill '+(k===state.scope?'active':'')+'" data-scope="'+k+'">'+n+'</button>').join('');
+ document.querySelectorAll('[data-league]').forEach(b=>b.onclick=()=>{state.league=b.dataset.league;document.querySelectorAll('[data-league]').forEach(x=>x.classList.toggle('active',x===b));fillYears();if(state.scope==='team')loadTeams()});
+ document.querySelectorAll('[data-scope]').forEach(b=>b.onclick=()=>{state.scope=b.dataset.scope;document.querySelectorAll('[data-scope]').forEach(x=>x.classList.toggle('active',x===b));$('#team').disabled=state.scope!=='team';fillYears();if(state.scope==='team')loadTeams()});
+ fillYears();
+}
+function fillYears(){
+ const L=LEAGUES[state.league], y=$('#year'); let options='';
+ if(state.scope==='year'){for(let n=currentYear;n>=Math.max(L.start,1900);n--)options+='<option value="'+n+'">'+n+'</option>'}
+ else {options='<option value="'+L.start+'">'+L.start+' → '+currentYear+'</option>';for(let n=currentYear-10;n>=Math.max(L.start,1900);n-=10)options+='<option value="'+n+'">'+n+' → '+currentYear+'</option>'}
+ y.innerHTML=options;
+}
+async function loadTeams(){
+ const L=LEAGUES[state.league]; $('#team').innerHTML='<option value="">Loading teams…</option>'; $('#team').disabled=true;
+ try{const j=await fetch('https://site.api.espn.com/apis/site/v2/sports/'+L.sport+'/'+L.league+'/teams?limit=1000').then(r=>r.json());
+ const teams=(j.sports?.[0]?.leagues?.[0]?.teams||[]).map(x=>x.team).sort((a,b)=>a.displayName.localeCompare(b.displayName));
+ $('#team').innerHTML='<option value="">Choose team…</option>'+teams.map(t=>'<option value="'+t.id+'">'+t.displayName+'</option>').join('');
+ }catch(e){$('#team').innerHTML='<option value="">Team list failed</option>'} finally{$('#team').disabled=false}
+}
+function cacheKey(k,y){return 'scorigami:v2:'+k+':'+y}
+async function seasonGames(key,year){
+ const cached=localStorage.getItem(cacheKey(key,year)); if(cached){try{return JSON.parse(cached)}catch{}}
+ const L=LEAGUES[key], url='https://site.api.espn.com/apis/site/v2/sports/'+L.sport+'/'+L.league+'/scoreboard?dates='+year+'&limit=1000';
+ const j=await fetch(url).then(r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json()});
+ const games=(j.events||[]).map(e=>{
+   const c=e.competitions?.[0], cs=c?.competitors||[]; if(cs.length<2)return null;
+   const a=cs[0],b=cs[1],sa=Number(a.score),sb=Number(b.score);
+   if(!Number.isFinite(sa)||!Number.isFinite(sb)||!(e.status?.type?.completed))return null;
+   return {id:e.id,date:e.date,season:Number(e.season?.year||year),type:Number(e.season?.type||0),a:{id:a.team?.id,name:a.team?.displayName||a.team?.name,abbr:a.team?.abbreviation,score:sa},b:{id:b.team?.id,name:b.team?.displayName||b.team?.name,abbr:b.team?.abbreviation,score:sb}};
+ }).filter(Boolean);
+ try{localStorage.setItem(cacheKey(key,year),JSON.stringify(games))}catch{}
+ return games;
+}
+async function build(){
+ const btn=$('#go');btn.disabled=true;state.games=[];state.scores=new Map();state.years=0;state.teamId=$('#team').value;
+ if(state.scope==='team'&&!state.teamId){$('#status').textContent='Choose a team first.';btn.disabled=false;return}
+ const L=LEAGUES[state.league], start=state.scope==='year'?Number($('#year').value):Number($('#year').value||L.start), years=[];
+ for(let y=start;y<=currentYear;y++)years.push(y);
+ $('#status').textContent='Loading '+years.length+' season'+(years.length===1?'':'s')+'…';$('#bar').style.width='0%';
+ let done=0, errors=0; const concurrency=state.league.startsWith('ncaa')?4:7;
+ async function worker(){
+   while(years.length){const y=years.shift();try{let g=await seasonGames(state.league,y);if($('#seasonType').value)g=g.filter(x=>String(x.type)===$('#seasonType').value);if(state.scope==='team')g=g.filter(x=>x.a.id===state.teamId||x.b.id===state.teamId);state.games.push(...g);state.years++}catch(e){errors++}
+   done++;$('#bar').style.width=(done/(done+years.length)*100)+'%';$('#status').textContent='Loaded '+done+' seasons · '+state.games.length.toLocaleString()+' games'+(errors?' · '+errors+' failed':'');}
+ }
+ await Promise.all(Array.from({length:Math.min(concurrency,years.length||1)},worker));
+ indexScores();render();btn.disabled=false;$('#status').textContent='Complete · '+state.games.length.toLocaleString()+' completed games across '+state.years+' seasons'+(errors?' · '+errors+' seasons unavailable':'')+'. Cached seasons load instantly next time.';
+}
+function indexScores(){
+ state.scores=new Map();
+ for(const g of state.games){const hi=Math.max(g.a.score,g.b.score),lo=Math.min(g.a.score,g.b.score),key=hi+'–'+lo;
+ if(!state.scores.has(key))state.scores.set(key,{key,hi,lo,games:[]});state.scores.get(key).games.push(g)}
+}
+function render(){
+ let arr=[...state.scores.values()],q=$('#search').value.trim().toLowerCase();
+ if(state.oneOnly)arr=arr.filter(x=>x.games.length===1);
+ if(q)arr=arr.filter(x=>x.key.includes(q)||x.games.some(g=>(g.a.name+' '+g.b.name+' '+g.season).toLowerCase().includes(q)));
+ const sort=$('#sort').value;
+ arr.sort((a,b)=>sort==='rare'?a.games.length-b.games.length||b.hi-a.hi:sort==='common'?b.games.length-a.games.length:sort==='score'?b.hi-a.hi||b.lo-a.lo:new Date(b.games.at(-1).date)-new Date(a.games.at(-1).date));
+ $('#gamesN').textContent=state.games.length.toLocaleString();$('#scoresN').textContent=state.scores.size.toLocaleString();$('#onesN').textContent=[...state.scores.values()].filter(x=>x.games.length===1).length.toLocaleString();$('#yearsN').textContent=state.years;
+ $('#grid').innerHTML=arr.length?arr.map(x=>{const sorted=[...x.games].sort((a,b)=>new Date(a.date)-new Date(b.date)),last=sorted.at(-1);return '<article class="score" data-score="'+x.key+'"><span class="badge '+(x.games.length===1?'rare':'')+'">'+(x.games.length===1?'SCORIGAMI':x.games.length+'×')+'</span><div class="num">'+x.key+'</div><div class="count">'+x.games.length+' occurrence'+(x.games.length===1?'':'s')+'</div><div class="date">Latest '+fmt(last.date)+' · '+last.a.abbr+' '+last.a.score+', '+last.b.abbr+' '+last.b.score+'</div></article>'}).join(''):'<div class="empty">No matching scores.</div>';
+ document.querySelectorAll('[data-score]').forEach(el=>el.onclick=()=>openScore(el.dataset.score));
+}
+function fmt(d){return new Date(d).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'})}
+function openScore(key){
+ const x=state.scores.get(key);if(!x)return;const games=[...x.games].sort((a,b)=>new Date(b.date)-new Date(a.date));
+ $('#detailTitle').textContent=key+' · '+games.length+' occurrence'+(games.length===1?'':'s');
+ $('#detailBody').innerHTML=games.map(g=>'<div class="game"><b>'+g.a.name+' '+g.a.score+' · '+g.b.name+' '+g.b.score+'</b><small>'+fmt(g.date)+' · '+g.season+'</small></div>').join('');
+ $('#detail').showModal();
+}
+$('#go').onclick=build;$('#search').oninput=render;$('#sort').onchange=render;$('#rare').onclick=()=>{state.oneOnly=!state.oneOnly;$('#rare').classList.toggle('active',!state.oneOnly);$('#rare').textContent=state.oneOnly?'Scorigamis only':'All scores';render()};
+init();
+</script></body></html>
