@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#071019"><title>Perfect / Winless</title>
+<style>
+:root{color-scheme:dark;--bg:#060a10;--panel:#0d1520;--panel2:#121e2c;--line:#243448;--text:#f7f9fc;--muted:#91a0b5;--good:#35d07f;--bad:#ff5d6c;--accent:#f5bd35}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 15% -10%,#143a5d 0,transparent 32%),var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}.app{max-width:1100px;margin:auto;padding:14px}.top{display:flex;justify-content:space-between;gap:12px;align-items:center}.back{color:var(--muted);text-decoration:none;font-size:12px}.eyebrow{font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);font-weight:900}h1{font-size:30px;margin:3px 0 2px}.sub{font-size:11px;color:var(--muted);margin:0}.controls{display:grid;grid-template-columns:1.3fr .8fr 1fr;gap:8px;margin:14px 0}.control{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px}.control label{display:block;color:var(--muted);font-size:9px;font-weight:800;text-transform:uppercase;margin-bottom:5px}select,input,button{font:inherit;color:var(--text);background:#09111b;border:1px solid var(--line);border-radius:8px;padding:9px;width:100%}.leagues{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.league{font-size:12px;font-weight:900}.league.active{border-color:var(--accent);background:#2a2414;color:#ffd96d}.mode{display:flex;gap:5px}.mode button.active{background:#1c3147;border-color:#47739e}.stepper{display:grid;grid-template-columns:46px 1fr 46px;gap:6px;align-items:center}.stepper button{font-size:20px;padding:8px}.step{text-align:center;font-weight:900}.step small{display:block;color:var(--muted);font-size:9px;font-weight:600}.status{min-height:24px;font-size:10px;color:var(--muted);display:flex;align-items:center;gap:7px}.bar{height:4px;background:#1c2a39;border-radius:9px;overflow:hidden;flex:1}.bar i{display:block;height:100%;background:var(--accent);width:0}.summary{display:grid;grid-template-columns:1fr 1fr;gap:8px}.heroCard{border:1px solid var(--line);border-radius:15px;padding:13px;background:linear-gradient(180deg,var(--panel2),var(--panel))}.heroCard.good{box-shadow:inset 0 3px var(--good)}.heroCard.bad{box-shadow:inset 0 3px var(--bad)}.heroTitle{display:flex;justify-content:space-between;align-items:center}.heroTitle h2{font-size:14px;margin:0}.count{font-size:30px;font-weight:950}.good .count{color:var(--good)}.bad .count{color:var(--bad)}.teams{display:grid;gap:6px;margin-top:9px}.team{display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:8px;background:#09111b;border:1px solid #1b2938;border-radius:10px;padding:7px}.team img{width:30px;height:30px;object-fit:contain}.name{font-size:12px;font-weight:850}.detail{font-size:9px;color:var(--muted);margin-top:2px}.record{font-size:13px;font-weight:900}.empty{padding:18px 5px;text-align:center;color:var(--muted);font-size:11px}.chartCard{margin-top:8px;background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:12px}.chartHead{display:flex;justify-content:space-between;align-items:end}.chartHead h3{margin:0;font-size:13px}.legend{font-size:9px;color:var(--muted)}canvas{width:100%;height:180px;margin-top:8px}.facts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}.fact{background:#09111b;border:1px solid #1b2938;border-radius:10px;padding:8px}.fact b{display:block;font-size:16px}.fact span{font-size:8px;color:var(--muted);text-transform:uppercase}.note{font-size:9px;color:var(--muted);margin:10px 2px 2px;line-height:1.45}
+@media(max-width:650px){h1{font-size:25px}.controls{grid-template-columns:1fr}.summary{grid-template-columns:1fr 1fr}.heroCard{padding:9px}.team{grid-template-columns:28px 1fr}.team img{width:25px;height:25px}.record{grid-column:2}.facts{grid-template-columns:1fr 1fr}.leagues{gap:4px}.league{padding:8px 4px}.sub{max-width:90%}}@media(max-width:420px){.summary{gap:5px}.name{font-size:10px}.detail{font-size:8px}.heroTitle h2{font-size:12px}.count{font-size:24px}}
+</style></head><body><main class="app">
+<div class="top"><div><div class="eyebrow">Survivor Lab</div><h1>Perfect / Winless</h1><p class="sub">How long can the last unbeaten and winless teams survive?</p></div><a class="back" href="./">All tools</a></div>
+<div class="controls">
+ <div class="control"><label>League</label><div class="leagues" id="leagues"></div></div>
+ <div class="control"><label>Season</label><select id="season"></select></div>
+ <div class="control"><label>View</label><div class="mode"><button id="gameMode" class="active">Game #</button><button id="dateMode">Date</button></div></div>
+</div>
+<div class="control" style="margin-bottom:8px"><label id="stepLabel">Games played by each team</label><div class="stepper"><button id="prev">‹</button><div class="step" id="step"></div><button id="next">›</button></div><input id="datePick" type="date" hidden></div>
+<div class="status"><span id="status">Choose a league and season.</span><div class="bar"><i id="progress"></i></div></div>
+<section class="summary">
+ <article class="heroCard good"><div class="heroTitle"><h2>🟢 Undefeated</h2><div class="count" id="uCount">–</div></div><div class="teams" id="undefeated"></div></article>
+ <article class="heroCard bad"><div class="heroTitle"><h2>🔴 Winless</h2><div class="count" id="wCount">–</div></div><div class="teams" id="winless"></div></article>
+</section>
+<section class="chartCard"><div class="chartHead"><h3>Season survival curve</h3><div class="legend">🟢 undefeated · 🔴 winless</div></div><canvas id="chart"></canvas><div class="facts"><div class="fact"><b id="lastU">–</b><span>Last unbeaten reached</span></div><div class="fact"><b id="lastW">–</b><span>Last winless reached</span></div><div class="fact"><b id="gamesLoaded">–</b><span>Unique games loaded</span></div><div class="fact"><b id="teamsLoaded">–</b><span>Teams analyzed</span></div></div></section>
+<p class="note">Game # mode compares every club after its own Nth completed regular-season game, so bye weeks and schedule timing do not distort the comparison. A tie preserves both “undefeated” (no losses) and “winless” (no wins). Date mode uses all completed regular-season games through the selected date.</p>
+</main>
+<script>
+const LEAGUES={NFL:{sport:'football',slug:'nfl',start:2002,max:18},NBA:{sport:'basketball',slug:'nba',start:2002,max:82},MLB:{sport:'baseball',slug:'mlb',start:2002,max:162},NHL:{sport:'hockey',slug:'nhl',start:2002,max:82}};
+let league='NFL',mode='game',gameN=1,teamData=[],allGames=[],season=2025;
+const $=id=>document.getElementById(id);
+function init(){
+ $('leagues').innerHTML=Object.keys(LEAGUES).map(x=>'<button class="league '+(x===league?'active':'')+'" data-l="'+x+'">'+x+'</button>').join('');
+ $('leagues').onclick=e=>{let b=e.target.closest('[data-l]');if(!b)return;league=b.dataset.l;gameN=1;renderLeague();load()};
+ const y=new Date().getFullYear(); $('season').innerHTML=Array.from({length:y-2001},(_,i)=>y-i).map(y=>'<option>'+y+'</option>').join(''); $('season').value=season;
+ $('season').onchange=()=>{season=+$('season').value;gameN=1;load()};
+ $('gameMode').onclick=()=>setMode('game'); $('dateMode').onclick=()=>setMode('date'); $('prev').onclick=()=>{gameN=Math.max(1,gameN-1);render()}; $('next').onclick=()=>{gameN=Math.min(maxGP(),gameN+1);render()};
+ $('datePick').onchange=render; renderLeague(); load();
+}
+function renderLeague(){document.querySelectorAll('.league').forEach(b=>b.classList.toggle('active',b.dataset.l===league))}
+function setMode(m){mode=m;$('gameMode').classList.toggle('active',m==='game');$('dateMode').classList.toggle('active',m==='date');$('datePick').hidden=m!=='date';document.querySelector('.stepper').style.display=m==='game'?'grid':'none';$('stepLabel').textContent=m==='game'?'Games played by each team':'Games completed through date';render()}
+function api(path){let l=LEAGUES[league];return 'https://site.api.espn.com/apis/site/v2/sports/'+l.sport+'/'+l.slug+'/'+path}
+async function getJSON(url){let r=await fetch(url);if(!r.ok)throw Error(r.status+' '+r.statusText);return r.json()}
+async function load(){
+ teamData=[];allGames=[];$('status').textContent='Loading '+league+' '+season+' teams…';$('progress').style.width='4%';
+ try{
+  let tj=await getJSON(api('teams?limit=500'));let teams=(tj.sports?.[0]?.leagues?.[0]?.teams||[]).map(x=>x.team);
+  $('teamsLoaded').textContent=teams.length;$('status').textContent='Loading '+teams.length+' team schedules in parallel…';
+  let done=0,seen=new Map();
+  const worker=async t=>{try{let j=await getJSON(api('teams/'+t.id+'/schedule?season='+season+'&seasontype=2'));for(let ev of j.events||[]){if(!isFinal(ev))continue;let g=parseGame(ev);if(g)seen.set(g.id,g)}}catch(e){}finally{done++;$('progress').style.width=(5+90*done/teams.length)+'%'}};
+  await Promise.all(teams.map(worker)); allGames=[...seen.values()].sort((a,b)=>a.date-b.date);
+  let map=new Map(teams.map(t=>[String(t.id),{id:String(t.id),name:t.displayName||t.name,abbr:t.abbreviation,logo:t.logos?.[0]?.href||'',games:[]}]));
+  for(let g of allGames){for(let s of g.sides){let t=map.get(s.id);if(t)t.games.push({date:g.date,result:s.result,opp:s.opp,score:s.score,oppScore:s.oppScore})}}
+  teamData=[...map.values()];teamData.forEach(t=>t.games.sort((a,b)=>a.date-b.date)); $('gamesLoaded').textContent=allGames.length;
+  let dates=allGames.map(g=>g.date);if(dates.length){$('datePick').min=iso(dates[0]);$('datePick').max=iso(dates.at(-1));$('datePick').value=iso(dates.at(-1))}
+  gameN=Math.min(gameN,Math.max(1,maxGP()));$('status').textContent='Loaded '+allGames.length+' completed regular-season games.';$('progress').style.width='100%';render();
+ }catch(e){$('status').textContent='Load failed: '+e.message;$('progress').style.width='0'}
+}
+function isFinal(ev){let s=ev.status?.type;return !!(s?.completed||s?.state==='post')}
+function parseGame(ev){
+ let c=ev.competitions?.[0],cs=c?.competitors;if(!cs||cs.length<2)return null;
+ let a=cs[0],b=cs[1],as=+a.score,bs=+b.score;if(!Number.isFinite(as)||!Number.isFinite(bs))return null;
+ const res=(x,y)=>x>y?'W':x<y?'L':'T';
+ return{id:String(ev.id),date:new Date(ev.date),sides:[
+  {id:String(a.team.id),result:res(as,bs),opp:b.team.abbreviation||b.team.shortDisplayName,score:as,oppScore:bs},
+  {id:String(b.team.id),result:res(bs,as),opp:a.team.abbreviation||a.team.shortDisplayName,score:bs,oppScore:as}]}
+}
+function maxGP(){return Math.max(1,...teamData.map(t=>t.games.length))}
+function iso(d){return new Date(d).toISOString().slice(0,10)}
+function selectedGames(t){if(mode==='game')return t.games.slice(0,gameN);let end=new Date($('datePick').value+'T23:59:59');return t.games.filter(g=>g.date<=end)}
+function record(gs){let w=0,l=0,t=0;for(let g of gs){if(g.result==='W')w++;else if(g.result==='L')l++;else t++}return{w,l,t,text:w+'-'+l+(t?'-'+t:'')}}
+function classify(){
+ let u=[],w=[];for(let t of teamData){let gs=selectedGames(t);if(!gs.length)continue;if(mode==='game'&&gs.length<gameN)continue;let r=record(gs);let row={...t,r,gs};if(r.l===0)u.push(row);if(r.w===0)w.push(row)}
+ return{u,w}
+}
+function card(t,type){let last=t.gs.at(-1);return '<div class="team"><img src="'+t.logo+'" alt="" onerror="this.style.visibility=\'hidden\'"><div><div class="name">'+t.abbr+'</div><div class="detail">'+(last?'Last: '+last.result+' '+last.score+'-'+last.oppScore+' vs '+last.opp:'')+'</div></div><div class="record">'+t.r.text+'</div></div>'}
+function render(){
+ if(!teamData.length)return;let {u,w}=classify();$('uCount').textContent=u.length;$('wCount').textContent=w.length;
+ $('undefeated').innerHTML=u.length?u.map(t=>card(t,'u')).join(''):'<div class="empty">No undefeated teams remain.</div>';
+ $('winless').innerHTML=w.length?w.map(t=>card(t,'w')).join(''):'<div class="empty">No winless teams remain.</div>';
+ if(mode==='game'){$('step').innerHTML='Game '+gameN+'<small>of '+maxGP()+' max team games</small>'}
+ drawChart();facts();
+}
+function survivalAt(n,type){return teamData.filter(t=>{let gs=t.games.slice(0,n);if(gs.length<n)return false;let r=record(gs);return type==='u'?r.l===0:r.w===0}).length}
+function facts(){
+ let m=maxGP(),lu=0,lw=0;for(let n=1;n<=m;n++){if(survivalAt(n,'u'))lu=n;if(survivalAt(n,'w'))lw=n}$('lastU').textContent=lu?'Game '+lu:'–';$('lastW').textContent=lw?'Game '+lw:'–'
+}
+function drawChart(){
+ let c=$('chart'),dpr=devicePixelRatio||1,w=c.clientWidth,h=180;c.width=w*dpr;c.height=h*dpr;let x=c.getContext('2d');x.scale(dpr,dpr);x.clearRect(0,0,w,h);
+ let m=maxGP(),step=Math.max(1,Math.ceil(m/100)),pts=[];for(let n=1;n<=m;n+=step)pts.push(n);if(pts.at(-1)!==m)pts.push(m);
+ let max=Math.max(1,...pts.map(n=>Math.max(survivalAt(n,'u'),survivalAt(n,'w'))));x.strokeStyle='#243448';x.lineWidth=1;for(let i=0;i<4;i++){let y=12+(h-30)*i/3;x.beginPath();x.moveTo(28,y);x.lineTo(w-8,y);x.stroke()}
+ function line(type,color){x.strokeStyle=color;x.lineWidth=2.5;x.beginPath();pts.forEach((n,i)=>{let px=28+(w-40)*(n-1)/Math.max(1,m-1),py=12+(h-30)*(1-survivalAt(n,type)/max);i?x.lineTo(px,py):x.moveTo(px,py)});x.stroke()}
+ line('u','#35d07f');line('w','#ff5d6c');x.fillStyle='#91a0b5';x.font='9px system-ui';x.fillText('1',28,h-5);x.fillText(String(m),w-22,h-5);x.fillText(String(max),3,16);x.fillText('0',12,h-18);
+}
+addEventListener('resize',()=>teamData.length&&drawChart());init();
+</script></body></html>
