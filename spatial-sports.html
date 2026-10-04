@@ -64,12 +64,20 @@ function footballPos(p){
 function coord(p,i,n){
  let k=CFG[S.lg].kind,x=null,y=null;
  const cands=[p.coordinate,p.coordinates,p.location,p.shot?.coordinates,p.play?.coordinates].filter(Boolean);
- for(let c of cands){x=num(c.x,c.xCoordinate,c.coordX,c.horizontal);y=num(c.y,c.yCoordinate,c.coordY,c.vertical);if(x!=null)break}
- if(k==='field'){let fp=footballPos(p);if(fp!=null)return{x:5+fp*.9,y:30+(i%5)*10,real:true}}
- if(x!=null&&y!=null){
-   if(Math.abs(x)<=100&&Math.abs(y)<=100){if(x<0||y<0){x=(x+100)/2;y=(y+100)/2}return{x:Math.max(2,Math.min(98,x)),y:Math.max(2,Math.min(98,y)),real:true}}
+ for(let q of cands){x=num(q.x,q.xCoordinate,q.coordX,q.horizontal);y=num(q.y,q.yCoordinate,q.coordY,q.vertical);if(x!=null&&y!=null)break}
+ // Football play-by-play is longitudinal. Never invent a sideline coordinate.
+ if(k==='field'){let fp=footballPos(p);if(fp!=null)return{x:5+fp*.9,y:50,real:true,axis:'field-position'}}
+ if(x==null||y==null)return{x:null,y:null,real:false};
+ if(k==='rink'){
+   // ESPN/NHL rink coordinates are centered at center ice, approximately x ±100, y ±42.5.
+   if(x>=-110&&x<=110&&y>=-50&&y<=50)return{x:Math.max(2,Math.min(98,(x+100)/2)),y:Math.max(2,Math.min(98,(y+42.5)/85*100)),real:true,axis:'rink'};
  }
- return {x:8+(i*17)%84,y:12+(i*29)%76,real:false}
+ if(k==='court'){
+   // ESPN basketball commonly uses full-court x 0..100 and width y 0..50.
+   if(x>=0&&x<=100&&y>=0&&y<=50)return{x:Math.max(2,Math.min(98,x)),y:Math.max(2,Math.min(98,y*2)),real:true,axis:'court'};
+   if(x>=-50&&x<=50&&y>=-25&&y<=25)return{x:x+50,y:(y+25)*2,real:true,axis:'court-centered'};
+ }
+ return{x:null,y:null,real:false}
 }
 function normalize(j){let ps=rawPlays(j);return ps.map((p,i)=>{let c=classify(p),xy=coord(p,i,ps.length),tm=teamOf(p);return{p,text:text(p)||'Play',type:c.type,good:c.good,x:xy.x,y:xy.y,real:xy.real,team:tm,period:p?.period?.number||p?.period||'',clock:p?.clock?.displayValue||p?.clock||''}})}
 function surface(){
@@ -86,8 +94,8 @@ function render(){
  if(v!=='plot'){let cells=new Map;for(let e of real){let x=Math.round(e.x/10)*10,y=Math.round(e.y/10)*10,k=x+'|'+y,c=cells.get(k)||{x,y,n:0};c.n++;cells.set(k,c)}let mx=Math.max(1,...[...cells.values()].map(c=>c.n));for(let c of cells.values())d.insertAdjacentHTML('beforeend','<i class="heat" style="left:'+c.x+'%;top:'+c.y+'%;width:'+(45+70*c.n/mx)+'px;height:'+(45+70*c.n/mx)+'px"></i>')}
  if(v!=='heat')for(let [i,e] of a.entries())if(e.real)d.insertAdjacentHTML('beforeend','<i class="dot '+(e.good===true?'good':e.good===false?'bad':'neutral')+'" title="'+esc(e.text)+'" style="left:'+e.x+'%;top:'+e.y+'%"></i>');
  $('stats').innerHTML='<div class="stat"><b>'+a.length+'</b><span>PLAYS</span></div><div class="stat"><b>'+real.length+'</b><span>LOCATED</span></div><div class="stat"><b>'+new Set(a.map(e=>e.type)).size+'</b><span>TYPES</span></div>';
- $('coverage').textContent=real.length?a.length===real.length?'All displayed plays include usable spatial/field-position data.':real.length+' of '+a.length+' plays expose usable location data. Only those are plotted; nothing is fabricated.':'This game feed does not expose usable coordinates/field position for the selected plays. The play list is still available.';
- let rows=a.map(e=>'<div class="event"><b>'+esc(e.type)+' · '+esc(e.team.abbr||e.team.name||'')+'</b><div>'+esc(e.text)+'</div><div class="meta">'+esc([e.period&&'P'+e.period,e.clock,e.real?'located':'no coordinates'].filter(Boolean).join(' · '))+'</div></div>').join('');
+ $('coverage').textContent=real.length?a.length===real.length?'All displayed plays include usable spatial/field-position data.':real.length+' of '+a.length+' plays expose usable location data. Only those are plotted; nothing is fabricated.':'This feed does not expose trustworthy spatial coordinates for the selected plays. The play list is still available. MLB spray data requires the MLB Stats feed rather than ESPN.';
+ let rows=a.map(e=>'<div class="event"><b>'+esc(e.type)+' · '+esc(e.team.abbr||e.team.name||'')+'</b><div>'+esc(e.text)+'</div><div class="meta">'+esc([e.period&&'P'+e.period,e.clock,e.real?(CFG[S.lg].kind==='field'?'field position':'located'):'no coordinates'].filter(Boolean).join(' · '))+'</div></div>').join('');
  $('events').innerHTML=rows||'<div class="empty">No matching events.</div>';$('allplays').innerHTML=rows||'<div class="empty">No plays.</div>'
 }
 async function load(){
