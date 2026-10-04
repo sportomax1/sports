@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#071019"><title>Spatial Sports Lab</title>
+<style>
+:root{color-scheme:dark;--bg:#060b12;--p:#0d1622;--p2:#121e2c;--line:#263649;--text:#f6f8fb;--muted:#91a0b3;--a:#61d6a3;--b:#62aef7;--bad:#ff6b78;--gold:#f5c451}*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font:14px Inter,system-ui,sans-serif}button,input,select{font:inherit;color:inherit}button,select,input{background:#111e2d;border:1px solid var(--line);border-radius:9px;padding:9px}button{cursor:pointer}.shell{max-width:1400px;margin:auto;padding:12px}.top{display:flex;align-items:center;gap:10px;margin-bottom:10px}.top h1{font-size:22px;margin:0}.top small,.muted{color:var(--muted)}.spacer{flex:1}.home{color:inherit;text-decoration:none;border:1px solid var(--line);border-radius:9px;padding:8px}.leagues,.tabs,.filters{display:flex;gap:6px;overflow:auto;scrollbar-width:none}.league,.tab{white-space:nowrap}.league.on,.tab.on{background:#17496a;border-color:#3a80aa}.panel{background:var(--p);border:1px solid var(--line);border-radius:14px;margin-top:9px;overflow:hidden}.controls{display:grid;grid-template-columns:repeat(6,minmax(100px,1fr));gap:7px;padding:10px}.field label{display:block;font-size:9px;text-transform:uppercase;font-weight:900;color:var(--muted);margin-bottom:4px}.field input,.field select{width:100%}.primary{background:#087451;border-color:#159b70;font-weight:800}.status{padding:8px 10px;border-top:1px solid var(--line);font-size:11px;color:var(--muted)}.main{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(280px,.7fr);gap:9px}.viz{padding:10px}.surface{position:relative;width:100%;aspect-ratio:16/9;min-height:320px;border-radius:12px;overflow:hidden;background:#12202c;border:1px solid #32475c}.surface svg{display:block;width:100%;height:100%}.dots{position:absolute;inset:0;pointer-events:none}.dot{position:absolute;width:13px;height:13px;border-radius:50%;transform:translate(-50%,-50%);border:2px solid #fff9;box-shadow:0 1px 5px #0009;pointer-events:auto}.dot.good{background:var(--a)}.dot.bad{background:var(--bad)}.dot.neutral{background:var(--gold)}.dot:hover{z-index:5;scale:1.35}.legend{display:flex;gap:12px;align-items:center;padding:8px 1px 0;font-size:10px;color:var(--muted)}.key{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px}.list{max-height:610px;overflow:auto}.event{padding:9px;border-bottom:1px solid #1d2a39;cursor:pointer}.event:hover{background:#122235}.event b{font-size:12px}.event .meta{font-size:10px;color:var(--muted);margin-top:3px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:10px}.stat{background:#09121c;border:1px solid var(--line);border-radius:9px;padding:8px;text-align:center}.stat b{display:block;font-size:18px}.stat span{font-size:9px;color:var(--muted)}.empty{padding:30px;text-align:center;color:var(--muted)}.notice{padding:8px 10px;background:#101d2a;border-bottom:1px solid var(--line);font-size:10px;color:#b8c6d5}.heat{position:absolute;border-radius:50%;transform:translate(-50%,-50%);background:radial-gradient(circle,#ffce5c88 0,#ff784d44 45%,transparent 72%);pointer-events:none}.hidden{display:none!important}
+@media(max-width:850px){.main{grid-template-columns:1fr}.controls{grid-template-columns:repeat(3,1fr)}.surface{min-height:260px}.list{max-height:380px}}@media(max-width:520px){.shell{padding:7px}.top small{display:none}.controls{grid-template-columns:1fr 1fr}.surface{min-height:230px;aspect-ratio:4/3}.top h1{font-size:18px}}
+</style></head><body><main class="shell">
+<header class="top"><div><h1>📍 Spatial Sports Lab</h1><small>Shots · hits · field position · scoring locations</small></div><div class="spacer"></div><a class="home" href="./index.html">Sports Home</a></header>
+<div class="leagues" id="leagues"></div>
+<section class="panel"><div class="controls">
+<div class="field"><label>Date</label><input id="date" type="date"></div>
+<div class="field"><label>Game</label><select id="game"><option>Load games…</option></select></div>
+<div class="field"><label>Team</label><select id="team"><option value="">All teams</option></select></div>
+<div class="field"><label>Event</label><select id="type"><option value="">All events</option></select></div>
+<div class="field"><label>View</label><select id="view"><option value="plot">Plot</option><option value="heat">Heatmap</option><option value="both">Plot + Heat</option></select></div>
+<button class="primary" id="load">Load</button>
+</div><div class="status" id="status">Choose a league and date.</div></section>
+<div class="tabs" style="margin-top:9px"><button class="tab on" data-pane="map">Map</button><button class="tab" data-pane="plays">Plays</button><button class="tab" data-pane="raw">Diagnostics</button></div>
+<div id="mapPane" class="main">
+<section class="panel viz"><div id="surface" class="surface"></div><div class="legend"><span><i class="key" style="background:var(--a)"></i>Successful/scoring</span><span><i class="key" style="background:var(--bad)"></i>Miss/negative</span><span><i class="key" style="background:var(--gold)"></i>Other play</span></div></section>
+<aside class="panel"><div class="stats" id="stats"></div><div class="notice" id="coverage"></div><div class="list" id="events"></div></aside>
+</div>
+<section id="playsPane" class="panel hidden"><div class="list" id="allplays"></div></section>
+<section id="rawPane" class="panel hidden"><pre id="raw" style="white-space:pre-wrap;word-break:break-word;padding:10px;font:10px ui-monospace,monospace;max-height:70vh;overflow:auto"></pre></section>
+</main><script>
+(()=>{'use strict';
+const $=x=>document.getElementById(x);
+const CFG={
+ NBA:{sport:'basketball',league:'nba',kind:'court',label:'🏀 NBA'},
+ NCAAM:{sport:'basketball',league:'mens-college-basketball',kind:'court',label:'🏀 NCAAB'},
+ NHL:{sport:'hockey',league:'nhl',kind:'rink',label:'🏒 NHL'},
+ MLB:{sport:'baseball',league:'mlb',kind:'diamond',label:'⚾ MLB'},
+ NFL:{sport:'football',league:'nfl',kind:'field',label:'🏈 NFL'},
+ NCAAF:{sport:'football',league:'college-football',kind:'field',label:'🏈 NCAAF'}
+};
+let S={lg:'NBA',games:[],summary:null,events:[],teams:[]};
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=d=>d.toISOString().slice(0,10), compact=d=>d.replaceAll('-','');
+$('date').value=fmt(new Date());
+$('leagues').innerHTML=Object.entries(CFG).map(([k,v])=>'<button class="league '+(k===S.lg?'on':'')+'" data-lg="'+k+'">'+v.label+'</button>').join('');
+async function get(u){let c=new AbortController(),t=setTimeout(()=>c.abort(),18000);try{let r=await fetch(u,{cache:'no-store',signal:c.signal});if(!r.ok)throw Error('HTTP '+r.status);return await r.json()}finally{clearTimeout(t)}}
+function base(){let c=CFG[S.lg];return 'https://site.api.espn.com/apis/site/v2/sports/'+c.sport+'/'+c.league}
+async function games(){status('Loading games…');try{let j=await get(base()+'/scoreboard?dates='+compact($('date').value)+'&limit=1000');S.games=j.events||[];$('game').innerHTML=S.games.length?S.games.map(g=>'<option value="'+esc(g.id)+'">'+esc(g.shortName||g.name)+'</option>').join(''):'<option value="">No games</option>';status(S.games.length+' games found.');if(S.games.length)load()}catch(e){status('Game load failed: '+e.message,true)}}
+function status(t,bad=false){$('status').textContent=t;$('status').style.color=bad?'var(--bad)':''}
+function text(p){return [p?.text,p?.shortText,p?.description,p?.type?.text].filter(Boolean).join(' ')}
+function teamOf(p){let id=String(p?.team?.id||p?.teamId||'');return S.teams.find(t=>t.id===id)||{id,name:p?.team?.displayName||'',abbr:p?.team?.abbreviation||''}}
+function rawPlays(j){let a=[],seen=new Set(),add=p=>{if(!p)return;let k=String(p.id||p.sequenceNumber||'')+'|'+text(p);if(!seen.has(k)){seen.add(k);a.push(p)}};
+(j.plays||[]).forEach(add);(j.playByPlay?.plays||[]).forEach(add);(j.scoringPlays||[]).forEach(add);
+for(let d of j.drives?.previous||[])for(let p of d.plays||[])add(p);for(let p of j.drives?.current?.plays||[])add(p);return a}
+function num(...v){for(let x of v){let n=Number(x);if(Number.isFinite(n))return n}return null}
+function classify(p){
+ let t=text(p).toLowerCase(),type='Play',good=null;
+ if(/touchdown/.test(t)){type='Touchdown';good=true}else if(/field goal/.test(t)){type='Field Goal';good=!/miss|no good|block/.test(t)}
+ else if(/punt/.test(t))type='Punt';else if(/intercept/.test(t)){type='Interception';good=false}else if(/fumble/.test(t)){type='Fumble';good=false}
+ else if(/three point|3-point|jumper|layup|dunk|shot/.test(t)){type=/three|3-point/.test(t)?'3PT':'Shot';good=!/miss/.test(t)}
+ else if(/goal/.test(t)){type='Goal';good=true}else if(/shot/.test(t)){type='Shot';good=!/miss|block/.test(t)}
+ else if(/home run/.test(t)){type='Home Run';good=true}else if(/triple/.test(t)){type='Triple';good=true}else if(/double/.test(t)){type='Double';good=true}else if(/single/.test(t)){type='Single';good=true}else if(/ground|fly|lineout|pop/.test(t)){type='Ball in Play';good=false}
+ return {type,good}
+}
+function footballPos(p){
+ let y=num(p?.start?.yardsToEndzone,p?.start?.yardsToEndZone,p?.start?.distanceToEndzone,p?.start?.yardLine?.yardsToEndzone,p?.end?.yardsToEndzone,p?.end?.yardsToEndZone);
+ if(y!=null)return Math.max(0,Math.min(100,100-y));
+ let t=text(p),m=t.match(/(?:at|to)\s+[A-Z]{2,4}\s+(\d{1,2})/i);return m?Math.min(100,+m[1]):null
+}
+function coord(p,i,n){
+ let k=CFG[S.lg].kind,x=null,y=null;
+ const cands=[p.coordinate,p.coordinates,p.location,p.shot?.coordinates,p.play?.coordinates].filter(Boolean);
+ for(let c of cands){x=num(c.x,c.xCoordinate,c.coordX,c.horizontal);y=num(c.y,c.yCoordinate,c.coordY,c.vertical);if(x!=null)break}
+ if(k==='field'){let fp=footballPos(p);if(fp!=null)return{x:5+fp*.9,y:30+(i%5)*10,real:true}}
+ if(x!=null&&y!=null){
+   if(Math.abs(x)<=100&&Math.abs(y)<=100){if(x<0||y<0){x=(x+100)/2;y=(y+100)/2}return{x:Math.max(2,Math.min(98,x)),y:Math.max(2,Math.min(98,y)),real:true}}
+ }
+ return {x:8+(i*17)%84,y:12+(i*29)%76,real:false}
+}
+function normalize(j){let ps=rawPlays(j);return ps.map((p,i)=>{let c=classify(p),xy=coord(p,i,ps.length),tm=teamOf(p);return{p,text:text(p)||'Play',type:c.type,good:c.good,x:xy.x,y:xy.y,real:xy.real,team:tm,period:p?.period?.number||p?.period||'',clock:p?.clock?.displayValue||p?.clock||''}})}
+function surface(){
+ let k=CFG[S.lg].kind,svg='';
+ if(k==='field')svg='<svg viewBox="0 0 1000 530" preserveAspectRatio="none"><rect width="1000" height="530" fill="#173c2a"/><rect x="0" width="70" height="530" fill="#153a55"/><rect x="930" width="70" height="530" fill="#153a55"/>'+Array.from({length:11},(_,i)=>'<line x1="'+(50+i*90)+'" x2="'+(50+i*90)+'" y1="0" y2="530" stroke="#fff" opacity=".35"/><text x="'+(50+i*90)+'" y="40" fill="#fff" opacity=".55" font-size="18">'+(i<=5?i*10:(10-i)*10)+'</text>').join('')+'</svg>';
+ if(k==='court')svg='<svg viewBox="0 0 940 500" preserveAspectRatio="none"><rect width="940" height="500" fill="#b98450"/><g fill="none" stroke="#fff" opacity=".75" stroke-width="4"><rect x="5" y="5" width="930" height="490"/><line x1="470" x2="470" y1="5" y2="495"/><circle cx="470" cy="250" r="60"/><rect x="5" y="170" width="190" height="160"/><rect x="745" y="170" width="190" height="160"/><circle cx="120" cy="250" r="60"/><circle cx="820" cy="250" r="60"/><path d="M5 70 Q310 250 5 430"/><path d="M935 70 Q630 250 935 430"/></g></svg>';
+ if(k==='rink')svg='<svg viewBox="0 0 1000 500" preserveAspectRatio="none"><rect width="1000" height="500" rx="70" fill="#e8eef3"/><g fill="none" stroke-width="5"><line x1="500" x2="500" y1="0" y2="500" stroke="#d64242"/><line x1="300" x2="300" y1="0" y2="500" stroke="#3976bd"/><line x1="700" x2="700" y1="0" y2="500" stroke="#3976bd"/><circle cx="500" cy="250" r="55" stroke="#3976bd"/><line x1="90" x2="90" y1="70" y2="430" stroke="#d64242"/><line x1="910" x2="910" y1="70" y2="430" stroke="#d64242"/></g></svg>';
+ if(k==='diamond')svg='<svg viewBox="0 0 800 600" preserveAspectRatio="none"><rect width="800" height="600" fill="#183b28"/><path d="M400 560 L70 230 Q400 -50 730 230 Z" fill="#2d6845"/><path d="M400 520 L245 365 L400 210 L555 365 Z" fill="#b68a58"/><circle cx="400" cy="365" r="22" fill="#c99b65"/><g fill="#fff"><rect x="390" y="505" width="20" height="20"/><rect x="235" y="355" width="20" height="20" transform="rotate(45 245 365)"/><rect x="390" y="200" width="20" height="20" transform="rotate(45 400 210)"/><rect x="545" y="355" width="20" height="20" transform="rotate(45 555 365)"/></g></svg>';
+ $('surface').innerHTML=svg+'<div class="dots" id="dots"></div>'
+}
+function filtered(){let tm=$('team').value,ty=$('type').value;return S.events.filter(e=>(!tm||e.team.id===tm)&&(!ty||e.type===ty))}
+function render(){
+ surface();let a=filtered(),real=a.filter(e=>e.real),v=$('view').value,d=$('dots');
+ if(v!=='plot'){let cells=new Map;for(let e of real){let x=Math.round(e.x/10)*10,y=Math.round(e.y/10)*10,k=x+'|'+y,c=cells.get(k)||{x,y,n:0};c.n++;cells.set(k,c)}let mx=Math.max(1,...[...cells.values()].map(c=>c.n));for(let c of cells.values())d.insertAdjacentHTML('beforeend','<i class="heat" style="left:'+c.x+'%;top:'+c.y+'%;width:'+(45+70*c.n/mx)+'px;height:'+(45+70*c.n/mx)+'px"></i>')}
+ if(v!=='heat')for(let [i,e] of a.entries())if(e.real)d.insertAdjacentHTML('beforeend','<i class="dot '+(e.good===true?'good':e.good===false?'bad':'neutral')+'" title="'+esc(e.text)+'" style="left:'+e.x+'%;top:'+e.y+'%"></i>');
+ $('stats').innerHTML='<div class="stat"><b>'+a.length+'</b><span>PLAYS</span></div><div class="stat"><b>'+real.length+'</b><span>LOCATED</span></div><div class="stat"><b>'+new Set(a.map(e=>e.type)).size+'</b><span>TYPES</span></div>';
+ $('coverage').textContent=real.length?a.length===real.length?'All displayed plays include usable spatial/field-position data.':real.length+' of '+a.length+' plays expose usable location data. Only those are plotted; nothing is fabricated.':'This game feed does not expose usable coordinates/field position for the selected plays. The play list is still available.';
+ let rows=a.map(e=>'<div class="event"><b>'+esc(e.type)+' · '+esc(e.team.abbr||e.team.name||'')+'</b><div>'+esc(e.text)+'</div><div class="meta">'+esc([e.period&&'P'+e.period,e.clock,e.real?'located':'no coordinates'].filter(Boolean).join(' · '))+'</div></div>').join('');
+ $('events').innerHTML=rows||'<div class="empty">No matching events.</div>';$('allplays').innerHTML=rows||'<div class="empty">No plays.</div>'
+}
+async function load(){
+ let id=$('game').value;if(!id)return;status('Loading game play-by-play…');try{let j=await get(base()+'/summary?event='+encodeURIComponent(id));S.summary=j;
+ let comps=j.header?.competitions?.[0]?.competitors||[];S.teams=comps.map(c=>({id:String(c.id||c.team?.id||''),name:c.team?.displayName||c.displayName||'',abbr:c.team?.abbreviation||c.abbreviation||''}));
+ $('team').innerHTML='<option value="">All teams</option>'+S.teams.map(t=>'<option value="'+esc(t.id)+'">'+esc(t.abbr||t.name)+'</option>').join('');
+ S.events=normalize(j);let types=[...new Set(S.events.map(e=>e.type))].sort();$('type').innerHTML='<option value="">All events</option>'+types.map(t=>'<option>'+esc(t)+'</option>').join('');
+ $('raw').textContent=JSON.stringify({league:S.lg,event:id,totalRawPlays:rawPlays(j).length,normalized:S.events.map(e=>({type:e.type,text:e.text,team:e.team,located:e.real,x:e.real?e.x:null,y:e.real?e.y:null}))},null,2);
+ render();status('Loaded '+S.events.length+' plays · '+S.events.filter(e=>e.real).length+' with usable location data.')}catch(e){status('Play load failed: '+e.message,true)}
+}
+document.addEventListener('click',e=>{let l=e.target.closest('.league');if(l){S.lg=l.dataset.lg;document.querySelectorAll('.league').forEach(x=>x.classList.toggle('on',x===l));games()}let t=e.target.closest('.tab');if(t){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));['map','plays','raw'].forEach(p=>$(p+'Pane').classList.toggle('hidden',p!==t.dataset.pane))}});
+$('date').onchange=games;$('game').onchange=load;$('load').onclick=load;$('team').onchange=render;$('type').onchange=render;$('view').onchange=render;games();
+})();
+</script></body></html>
