@@ -59,22 +59,21 @@ function seasonRange(key,y){
 }
 function isoDate(s){return new Date(s.slice(0,4)+'-'+s.slice(4,6)+'-'+s.slice(6,8)+'T12:00:00Z')}
 function ymd(d){return d.toISOString().slice(0,10).replaceAll('-','')}
-function dateWindows(from,to,days=28){let a=[],cur=isoDate(from),end=isoDate(to);while(cur<=end){let stop=new Date(cur);stop.setUTCDate(stop.getUTCDate()+days-1);if(stop>end)stop=end;a.push([ymd(cur),ymd(stop)]);cur=new Date(stop);cur.setUTCDate(cur.getUTCDate()+1)}return a}
+function seasonDates(from,to){let out=[],d=isoDate(from),end=isoDate(to);for(;d<=end;d.setUTCDate(d.getUTCDate()+1))out.push(ymd(d));return out}
 async function schedule(cfg,yr,signal){
- const key='att:season:v3:'+currentKey+':'+yr,v=cacheGet(key);if(v)return v;
- const [from,to]=seasonRange(currentKey,yr),windows=dateWindows(from,to,21);
- status.textContent='Loading '+cfg.name+' season schedule · '+windows.length+' date windows…';
- const chunks=await pool(windows,async ([a,b])=>{
-  const url=api(cfg.sport+'/'+cfg.league+'/scoreboard?limit='+(cfg.limit||1000)+'&dates='+a+'-'+b);
-  try{return (await getJSON(url,signal)).events||[]}catch(e){
-   if(e.name==='AbortError')throw e;
-   let out=[];for(let d=isoDate(a),end=isoDate(b);d<=end;d.setUTCDate(d.getUTCDate()+1)){
-    try{let x=await getJSON(api(cfg.sport+'/'+cfg.league+'/scoreboard?limit='+(cfg.limit||1000)+'&dates='+ymd(d)),signal);out.push(...(x.events||[]))}catch(x){if(x.name==='AbortError')throw x}
-   }return out
-  }
- },6,(d,n)=>{prog.style.width=Math.max(2,d/n*20)+'%';status.textContent='Loading schedule '+d+' / '+n+' windows…'});
+ const key='att:season:v4:'+currentKey+':'+yr,v=cacheGet(key);if(v)return v;
+ const [from,to]=seasonRange(currentKey,yr),dates=seasonDates(from,to);
+ status.textContent='Loading '+cfg.name+' season schedule…';
+ const chunks=await pool(dates,async day=>{
+  try{
+   const url=api(cfg.sport+'/'+cfg.league+'/scoreboard?dates='+day+'&limit='+(cfg.limit||500));
+   return (await getJSON(url,signal)).events||[]
+  }catch(e){if(e.name==='AbortError')throw e;return []}
+ },8,(d,n)=>{prog.style.width=Math.max(2,d/n*30)+'%';status.textContent='Loading schedule '+d+' / '+n+' days…'});
  const byId=new Map;chunks.flat().forEach(e=>{if(e?.id)byId.set(String(e.id),e)});
- const ev=[...byId.values()].filter(e=>belongsToSeason(e,currentKey,Number(yr)));cacheSet(key,ev);return ev
+ const ev=[...byId.values()].filter(e=>belongsToSeason(e,currentKey,Number(yr)));
+ if(!ev.length)throw Error('No games returned by ESPN for this season.');
+ cacheSet(key,ev);return ev
 }
 function belongsToSeason(e,key,y){
  const s=Number(e.season?.year);
@@ -114,7 +113,7 @@ async function load(){
   const ev=await schedule(cfg,yr,aborter.signal);let base=ev.map(baseGame).filter(g=>g.completed);
   if(!base.length)throw Error('No completed games found for this season.');
   status.textContent='Found '+base.length+' completed games. Fetching attendance in parallel…';
-  games=await pool(base,g=>summary(g,cfg,aborter.signal),12,(d,n)=>{prog.style.width=(d/n*100)+'%';status.textContent='Attendance summaries '+d+' / '+n+' · '+gamesWith(base,d)+' processed'});
+  games=await pool(base,g=>summary(g,cfg,aborter.signal),6,(d,n)=>{prog.style.width=(d/n*100)+'%';status.textContent='Attendance summaries '+d+' / '+n+' · '+gamesWith(base,d)+' processed'});
   status.textContent='Loaded '+games.length+' games · '+games.filter(g=>g.attendance).length+' with attendance · missing values are excluded, never counted as zero.';
   populateTeams();render();prog.style.width='100%'
  }catch(e){if(e.name!=='AbortError'){status.textContent='Load failed: '+e.message;prog.style.width='0'}}
