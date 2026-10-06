@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#070b11">
+<title>Attendance Lab</title>
+<style>
+:root{color-scheme:dark;--bg:#070b11;--panel:#0f1622;--panel2:#151f2d;--line:#253247;--text:#f5f7fb;--muted:#94a3b8;--accent:#f4b400;--good:#35d07f;--bad:#ff6b6b}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 10% 0,#17305555,transparent 30%),var(--bg);color:var(--text);font:14px Inter,system-ui,sans-serif}.shell{width:min(1400px,calc(100% - 24px));margin:auto;padding:22px 0 50px}
+header{display:flex;gap:14px;justify-content:space-between;align-items:end;margin-bottom:16px}h1{font-size:clamp(30px,6vw,52px);margin:2px 0}.eyebrow,.label{font-size:10px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#ffd45c}.muted{color:var(--muted)}
+.controls{position:sticky;top:0;z-index:20;display:grid;grid-template-columns:1.25fr .8fr 1.4fr auto;gap:8px;padding:10px;background:#070b11e8;backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:14px}
+select,button,input{min-height:44px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);color:var(--text);padding:0 11px;font-weight:750}button{cursor:pointer}button.primary{background:var(--accent);color:#111;border-color:var(--accent);font-weight:950}.progress{grid-column:1/-1;height:5px;background:#1b2637;border-radius:99px;overflow:hidden}.progress i{display:block;height:100%;width:0;background:var(--accent);transition:.2s}.status{grid-column:1/-1;font-size:11px;color:var(--muted)}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:12px 0}.kpi,.panel{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:12px}.kpi{padding:12px}.kpi b{display:block;font-size:21px;margin-top:4px}.kpi small{color:var(--muted);font-size:9px;text-transform:uppercase;font-weight:900}
+.tabs{display:flex;gap:6px;overflow:auto;margin:12px 0 8px}.tabs button{white-space:nowrap;min-height:38px}.tabs button.on{background:#fff;color:#111}.view{display:none}.view.on{display:block}
+.grid2{display:grid;grid-template-columns:1.15fr .85fr;gap:10px}.panel{padding:13px;overflow:hidden}.panel h2{font-size:15px;margin:0 0 10px}.chart{height:280px;display:flex;align-items:end;gap:3px;border-bottom:1px solid var(--line);padding-top:12px;overflow:hidden}.bar{flex:1;min-width:3px;background:linear-gradient(#ffd45c,#b77b00);border-radius:3px 3px 0 0;position:relative}.bar:hover:after{content:attr(data-tip);position:absolute;z-index:5;bottom:100%;left:50%;transform:translateX(-50%);background:#000;padding:6px;border-radius:5px;white-space:nowrap;font-size:10px}
+.tablewrap{overflow:auto;max-height:620px}table{width:100%;border-collapse:collapse;font-size:12px}th{position:sticky;top:0;background:#111a27;color:#cbd5e1;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.05em}th,td{padding:9px 7px;border-bottom:1px solid #202d40}th.num,td.num{text-align:right}.team{display:flex;align-items:center;gap:7px;font-weight:800}.team img{width:25px;height:25px;object-fit:contain}.rank{color:var(--muted);width:24px;display:inline-block}.pill{font-size:9px;padding:3px 6px;border:1px solid var(--line);border-radius:99px;color:var(--muted)}
+.empty{padding:45px 15px;text-align:center;color:var(--muted)}.spark{width:100%;height:44px}.note{font-size:10px;color:var(--muted);margin-top:8px}
+@media(max-width:900px){.controls{grid-template-columns:1fr 1fr}.controls #team{grid-column:1/3}.kpis{grid-template-columns:repeat(3,1fr)}.grid2{grid-template-columns:1fr}}
+@media(max-width:560px){header{align-items:start;flex-direction:column}.controls{grid-template-columns:1fr 1fr}.kpis{grid-template-columns:repeat(2,1fr)}.kpi b{font-size:18px}.shell{width:min(100% - 14px,1400px)}}
+</style></head><body><main class="shell">
+<header><div><div class="eyebrow">Sportomax Sports</div><h1>Attendance Lab</h1><div class="muted">Crowd analytics across NFL, NBA, MLB, NHL, NCAAF and NCAAM.</div></div><a href="./index.html" style="color:#ffd45c;text-decoration:none;font-weight:900">← Sports Tools</a></header>
+<section class="controls"><select id="league"></select><select id="season"></select><select id="team"><option value="">All teams</option></select><button class="primary" id="load">LOAD SEASON</button><div class="progress"><i id="prog"></i></div><div class="status" id="status">Choose a league and season.</div></section>
+<section class="kpis" id="kpis"></section>
+<nav class="tabs"><button class="on" data-v="teams">Team Rankings</button><button data-v="trend">Season Trend</button><button data-v="games">Games</button><button data-v="venues">Venues</button><button data-v="opponents">Opponents</button></nav>
+<section id="teams" class="view on"></section><section id="trend" class="view"></section><section id="games" class="view"></section><section id="venues" class="view"></section><section id="opponents" class="view"></section>
+</main>
+<script>
+(()=>{'use strict';
+const LEAGUES={
+ nfl:{name:'NFL',sport:'football',league:'nfl',start:2001},
+ nba:{name:'NBA',sport:'basketball',league:'nba',start:2001},
+ mlb:{name:'MLB',sport:'baseball',league:'mlb',start:2001},
+ nhl:{name:'NHL',sport:'hockey',league:'nhl',start:2001},
+ ncaaf:{name:'NCAAF',sport:'football',league:'college-football',start:2001,limit:1000},
+ ncaam:{name:'NCAAM',sport:'basketball',league:'mens-college-basketball',start:2001,limit:1000}
+};
+const $=s=>document.querySelector(s), fmt=n=>Number.isFinite(n)?Math.round(n).toLocaleString():'—', pct=n=>Number.isFinite(n)?(n*100).toFixed(1)+'%':'—';
+const median=a=>{if(!a.length)return NaN;let b=[...a].sort((x,y)=>x-y),m=b.length>>1;return b.length%2?b[m]:(b[m-1]+b[m])/2};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let games=[], currentKey='nfl', aborter=null;
+const league=$('#league'),season=$('#season'),team=$('#team'),status=$('#status'),prog=$('#prog');
+Object.entries(LEAGUES).forEach(([k,v])=>league.add(new Option(v.name,k)));
+function seasons(){season.innerHTML='';let y=new Date().getFullYear(),l=LEAGUES[league.value];for(let i=y;i>=l.start;i--)season.add(new Option(i,i));}
+league.onchange=()=>{seasons();team.innerHTML='<option value="">All teams</option>';clearViews()};
+seasons();
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button,.view').forEach(x=>x.classList.remove('on'));b.classList.add('on');$('#'+b.dataset.v).classList.add('on')});
+function api(path){return 'https://site.api.espn.com/apis/site/v2/sports/'+path}
+async function getJSON(url,signal){let r=await fetch(url,{signal});if(!r.ok)throw Error(r.status+' '+r.statusText);return r.json()}
+function cacheGet(k){try{let x=JSON.parse(localStorage.getItem(k));if(x&&Date.now()-x.t<1000*60*60*24*14)return x.v}catch{}}
+function cacheSet(k,v){try{localStorage.setItem(k,JSON.stringify({t:Date.now(),v}))}catch{}}
+async function schedule(cfg,yr,signal){
+ const key='att:schedule:'+currentKey+':'+yr,v=cacheGet(key);if(v)return v;
+ const url=api(cfg.sport+'/'+cfg.league+'/scoreboard?limit='+(cfg.limit||500)+'&dates='+yr);
+ const d=await getJSON(url,signal), ev=d.events||[]; cacheSet(key,ev); return ev
+}
+function baseGame(e){
+ const c=e.competitions?.[0]||{}, comps=c.competitors||[],home=comps.find(x=>x.homeAway==='home')||{},away=comps.find(x=>x.homeAway==='away')||{};
+ return {id:e.id,date:e.date,name:e.name||e.shortName,home:idTeam(home),away:idTeam(away),venue:c.venue?.fullName||'',attendance:num(c.attendance),completed:e.status?.type?.completed===true}
+}
+function idTeam(c){let t=c.team||{};return{id:String(t.id||''),name:t.displayName||t.shortDisplayName||'Unknown',abbr:t.abbreviation||'',logo:t.logo||'',score:c.score}}
+function num(x){x=Number(x);return Number.isFinite(x)&&x>0?x:null}
+async function summary(g,cfg,signal){
+ if(g.attendance)return g;
+ const key='att:summary:'+g.id,v=cacheGet(key);if(v)return {...g,...v};
+ try{
+  const d=await getJSON(api(cfg.sport+'/'+cfg.league+'/summary?event='+g.id),signal), gi=d.gameInfo||{}, h=d.header?.competitions?.[0]||{};
+  const patch={attendance:num(gi.attendance)||num(h.attendance),venue:gi.venue?.fullName||h.venue?.fullName||g.venue||''};cacheSet(key,patch);return {...g,...patch}
+ }catch(e){if(e.name==='AbortError')throw e;return g}
+}
+async function pool(items,worker,limit,onProgress){
+ let out=new Array(items.length),next=0,done=0;
+ async function run(){while(true){let i=next++;if(i>=items.length)return;out[i]=await worker(items[i]);done++;onProgress(done,items.length)}}
+ await Promise.all(Array.from({length:Math.min(limit,items.length)},run));return out
+}
+$('#load').onclick=load;
+async function load(){
+ if(aborter)aborter.abort();aborter=new AbortController();currentKey=league.value;const cfg=LEAGUES[currentKey],yr=season.value;
+ games=[];clearViews();status.textContent='Loading '+cfg.name+' '+yr+' schedule…';prog.style.width='2%';
+ try{
+  const ev=await schedule(cfg,yr,aborter.signal);let base=ev.map(baseGame).filter(g=>g.completed);
+  if(!base.length)throw Error('No completed games found for this season.');
+  status.textContent='Found '+base.length+' completed games. Fetching attendance in parallel…';
+  games=await pool(base,g=>summary(g,cfg,aborter.signal),12,(d,n)=>{prog.style.width=(d/n*100)+'%';status.textContent='Attendance summaries '+d+' / '+n+' · '+gamesWith(base,d)+' processed'});
+  status.textContent='Loaded '+games.length+' games · '+games.filter(g=>g.attendance).length+' with attendance · missing values are excluded, never counted as zero.';
+  populateTeams();render();prog.style.width='100%'
+ }catch(e){if(e.name!=='AbortError'){status.textContent='Load failed: '+e.message;prog.style.width='0'}}
+}
+function gamesWith(base,d){return Math.min(d,base.length)}
+function filtered(){let id=team.value;return id?games.filter(g=>g.home.id===id||g.away.id===id):games}
+function populateTeams(){let m=new Map;games.forEach(g=>[g.home,g.away].forEach(t=>m.set(t.id,t)));let old=team.value;team.innerHTML='<option value="">All teams</option>'+[...m.values()].sort((a,b)=>a.name.localeCompare(b.name)).map(t=>'<option value="'+esc(t.id)+'">'+esc(t.name)+'</option>').join('');team.value=old}
+team.onchange=render;
+function clearViews(){$('#kpis').innerHTML='';['teams','trend','games','venues','opponents'].forEach(x=>$('#'+x).innerHTML='<div class="empty">Load a season to begin.</div>')}
+clearViews();
+function render(){let a=filtered(),vals=a.map(g=>g.attendance).filter(Boolean);renderKpis(a,vals);renderTeams(a);renderTrend(a);renderGames(a);renderVenues(a);renderOpp(a)}
+function renderKpis(a,v){let total=v.reduce((s,x)=>s+x,0),hi=v.length?Math.max(...v):NaN,lo=v.length?Math.min(...v):NaN;
+ $('#kpis').innerHTML=[['Games w/ data',v.length+' / '+a.length],['Average',fmt(total/v.length)],['Median',fmt(median(v))],['Total',fmt(total)],['Largest',fmt(hi)],['Smallest',fmt(lo)]].map(x=>'<div class="kpi"><small>'+x[0]+'</small><b>'+x[1]+'</b></div>').join('')}
+function teamStats(a){
+ let m=new Map;for(const g of a){if(!g.attendance)continue;let t=g.home,o=g.away,x=m.get(t.id)||{...t,home:[],away:[],all:[],games:0};x.home.push(g.attendance);x.all.push(g.attendance);x.games++;m.set(t.id,x);
+ let y=m.get(o.id)||{...o,home:[],away:[],all:[],games:0};y.away.push(g.attendance);y.all.push(g.attendance);y.games++;m.set(o.id,y)}
+ return [...m.values()].map(x=>({...x,homeAvg:avg(x.home),awayAvg:avg(x.away),avg:avg(x.all),total:x.all.reduce((s,n)=>s+n,0)})).sort((a,b)=>b.homeAvg-a.homeAvg)}
+function avg(a){return a.length?a.reduce((s,n)=>s+n,0)/a.length:NaN}
+function renderTeams(a){let s=teamStats(a);$('#teams').innerHTML='<div class="panel"><h2>Team Attendance Rankings</h2><div class="tablewrap"><table><thead><tr><th>Rank / Team</th><th class="num">Home Avg</th><th class="num">Home Games</th><th class="num">Away Avg</th><th class="num">All Games Avg</th><th class="num">Total Gate</th></tr></thead><tbody>'+s.map((x,i)=>'<tr><td><div class="team"><span class="rank">'+(i+1)+'</span><img src="'+esc(x.logo)+'" alt=""><span>'+esc(x.name)+'</span></div></td><td class="num">'+fmt(x.homeAvg)+'</td><td class="num">'+x.home.length+'</td><td class="num">'+fmt(x.awayAvg)+'</td><td class="num">'+fmt(x.avg)+'</td><td class="num">'+fmt(x.total)+'</td></tr>').join('')+'</tbody></table></div><div class="note">Ranking uses average attendance at home games. “Total Gate” sums attendance for all games involving the team and is not unique league attendance.</div></div>'}
+function renderTrend(a){let rows=a.filter(g=>g.attendance).sort((x,y)=>new Date(x.date)-new Date(y.date)),max=Math.max(1,...rows.map(g=>g.attendance));$('#trend').innerHTML='<div class="panel"><h2>Game-by-game Crowd Trend</h2><div class="chart">'+rows.map(g=>'<div class="bar" style="height:'+Math.max(2,g.attendance/max*100)+'%" data-tip="'+esc(new Date(g.date).toLocaleDateString()+' · '+fmt(g.attendance)+' · '+g.name)+'"></div>').join('')+'</div><div class="note">Each bar is one completed game with reported attendance, chronological left to right.</div></div>'}
+function renderGames(a){let r=a.filter(g=>g.attendance).sort((x,y)=>y.attendance-x.attendance);$('#games').innerHTML='<div class="panel"><h2>Game Attendance</h2><div class="tablewrap"><table><thead><tr><th>Date</th><th>Matchup</th><th>Venue</th><th class="num">Attendance</th></tr></thead><tbody>'+r.map(g=>'<tr><td>'+new Date(g.date).toLocaleDateString()+'</td><td>'+esc(g.away.abbr)+' @ '+esc(g.home.abbr)+'</td><td>'+esc(g.venue||'—')+'</td><td class="num"><b>'+fmt(g.attendance)+'</b></td></tr>').join('')+'</tbody></table></div></div>'}
+function groupBy(a,key){let m=new Map;for(let g of a){if(!g.attendance)continue;let k=key(g)||'Unknown',x=m.get(k)||[];x.push(g.attendance);m.set(k,x)}return [...m].map(([name,v])=>({name,games:v.length,avg:avg(v),total:v.reduce((s,n)=>s+n,0),high:Math.max(...v)})).sort((a,b)=>b.avg-a.avg)}
+function simpleTable(rows,title){return '<div class="panel"><h2>'+title+'</h2><div class="tablewrap"><table><thead><tr><th>'+title.replace(' Breakdown','')+'</th><th class="num">Games</th><th class="num">Avg</th><th class="num">High</th><th class="num">Total</th></tr></thead><tbody>'+rows.map(x=>'<tr><td><b>'+esc(x.name)+'</b></td><td class="num">'+x.games+'</td><td class="num">'+fmt(x.avg)+'</td><td class="num">'+fmt(x.high)+'</td><td class="num">'+fmt(x.total)+'</td></tr>').join('')+'</tbody></table></div></div>'}
+function renderVenues(a){$('#venues').innerHTML=simpleTable(groupBy(a,g=>g.venue),'Venue Breakdown')}
+function renderOpp(a){let id=team.value;if(!id){$('#opponents').innerHTML='<div class="empty">Choose a team above to analyze attendance by opponent.</div>';return}let m=groupBy(a,g=>g.home.id===id?g.away.name:g.home.name);$('#opponents').innerHTML=simpleTable(m,'Opponent Breakdown')}
+})();
+</script></body></html>
