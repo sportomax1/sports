@@ -57,10 +57,24 @@ function seasonRange(key,y){
  if(key==='nba'||key==='nhl'||key==='ncaam')return [y+'0701',(y+1)+'0701'];
  return [y+'0101',y+'1231']
 }
+function isoDate(s){return new Date(s.slice(0,4)+'-'+s.slice(4,6)+'-'+s.slice(6,8)+'T12:00:00Z')}
+function ymd(d){return d.toISOString().slice(0,10).replaceAll('-','')}
+function dateWindows(from,to,days=28){let a=[],cur=isoDate(from),end=isoDate(to);while(cur<=end){let stop=new Date(cur);stop.setUTCDate(stop.getUTCDate()+days-1);if(stop>end)stop=end;a.push([ymd(cur),ymd(stop)]);cur=new Date(stop);cur.setUTCDate(cur.getUTCDate()+1)}return a}
 async function schedule(cfg,yr,signal){
- const key='att:season:v2:'+currentKey+':'+yr,v=cacheGet(key);if(v)return v;
- const [from,to]=seasonRange(currentKey,yr),url=api(cfg.sport+'/'+cfg.league+'/scoreboard?limit='+(cfg.limit||1000)+'&dates='+from+'-'+to);
- const d=await getJSON(url,signal), ev=(d.events||[]).filter(e=>belongsToSeason(e,currentKey,Number(yr))); cacheSet(key,ev); return ev
+ const key='att:season:v3:'+currentKey+':'+yr,v=cacheGet(key);if(v)return v;
+ const [from,to]=seasonRange(currentKey,yr),windows=dateWindows(from,to,21);
+ status.textContent='Loading '+cfg.name+' season schedule · '+windows.length+' date windows…';
+ const chunks=await pool(windows,async ([a,b])=>{
+  const url=api(cfg.sport+'/'+cfg.league+'/scoreboard?limit='+(cfg.limit||1000)+'&dates='+a+'-'+b);
+  try{return (await getJSON(url,signal)).events||[]}catch(e){
+   if(e.name==='AbortError')throw e;
+   let out=[];for(let d=isoDate(a),end=isoDate(b);d<=end;d.setUTCDate(d.getUTCDate()+1)){
+    try{let x=await getJSON(api(cfg.sport+'/'+cfg.league+'/scoreboard?limit='+(cfg.limit||1000)+'&dates='+ymd(d)),signal);out.push(...(x.events||[]))}catch(x){if(x.name==='AbortError')throw x}
+   }return out
+  }
+ },6,(d,n)=>{prog.style.width=Math.max(2,d/n*20)+'%';status.textContent='Loading schedule '+d+' / '+n+' windows…'});
+ const byId=new Map;chunks.flat().forEach(e=>{if(e?.id)byId.set(String(e.id),e)});
+ const ev=[...byId.values()].filter(e=>belongsToSeason(e,currentKey,Number(yr)));cacheSet(key,ev);return ev
 }
 function belongsToSeason(e,key,y){
  const s=Number(e.season?.year);
