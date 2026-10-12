@@ -126,48 +126,39 @@ function statValue(stats,...keys){for(const key of keys){const v=stats[key.toLow
 async function showPlayer(p){
 $('detailTitle').textContent=p.name;$('detail').showModal();
 const d=$('detailBody'),baseUrl=playerBase+p.game.league+'/athletes/'+encodeURIComponent(p.id)+'/';
-const currentYear=new Date().getFullYear();let year=currentYear,tab='games',request=0;
-const years=Array.from({length:Math.min(22,currentYear-2000+1)},(_,i)=>currentYear-i);
-d.innerHTML='<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">'+img(p.head,'face')+img(logo(p.team),'logo')+'<div><b>'+esc(p.name)+'</b><div class="muted">'+esc(p.position)+' · '+esc(p.team.displayName||'')+'</div></div></div><div class="segments" style="margin:12px 0"><button class="active" data-log="games">Game log</button><button data-log="seasons">Season by season</button></div><div id="profileYearControls" class="row" style="margin-bottom:12px"><button class="btn" id="profilePrev">‹</button><select class="field" id="profileYear" aria-label="Game log season">'+years.map(y=>'<option value="'+y+'">'+y+' season</option>').join('')+'</select><button class="btn" id="profileNext">›</button></div><div id="playerLog"></div>';
-const holder=d.querySelector('#playerLog'),select=d.querySelector('#profileYear'),controls=d.querySelector('#profileYearControls'),cache=new Map();
+const currentYear=new Date().getFullYear(),cache=new Map();let tab='games',request=0;
+const years=Array.from({length:Math.min(24,currentYear-2000+1)},(_,i)=>currentYear-i);
+d.innerHTML='<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">'+img(p.head,'face')+img(logo(p.team),'logo')+'<div><b>'+esc(p.name)+'</b><div class="muted">'+esc(p.position)+' · '+esc(p.team.displayName||'')+'</div></div></div><div class="segments" style="margin:12px 0"><button class="active" data-log="games">All game logs</button><button data-log="seasons">Season by season</button></div><div id="playerLog"></div>';
+const holder=d.querySelector('#playerLog');
+async function getYear(y){if(cache.has(y))return cache.get(y);const data=await json(baseUrl+'gamelog?season='+y);const rows=normalizedGameLog(data).filter(x=>!String(x.seasonType||'').toLowerCase().includes('preseason'));cache.set(y,rows);return rows}
 async function display(){
-const ticket=++request;controls.style.display=tab==='seasons'?'none':'flex';
-holder.innerHTML='<p class="muted">Loading ESPN '+(tab==='seasons'?'career seasons':year+' game log')+'…</p>';
-try{
-if(tab==='games'){
-const key='games:'+year;let html=cache.get(key);
-if(!html){const data=await json(baseUrl+'gamelog?season='+year);html=athleteGameLogTable(data);if(!html){const local=p.logs.filter(x=>x.game.date.getFullYear()===year);html=local.length?tableForLogs(local):'<p class="muted">No ESPN game statistics available for '+year+'.</p>'}cache.set(key,html)}
-if(ticket===request)holder.innerHTML=html;
-}else{
-let html=cache.get('career');
-if(!html){
-let debut=currentYear-(p.game.league==='nfl'?8:5);
+const ticket=++request;
+holder.innerHTML='<p class="muted">Loading historical games…</p>';
+let debut=currentYear-(p.game.league==='nfl'?9:5);
 try{const profile=await json(baseUrl.slice(0,-1));debut=Number(profile.athlete?.debutYear||profile.debutYear)||debut}catch(e){}
-const seasonYears=years.filter(y=>y>=Math.max(2000,debut));
-const results=[];
-for(let i=0;i<seasonYears.length;i+=4){
-const batch=await Promise.allSettled(seasonYears.slice(i,i+4).map(async y=>{
-const data=await json(baseUrl+'gamelog?season='+y);
-const rows=normalizedGameLog(data).filter(x=>!x.seasonType||!String(x.seasonType).toLowerCase().includes('preseason'));
-const totals={};
-for(const row of rows){for(const [k,v] of Object.entries(row.stats)){const number=Number(String(v).replace(/,/g,''));if(Number.isFinite(number))totals[k]=(totals[k]||0)+number}}
-return {year:y,games:rows.length,stats:totals}
-}));
-for(const result of batch)if(result.status==='fulfilled'&&result.value.games)results.push(result.value);
+const selectedYears=years.filter(y=>y>=Math.max(2000,debut));
+const result=[];
+for(let i=0;i<selectedYears.length;i+=4){
+const batch=await Promise.allSettled(selectedYears.slice(i,i+4).map(async year=>({year,rows:await getYear(year)})));
+for(const item of batch)if(item.status==='fulfilled'&&item.value.rows.length)result.push(item.value);
 if(ticket!==request)return;
+holder.innerHTML='<p class="muted">Loaded '+Math.min(i+4,selectedYears.length)+' of '+selectedYears.length+' seasons…</p>'
 }
-const cols=[['Comp','completions','passingcompletions'],['Att','passingattempts','attempts'],['Pass Yds','passingyards'],['Pass TD','passingtouchdowns'],['Rush','rushingattempts','carries'],['Rush Yds','rushingyards'],['Rush TD','rushingtouchdowns'],['Targets','receivingtargets','targets'],['Rec','receptions'],['Rec Yds','receivingyards'],['Rec TD','receivingtouchdowns']];
-html=results.length?'<div class="tablewrap"><table><thead><tr><th>Season</th><th>GP</th>'+cols.map(c=>'<th>'+c[0]+'</th>').join('')+'</tr></thead><tbody>'+results.map(row=>'<tr><td>'+row.year+'</td><td>'+row.games+'</td>'+cols.map(c=>'<td>'+esc(statValue(row.stats,...c.slice(1)))+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>':'<p class="muted">No historical ESPN game statistics were returned for this player.</p>';
-cache.set('career',html)
+if(ticket!==request)return;
+if(!result.length){holder.innerHTML='<p class="muted">ESPN returned no historical games for this player.</p>';return}
+if(tab==='games'){
+holder.innerHTML=result.sort((a,b)=>b.year-a.year).map(item=>'<section><h3 class="history-year">'+item.year+' season · '+item.rows.length+' games</h3>'+[...item.rows].sort((a,b)=>(Number(a.meta.week)||0)-(Number(b.meta.week)||0)).map(row=>gameHistoryCard(row,p.game.league)).join('')+'</section>').join('');
+}else{
+const metrics=[['Comp','completions'],['Att','passingattempts'],['Pass Yds','passingyards'],['Pass TD','passingtouchdowns'],['Rushes','rushingattempts'],['Rush Yds','rushingyards'],['Rush TD','rushingtouchdowns'],['Targets','receivingtargets'],['Catches','receptions'],['Rec Yds','receivingyards'],['Rec TD','receivingtouchdowns']];
+holder.innerHTML=result.sort((a,b)=>b.year-a.year).map(item=>{
+const totals={};const teams=new Map();
+for(const row of item.rows){const team=historyTeam(row.meta,p.game.league);if(team.id||team.abbreviation)teams.set(team.id||team.abbreviation,team);for(const [k,v] of Object.entries(row.stats)){const n=Number(String(v).replace(/,/g,''));if(Number.isFinite(n))totals[k]=(totals[k]||0)+n}}
+const teamHtml=[...teams.values()].map(t=>img(t.logo,'logo')+' '+esc(t.abbreviation||'')).join(' ');
+return '<section class="history-season"><div class="season-title">'+item.year+' <span class="muted" style="font-size:12px;font-weight:400">'+item.rows.length+' GP</span> '+(teamHtml||'<span class="muted" style="font-size:12px">Team unavailable from ESPN</span>')+'</div><div class="numbers">'+metrics.filter(m=>totals[m[1]]!==undefined).map(m=>'<span>'+m[0]+' <b>'+totals[m[1]]+'</b></span>').join('')+'</div></section>'
+}).join('')
 }
-if(ticket===request)holder.innerHTML=html
-}
-}catch(e){if(ticket===request)holder.innerHTML='<p class="warning">ESPN history request failed: '+esc(e.message)+'</p>'}
 }
 d.querySelectorAll('[data-log]').forEach(btn=>btn.onclick=()=>{d.querySelectorAll('[data-log]').forEach(x=>x.classList.toggle('active',x===btn));tab=btn.dataset.log;display()});
-select.onchange=()=>{year=Number(select.value);display()};
-d.querySelector('#profilePrev').onclick=()=>{year=Math.max(years.at(-1),year-1);select.value=String(year);display()};
-d.querySelector('#profileNext').onclick=()=>{year=Math.min(currentYear,year+1);select.value=String(year);display()};
 display()
 }
 async function load(){const token=++loadId;label();$('status').textContent='Loading schedules…';$('list').innerHTML='';try{const r=await selectedGames();if(token!==loadId)return;games=r.games.filter(g=>state.status==='all'||g.status===state.status);if(!games.length){players=[];render();$('status').textContent=r.errors.length?'Schedule request failed: '+r.errors[0].reason.message:'No games in this period';return}const playable=games.filter(g=>g.status!=='scheduled');$('status').textContent='Loading '+playable.length+' game box scores…';const results=[];let failed=0;for(let i=0;i<playable.length;i+=6){const batch=await Promise.allSettled(playable.slice(i,i+6).map(gamePlayers));if(token!==loadId)return;for(const x of batch){if(x.status==='fulfilled')results.push(...x.value);else failed++}$('status').textContent='Loaded '+Math.min(i+6,playable.length)+' / '+playable.length+' games…'}players=aggregate(results);render();if(failed)$('status').textContent+=' · '+failed+' box scores unavailable';if(r.errors.length)$('status').textContent+=' · '+r.errors.length+' schedule requests failed'}catch(e){if(token===loadId){$('status').textContent='Data unavailable: '+e.message;$('list').innerHTML='<div class="empty">Try another date or refresh. ESPN endpoints can be temporarily unavailable or block browser requests.</div>'}}}
