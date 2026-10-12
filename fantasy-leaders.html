@@ -55,7 +55,31 @@ else continue;
 const athlete=a.athlete||{},id=String(athlete.id||athlete.uid||athlete.displayName||'');if(!id)continue;
 const pos=(rosterPos.get(id)||athlete.position?.abbreviation||athlete.position?.name||a.position?.abbreviation||'').toUpperCase();const position=(pos==='TIGHT END'||pos==='TIGHTEND')?'TE':pos==='WIDE RECEIVER'?'WR':pos==='RUNNING BACK'?'RB':pos==='QUARTERBACK'?'QB':pos==='PLACE KICKER'?'K':pos|| (name.includes('kick')?'K':name.includes('pass')?'QB':name.includes('rush')?'RB':name.includes('receiv')?'WR':'');
 out.push({id,name:athlete.displayName||athlete.fullName||'Unknown',position,head:athlete.headshot?.href||('https://a.espncdn.com/i/headshots/'+(g.league==='nfl'?'nfl':'college-football')+'/players/full/'+encodeURIComponent(id)+'.png'),team:team.team||{},game:g,line});}}}return out}
-async function gamePlayers(g){const key=g.league+':'+g.id;if(statsCache.has(key)&&g.status==='finished')return statsCache.get(key);const j=await json(base+g.league+'/summary?event='+encodeURIComponent(g.id));const rows=athleteRows(j,g);if(g.status==='finished')statsCache.set(key,rows);return rows}
+const teamRosterCache=new Map();
+async function teamPositions(league,teamId){
+const key=league+':'+teamId;
+if(!teamRosterCache.has(key))teamRosterCache.set(key,(async()=>{
+const data=await json(base+league+'/teams/'+encodeURIComponent(teamId)+'/roster');
+const positions=new Map();
+const groups=[...(data.athletes||[]),...(data.roster||[])];
+for(const group of groups){const entries=group.items||group.athletes||[group];for(const entry of entries){const athlete=entry.athlete||entry;const pos=athlete.position?.abbreviation||athlete.position?.name||entry.position?.abbreviation||group.position||'';if(athlete.id&&pos)positions.set(String(athlete.id),String(pos).toUpperCase())}}
+return positions})().catch(()=>new Map()));
+return teamRosterCache.get(key)
+}
+async function gamePlayers(g){
+const key=g.league+':'+g.id;
+if(statsCache.has(key)&&g.status==='finished')return statsCache.get(key);
+const j=await json(base+g.league+'/summary?event='+encodeURIComponent(g.id));
+const rows=athleteRows(j,g);
+if(state.positions.has('TE')){
+const ids=[...new Set(rows.filter(r=>r.position==='WR'||r.position==='').map(r=>String(r.team.id)).filter(Boolean))];
+const mapped=await Promise.all(ids.map(async id=>[id,await teamPositions(g.league,id)]));
+const byTeam=new Map(mapped);
+for(const row of rows){const rosterPosition=byTeam.get(String(row.team.id))?.get(String(row.id));if(rosterPosition==='TE'||rosterPosition==='TIGHT END')row.position='TE';else if(rosterPosition==='WR'||rosterPosition==='WIDE RECEIVER')row.position='WR'}
+}
+if(g.status==='finished')statsCache.set(key,rows);
+return rows
+}
 function pts(l){return l.passYds*scoring.passYds+l.passTd*scoring.passTd+l.interception*scoring.interception+l.rushYds*scoring.rushYds+l.recYds*scoring.recYds+l.rec*scoring.rec+l.rushTd*scoring.rushTd+l.recTd*scoring.recTd+l.fumbles*scoring.fumbles+l.fg0*scoring.fg0+l.fg40*scoring.fg40+l.fg50*scoring.fg50+l.xp*scoring.xp}
 function aggregate(rows){const map=new Map();for(const r of rows){const key=r.game.league+':'+r.id+':'+r.game.id;let x=map.get(key);if(!x){x={...r,line:{...r.line}};map.set(key,x)}else{for(const k of Object.keys(r.line))x.line[k]+=(r.line[k]||0);if((!x.position||x.position==='WR')&&r.position)x.position=r.position}}
 const combined=new Map();for(const r of map.values()){const key=r.game.league+':'+r.id;let x=combined.get(key);if(!x){x={...r,line:{...r.line},logs:[r]};combined.set(key,x)}else{for(const k of Object.keys(r.line))x.line[k]+=(r.line[k]||0);x.logs.push(r);if(r.game.date>x.game.date)x.game=r.game}}
