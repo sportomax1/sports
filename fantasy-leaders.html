@@ -126,7 +126,7 @@ $('detailTitle').textContent=p.name;$('detail').showModal();
 const d=$('detailBody'),baseUrl=playerBase+p.game.league+'/athletes/'+encodeURIComponent(p.id)+'/';
 const currentYear=new Date().getFullYear();let year=currentYear,tab='games',request=0;
 const years=Array.from({length:Math.min(22,currentYear-2000+1)},(_,i)=>currentYear-i);
-d.innerHTML='<p class="muted">'+esc(p.position)+' · '+esc(p.team.displayName||'')+'</p><div class="segments" style="margin:12px 0"><button class="active" data-log="games">Game log</button><button data-log="seasons">Season by season</button></div><div id="profileYearControls" class="row" style="margin-bottom:12px"><button class="btn" id="profilePrev">‹</button><select class="field" id="profileYear" aria-label="Game log season">'+years.map(y=>'<option value="'+y+'">'+y+' season</option>').join('')+'</select><button class="btn" id="profileNext">›</button></div><div id="playerLog"></div>';
+d.innerHTML='<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">'+img(p.head,'face')+img(logo(p.team),'logo')+'<div><b>'+esc(p.name)+'</b><div class="muted">'+esc(p.position)+' · '+esc(p.team.displayName||'')+'</div></div></div><div class="segments" style="margin:12px 0"><button class="active" data-log="games">Game log</button><button data-log="seasons">Season by season</button></div><div id="profileYearControls" class="row" style="margin-bottom:12px"><button class="btn" id="profilePrev">‹</button><select class="field" id="profileYear" aria-label="Game log season">'+years.map(y=>'<option value="'+y+'">'+y+' season</option>').join('')+'</select><button class="btn" id="profileNext">›</button></div><div id="playerLog"></div>';
 const holder=d.querySelector('#playerLog'),select=d.querySelector('#profileYear'),controls=d.querySelector('#profileYearControls'),cache=new Map();
 async function display(){
 const ticket=++request;controls.style.display=tab==='seasons'?'none':'flex';
@@ -139,10 +139,24 @@ if(ticket===request)holder.innerHTML=html;
 }else{
 let html=cache.get('career');
 if(!html){
-const results=[];const batchYears=years.filter(y=>y>=2010);
-for(let i=0;i<batchYears.length;i+=5){const batch=await Promise.allSettled(batchYears.slice(i,i+5).map(async y=>({year:y,stats:seasonStatValues(await json(baseUrl+'stats?season='+y+'&seasontype=2'))})));for(const result of batch)if(result.status==='fulfilled'&&Object.keys(result.value.stats).length)results.push(result.value);if(ticket!==request)return}
-const cols=[['Games','gamesPlayed','games'],['Comp','completions','passingCompletions'],['Att','passingAttempts','attempts'],['Pass Yds','passingYards'],['Pass TD','passingTouchdowns'],['Rush','rushingAttempts'],['Rush Yds','rushingYards'],['Rush TD','rushingTouchdowns'],['Targets','receivingTargets','targets'],['Rec','receptions'],['Rec Yds','receivingYards'],['Rec TD','receivingTouchdowns']];
-html=results.length?'<div class="tablewrap"><table><thead><tr><th>Season</th>'+cols.map(c=>'<th>'+c[0]+'</th>').join('')+'</tr></thead><tbody>'+results.map(row=>'<tr><td>'+row.year+'</td>'+cols.map(c=>'<td>'+esc(statValue(row.stats,...c.slice(1)))+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>':'<p class="muted">ESPN did not return season totals for this player.</p>';cache.set('career',html)
+let debut=currentYear-(p.game.league==='nfl'?8:5);
+try{const profile=await json(baseUrl.slice(0,-1));debut=Number(profile.athlete?.debutYear||profile.debutYear)||debut}catch(e){}
+const seasonYears=years.filter(y=>y>=Math.max(2000,debut));
+const results=[];
+for(let i=0;i<seasonYears.length;i+=4){
+const batch=await Promise.allSettled(seasonYears.slice(i,i+4).map(async y=>{
+const data=await json(baseUrl+'gamelog?season='+y);
+const rows=normalizedGameLog(data).filter(x=>!x.seasonType||!String(x.seasonType).toLowerCase().includes('preseason'));
+const totals={};
+for(const row of rows){for(const [k,v] of Object.entries(row.stats)){const number=Number(String(v).replace(/,/g,''));if(Number.isFinite(number))totals[k]=(totals[k]||0)+number}}
+return {year:y,games:rows.length,stats:totals}
+}));
+for(const result of batch)if(result.status==='fulfilled'&&result.value.games)results.push(result.value);
+if(ticket!==request)return;
+}
+const cols=[['Comp','completions','passingcompletions'],['Att','passingattempts','attempts'],['Pass Yds','passingyards'],['Pass TD','passingtouchdowns'],['Rush','rushingattempts','carries'],['Rush Yds','rushingyards'],['Rush TD','rushingtouchdowns'],['Targets','receivingtargets','targets'],['Rec','receptions'],['Rec Yds','receivingyards'],['Rec TD','receivingtouchdowns']];
+html=results.length?'<div class="tablewrap"><table><thead><tr><th>Season</th><th>GP</th>'+cols.map(c=>'<th>'+c[0]+'</th>').join('')+'</tr></thead><tbody>'+results.map(row=>'<tr><td>'+row.year+'</td><td>'+row.games+'</td>'+cols.map(c=>'<td>'+esc(statValue(row.stats,...c.slice(1)))+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>':'<p class="muted">No historical ESPN game statistics were returned for this player.</p>';
+cache.set('career',html)
 }
 if(ticket===request)holder.innerHTML=html
 }
