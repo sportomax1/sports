@@ -32,7 +32,14 @@ async function schedule(league,y){const key=league+':'+y;if(scheduleCache.has(ke
 const ranges=league==='nfl'?[[y+'0801',y+'1231'],[(y+1)+'0101',(y+1)+'0301']]:[[y+'0801',y+'1231'],[(y+1)+'0101',(y+1)+'0301']];
 const out=[];for(const [a,b] of ranges){try{const j=await json(base+league+'/scoreboard?dates='+a+'-'+b+'&limit=1000');out.push(...parseGames(j,league))}catch(e){if(!out.length&&a===ranges.at(-1)[0])throw e}}
 const g=[...new Map(out.map(x=>[x.id,x])).values()];scheduleCache.set(key,g);return g}
-async function selectedGames(){const [a,b]=interval();const leagues=state.league==='both'?['nfl','college-football']:[state.league];const years=[...new Set([year(a),year(b),year(a)-1])];const settled=await Promise.allSettled(leagues.flatMap(l=>years.map(y=>schedule(l,y))));let errors=settled.filter(x=>x.status==='rejected');let all=settled.filter(x=>x.status==='fulfilled').flatMap(x=>x.value);return{games:all.filter(g=>g.date>=a&&g.date<=b),errors}}
+async function selectedGames(){
+const [start,end]=interval(),leagues=state.league==='both'?['nfl','college-football']:[state.league];
+const dates=[];if(state.mode==='season'){const y=start.getFullYear();for(const league of leagues){for(let w=1;w<=(league==='nfl'?22:17);w++)dates.push({league,url:base+league+'/scoreboard?dates='+y+'&seasontype=2&week='+w+'&limit=500'})}}
+else{for(const league of leagues){for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1)){const date=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('');dates.push({league,url:base+league+'/scoreboard?dates='+date+'&limit=500'})}}}
+const results=[];let failures=0;for(let i=0;i<dates.length;i+=8){const batch=await Promise.allSettled(dates.slice(i,i+8).map(async item=>parseGames(await json(item.url),item.league)));for(const x of batch){if(x.status==='fulfilled')results.push(...x.value);else failures++}}
+const games=[...new Map(results.map(g=>[g.league+':'+g.id,g])).values()].filter(g=>g.date>=start&&g.date<=end);
+return {games,errors:failures?[{reason:new Error(failures+' ESPN schedule requests failed')}]:[]}
+}
 const findNumber=(obj,keys)=>{for(const k of keys){if(obj[k]!==undefined&&obj[k]!==null){const n=Number(obj[k]);if(Number.isFinite(n))return n}}return 0};
 function extractStats(raw){const r={};for(const group of raw||[]){const labels=group.labels||group.names||[];const values=group.stats||[];labels.forEach((label,i)=>{r[String(label).toLowerCase().replace(/[^a-z0-9]/g,'')]=values[i]})}return r}
 function parseLine(groups){const s=extractStats(groups);const number=(...keys)=>findNumber(s,keys);const pair=v=>{const m=String(v||'').match(/^(\d+)\s*\/\s*(\d+)$/);return m?[+m[1],+m[2]]:[0,0]};
