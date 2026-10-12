@@ -97,7 +97,7 @@ $('gameFilters').innerHTML=available.length?'<button class="game-filter '+(!stat
 const scored=g.awayScore!==undefined&&g.homeScore!==undefined;
 return '<button class="game-filter '+(state.gameId===String(g.id)?'active':'')+'" data-game="'+esc(g.id)+'">'+img(logo(g.away),'logo')+'<span>'+esc(g.away.abbreviation||'Away')+'</span>'+(scored?'<b class="side-score">'+esc(g.awayScore)+'</b>':'')+'<span class="game-separator">–</span>'+(scored?'<b class="side-score">'+esc(g.homeScore)+'</b>':'')+img(logo(g.home),'logo')+'<span>'+esc(g.home.abbreviation||'Home')+'</span>'+(scored?'':'<small>'+esc(g.status==='live'?'LIVE':'')+'</small>')+'</button>'
 }).join(''):'';
-$('gameFilters').querySelectorAll('[data-game]').forEach(b=>b.onclick=()=>{state.gameId=b.dataset.game||null;render()})
+$('gameFilters').querySelectorAll('[data-game]').forEach(b=>b.onclick=()=>{const selected=b.dataset.game||null;state.gameId=state.gameId===selected?null:selected;render()})
 }
 function statLines(p){
 const l=p.line||{},fmt=(name,value)=>'<span>'+name+' <b>'+value+'</b></span>';
@@ -126,7 +126,7 @@ arr.sort((a,b)=>b[state.sort]-a[state.sort]);
 $('status').textContent=arr.length+' players · '+(state.gameId?'1 selected game':games.length+' games')+' · '+(state.mode==='season'?'Season totals':'Period totals')+(state.status==='scheduled'?' · Scheduled games have no actual stats':'');
 $('list').innerHTML=arr.length?arr.map((p,i)=>'<div class="player player-card" role="button" tabindex="0" data-i="'+i+'" aria-label="Open '+esc(p.name)+' profile">'+img(p.head,'face')+'<div class="identity"><b>'+esc(p.name)+'</b><div class="meta">'+esc(p.position)+' · '+img(leagueLogo[p.game.league],'logo')+'<button type="button" class="card-matchup" data-match="'+esc(p.game.id)+'" data-league="'+esc(p.game.league)+'" aria-label="Filter leaderboard to '+esc(p.game.away.abbreviation||'away')+' at '+esc(p.game.home.abbreviation||'home')+'">'+img(logo(p.game.away),'logo')+'<span>'+esc(p.game.away.abbreviation||'')+'</span><b>'+esc(p.game.awayScore??'—')+'</b><span class="game-separator">–</span><b>'+esc(p.game.homeScore??'—')+'</b>'+img(logo(p.game.home),'logo')+'<span>'+esc(p.game.home.abbreviation||'')+'</span></button></div><div class="stat-lines">'+statLines(p)+'</div></div><div class="score"><strong>'+p.points.toFixed(1)+'</strong><small>FPTS</small><span class="rank-detail">'+('#'+positionRanks.get(p.game.league+':'+p.id)+' '+esc(p.position))+' · '+('#'+leagueRanks.get(p.game.league+':'+p.id)+' '+(p.game.league==='nfl'?'NFL':'NCAA'))+'</span></div></div>').join(''):'<div class="empty">No player statistics found for these filters.</div>';
 document.querySelectorAll('.player-card').forEach(card=>{
-card.onclick=e=>{const match=e.target.closest('.card-matchup');if(match){state.gameId=String(match.dataset.match);render();return}showPlayer(arr[+card.dataset.i])};
+card.onclick=e=>{const match=e.target.closest('.card-matchup');if(match){const selected=String(match.dataset.match);state.gameId=state.gameId===selected?null:selected;render();return}showPlayer(arr[+card.dataset.i])};
 card.onkeydown=e=>{if(e.target===card&&(e.key==='Enter'||e.key===' ')){e.preventDefault();showPlayer(arr[+card.dataset.i])}}
 })
 }
