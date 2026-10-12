@@ -93,13 +93,27 @@ function render(){let arr=players.filter(p=>state.positions.has(p.position)&&(!s
 const playerBase='https://site.web.api.espn.com/apis/common/v3/sports/football/';
 function tableForLogs(logs){return '<div class="tablewrap"><table><thead><tr><th>Date / Opponent</th><th>Comp/Att</th><th>Pass Yds</th><th>Rushes</th><th>Rush Yds</th><th>Targets</th><th>Catches</th><th>Rec Yds</th><th>TD</th><th>FP</th></tr></thead><tbody>'+logs.map(x=>'<tr><td>'+esc(format(x.game.date))+' · '+esc(matchup(x))+'</td><td>'+x.line.passComp+'/'+x.line.passAtt+'</td><td>'+x.line.passYds+'</td><td>'+x.line.rushAtt+'</td><td>'+x.line.rushYds+'</td><td>'+(x.line.targets||'—')+'</td><td>'+x.line.rec+'</td><td>'+x.line.recYds+'</td><td>'+(x.line.passTd+x.line.rushTd+x.line.recTd)+'</td><td>'+pts(x.line).toFixed(1)+'</td></tr>').join('')+'</tbody></table></div>'}
 function externalStatTable(data){const cats=data?.categories||data?.statistics?.splits?.categories||[];const lines=[];for(const c of cats){for(const st of c.stats||c.statistics||[]){const value=st.displayValue??st.value;if(value!==undefined)lines.push([c.displayName||c.name||'Stats',st.displayName||st.name||'',value])}}return lines.length?'<div class="tablewrap"><table><thead><tr><th>Category</th><th>Statistic</th><th>Value</th></tr></thead><tbody>'+lines.slice(0,150).map(a=>'<tr><td>'+esc(a[0])+'</td><td>'+esc(a[1])+'</td><td>'+esc(a[2])+'</td></tr>').join('')+'</tbody></table></div>':''}
+function normalizedGameLog(data){
+const events=data.events||{},map=new Map();
+const clean=k=>String(k||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+for(const season of data.seasonTypes||[]){for(const cat of season.categories||[]){
+const names=cat.names||cat.labels||data.names||data.labels||[];
+const entries=Array.isArray(cat.events)?cat.events:Object.values(cat.events||{});
+for(const entry of entries){const id=String(entry.eventId||entry.id||entry.event?.id||'');if(!id)continue;
+const row=map.get(id)||{id,stats:{},meta:events[id]||{},seasonType:season.name||''};
+const vals=entry.stats||entry.statistics||[];
+names.forEach((name,i)=>{if(vals[i]!==undefined&&vals[i]!==null&&vals[i]!=='—')row.stats[clean(name)]=vals[i]});
+map.set(id,row)
+}
+}}
+return [...map.values()].sort((a,b)=>(Number(b.meta.week)||0)-(Number(a.meta.week)||0))
+}
 function athleteGameLogTable(data){
-const labels=Array.isArray(data.labels)?data.labels:[];
-const meta=data.events||{},statsByGame=new Map();
-for(const season of data.seasonTypes||[]){for(const cat of season.categories||[]){for(const event of cat.events||[]){const id=String(event.eventId||event.id||'');if(!id)continue;const current=statsByGame.get(id)||[];const values=event.stats||[];values.forEach((v,i)=>{if(v!==null&&v!==undefined)current[i]=v});statsByGame.set(id,current)}}}
-const rows=[...statsByGame].map(([id,stats])=>({id,stats,meta:meta[id]||{}})).sort((a,b)=>(Number(b.meta.week)||0)-(Number(a.meta.week)||0));
+const rows=normalizedGameLog(data);
 if(!rows.length)return '';
-return '<div class="tablewrap"><table><thead><tr><th>Week / Opponent</th>'+labels.map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(row=>'<tr><td>'+esc('W'+(row.meta.week||'—')+' '+(row.meta.atVs||'vs')+' '+(row.meta.opponent?.abbreviation||row.meta.opponent?.displayName||''))+'</td>'+labels.map((_,i)=>'<td>'+esc(row.stats[i]??'—')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'
+const keys=[...new Set(rows.flatMap(r=>Object.keys(r.stats)))].slice(0,18);
+const heading=k=>({completions:'Comp',passingattempts:'Att',rushingattempts:'Rush',receivingtargets:'Targets',receptions:'Catches',passingyards:'Pass Yds',rushingyards:'Rush Yds',receivingyards:'Rec Yds'}[k]||k.replace(/([a-z])([0-9])/g,'$1 $2').toUpperCase());
+return '<div class="tablewrap"><table><thead><tr><th>Week / Opponent</th>'+keys.map(k=>'<th>'+esc(heading(k))+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr><td>'+esc('W'+(r.meta.week||'—')+' '+(r.meta.atVs||'vs')+' '+(r.meta.opponent?.abbreviation||r.meta.opponent?.displayName||''))+'</td>'+keys.map(k=>'<td>'+esc(r.stats[k]??'—')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'
 }
 function seasonStatValues(data){
 const roots=[data?.statistics?.splits?.categories,data?.statistics?.categories,data?.stats?.splits?.categories,data?.stats?.categories,data?.splits?.categories,data?.categories,...(Array.isArray(data?.statistics)?data.statistics.map(x=>x.splits?.categories||x.categories):[])];
