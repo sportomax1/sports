@@ -69,7 +69,51 @@ function render(){let arr=players.filter(p=>state.positions.has(p.position)&&(!s
 const playerBase='https://site.web.api.espn.com/apis/common/v3/sports/football/';
 function tableForLogs(logs){return '<div class="tablewrap"><table><thead><tr><th>Date / Opponent</th><th>Comp/Att</th><th>Pass Yds</th><th>Rushes</th><th>Rush Yds</th><th>Targets</th><th>Catches</th><th>Rec Yds</th><th>TD</th><th>FP</th></tr></thead><tbody>'+logs.map(x=>'<tr><td>'+esc(format(x.game.date))+' · '+esc(matchup(x))+'</td><td>'+x.line.passComp+'/'+x.line.passAtt+'</td><td>'+x.line.passYds+'</td><td>'+x.line.rushAtt+'</td><td>'+x.line.rushYds+'</td><td>'+(x.line.targets||'—')+'</td><td>'+x.line.rec+'</td><td>'+x.line.recYds+'</td><td>'+(x.line.passTd+x.line.rushTd+x.line.recTd)+'</td><td>'+pts(x.line).toFixed(1)+'</td></tr>').join('')+'</tbody></table></div>'}
 function externalStatTable(data){const cats=data?.categories||data?.statistics?.splits?.categories||[];const lines=[];for(const c of cats){for(const st of c.stats||c.statistics||[]){const value=st.displayValue??st.value;if(value!==undefined)lines.push([c.displayName||c.name||'Stats',st.displayName||st.name||'',value])}}return lines.length?'<div class="tablewrap"><table><thead><tr><th>Category</th><th>Statistic</th><th>Value</th></tr></thead><tbody>'+lines.slice(0,150).map(a=>'<tr><td>'+esc(a[0])+'</td><td>'+esc(a[1])+'</td><td>'+esc(a[2])+'</td></tr>').join('')+'</tbody></table></div>':''}
-async function showPlayer(p){$('detailTitle').textContent=p.name;$('detail').showModal();const d=$('detailBody'),logs=[...p.logs].sort((a,b)=>b.game.date-a.game.date);const tabs='<div class="segments" style="margin:12px 0"><button class="active" data-log="games">Game log</button><button data-log="seasons">Season log</button></div>';d.innerHTML='<p class="muted">'+esc(p.position)+' · '+esc(p.team.displayName||'')+'</p>'+tabs+'<div id="playerLog">'+tableForLogs(logs)+'</div>';const holder=$('playerLog');const cache={games:tableForLogs(logs)};d.querySelectorAll('[data-log]').forEach(btn=>btn.onclick=async()=>{d.querySelectorAll('[data-log]').forEach(b=>b.classList.toggle('active',b===btn));const type=btn.dataset.log;if(cache[type]){holder.innerHTML=cache[type];return}holder.textContent='Loading '+type+'…';try{const endpoint=type==='games'?'gamelog':'stats';const data=await json(playerBase+p.game.league+'/athletes/'+encodeURIComponent(p.id)+'/'+endpoint);let output=externalStatTable(data);if(!output&&type==='seasons'){const seasons=data?.statistics?.splits?.categories||data?.categories||[];output=externalStatTable({categories:seasons})}if(!output&&type==='games')output=tableForLogs(logs);if(!output)output='<p class="muted">ESPN did not provide a structured '+type+' for this player.</p>';cache[type]=output;holder.innerHTML=output}catch(e){holder.innerHTML='<p class="warning">Could not load '+type+': '+esc(e.message)+'</p>'}})}
+function athleteGameLogTable(data){
+const labels=data?.labels||data?.displayNames||[];
+const events=Array.isArray(data?.events)?data.events:Object.values(data?.events||{}).filter(x=>x&&typeof x==='object'&&x.id);
+if(!events.length)return '';
+const columns=labels.length?labels.slice(0,16):[];
+return '<div class="tablewrap"><table><thead><tr><th>Date / Opponent</th>'+columns.map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr></thead><tbody>'+events.map(e=>'<tr><td>'+esc(e.date?format(dateFrom(e.date)):'')+' '+esc((e.homeAway==='away'?'@ ':'vs ')+(e.opponent?.abbreviation||e.opponent?.displayName||''))+'</td>'+columns.map((c,i)=>'<td>'+esc(e.stats?.[i]??'—')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'
+}
+async function showPlayer(p){
+$('detailTitle').textContent=p.name;
+$('detail').showModal();
+const d=$('detailBody'),baseUrl=playerBase+p.game.league+'/athletes/'+encodeURIComponent(p.id)+'/';
+const todayYear=new Date().getFullYear(),years=Array.from({length:Math.min(20,todayYear-2000+1)},(_,i)=>todayYear-i);
+let selectedYear=todayYear,activeTab='games',request=0;
+const tabs='<div class="segments" style="margin:12px 0"><button class="active" data-log="games">Game log</button><button data-log="seasons">Season log</button></div>';
+d.innerHTML='<p class="muted">'+esc(p.position)+' · '+esc(p.team.displayName||'')+'</p><p class="muted">Player history is independent of the main leaderboard date range.</p>'+tabs+'<div class="row" style="margin-bottom:12px"><button class="btn" id="profilePrev">‹</button><select class="field" id="profileYear" aria-label="Player season">'+years.map(y=>'<option value="'+y+'">'+y+' season</option>').join('')+'</select><button class="btn" id="profileNext">›</button></div><div id="playerLog"></div>';
+const holder=d.querySelector('#playerLog'),yearSelect=d.querySelector('#profileYear'),cache=new Map();
+yearSelect.value=String(selectedYear);
+async function renderProfile(){
+const ticket=++request,year=selectedYear,tab=activeTab;
+holder.innerHTML='<p class="muted">Loading '+year+' '+(tab==='games'?'game log':'season statistics')+'…</p>';
+const key=tab+':'+year;
+try{
+let output=cache.get(key);
+if(!output){
+const endpoint=tab==='games'?'gamelog':'stats';
+const data=await json(baseUrl+endpoint+'?season='+year);
+if(tab==='games'){
+output=athleteGameLogTable(data);
+if(!output){const local=p.logs.filter(x=>x.game.date.getFullYear()===year);output=local.length?tableForLogs(local):''}
+}else{
+output=externalStatTable(data);
+if(!output&&Array.isArray(data?.categories))output=externalStatTable({categories:data.categories});
+}
+if(!output)output='<p class="muted">No '+(tab==='games'?'game logs':'season statistics')+' available from ESPN for '+year+'.</p>';
+cache.set(key,output)
+}
+if(ticket===request)holder.innerHTML=output
+}catch(e){if(ticket===request)holder.innerHTML='<p class="warning">Unable to load '+year+' history: '+esc(e.message)+'</p>'}
+}
+d.querySelectorAll('[data-log]').forEach(btn=>btn.onclick=()=>{d.querySelectorAll('[data-log]').forEach(x=>x.classList.toggle('active',x===btn));activeTab=btn.dataset.log;renderProfile()});
+yearSelect.onchange=()=>{selectedYear=Number(yearSelect.value);renderProfile()};
+d.querySelector('#profilePrev').onclick=()=>{selectedYear=Math.max(years[years.length-1],selectedYear-1);yearSelect.value=String(selectedYear);renderProfile()};
+d.querySelector('#profileNext').onclick=()=>{selectedYear=Math.min(todayYear,selectedYear+1);yearSelect.value=String(selectedYear);renderProfile()};
+renderProfile()
+}
 async function load(){const token=++loadId;label();$('status').textContent='Loading schedules…';$('list').innerHTML='';try{const r=await selectedGames();if(token!==loadId)return;games=r.games.filter(g=>state.status==='all'||g.status===state.status);if(!games.length){players=[];render();$('status').textContent=r.errors.length?'Schedule request failed: '+r.errors[0].reason.message:'No games in this period';return}const playable=games.filter(g=>g.status!=='scheduled');$('status').textContent='Loading '+playable.length+' game box scores…';const results=[];let failed=0;for(let i=0;i<playable.length;i+=6){const batch=await Promise.allSettled(playable.slice(i,i+6).map(gamePlayers));if(token!==loadId)return;for(const x of batch){if(x.status==='fulfilled')results.push(...x.value);else failed++}$('status').textContent='Loaded '+Math.min(i+6,playable.length)+' / '+playable.length+' games…'}players=aggregate(results);render();if(failed)$('status').textContent+=' · '+failed+' box scores unavailable';if(r.errors.length)$('status').textContent+=' · '+r.errors.length+' schedule requests failed'}catch(e){if(token===loadId){$('status').textContent='Data unavailable: '+e.message;$('list').innerHTML='<div class="empty">Try another date or refresh. ESPN endpoints can be temporarily unavailable or block browser requests.</div>'}}}
 function activate(container,key,val){document.querySelectorAll('#'+container+' button').forEach(b=>b.classList.toggle('active',b.dataset.value===val))}
 $('leagues').onclick=e=>{const b=e.target.closest('button');if(!b)return;state.league=b.dataset.value;activate('leagues','league',state.league);load()};
