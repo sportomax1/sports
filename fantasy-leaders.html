@@ -108,11 +108,12 @@ if(l.targets||l.rec||l.recYds||l.recTd)rows.push('<div class="stat-line"><em>REC
 if(!rows.length&&p.position==='K')rows.push('<div class="stat-line"><em>KICK</em>'+fmt('FG',l.fg0||0)+fmt('XP',l.xp||0)+'</div>');
 return rows.join('')
 }
-let previousWeekPoints=new Map(),previousWeekKey='',previousWeekLoading=false,previousWeekError='';
+let previousWeekPoints=new Map(),previousWeekKey='',previousWeekLoading=false,previousWeekError='',previousWeekAttempted='';
 async function loadPreviousWeek(){
 if(state.mode!=='week')return;
 const key=state.league+':'+iso(interval()[0])+':'+JSON.stringify(scoring);
-if(previousWeekKey===key||previousWeekLoading)return;
+if(previousWeekKey===key||previousWeekAttempted===key||previousWeekLoading)return;
+previousWeekAttempted=key;
 previousWeekLoading=true;previousWeekError='';previousWeekPoints=new Map();render();
 try{
 const previousDate=new Date(state.date);previousDate.setDate(previousDate.getDate()-7);
@@ -130,7 +131,7 @@ function trendFor(p){const key=p.game.league+':'+p.id;return previousWeekPoints.
 function trendBadge(p){if(state.mode!=='week'||previousWeekKey!==state.league+':'+iso(interval()[0])+':'+JSON.stringify(scoring))return '';const diff=trendFor(p);return diff===null?'':('<span class="trend-tag '+(diff>=0?'positive':'negative')+'">'+(diff>=0?'▲ +':'▼ ')+diff.toFixed(1)+' vs prior week</span>')}
 function render(){
 if(state.gameId&&!games.some(g=>String(g.id)===state.gameId))state.gameId=null;
-gameFilterBar();$('weeklyTrend').hidden=state.mode!=='week';if(state.mode==='week'&&!previousWeekLoading&&previousWeekKey!==state.league+':'+iso(interval()[0])+':'+JSON.stringify(scoring))queueMicrotask(loadPreviousWeek);
+gameFilterBar();$('weeklyTrend').hidden=state.mode!=='week';if(state.mode==='week'&&!previousWeekLoading&&previousWeekAttempted!==state.league+':'+iso(interval()[0])+':'+JSON.stringify(scoring))queueMicrotask(loadPreviousWeek);
 let arr=players.filter(p=>state.positions.has(p.position)&&(!state.search||[p.name,p.team.displayName,p.team.abbreviation].join(' ').toLowerCase().includes(state.search)));
 if(state.gameId){arr=arr.filter(p=>p.logs.some(l=>String(l.game.id)===state.gameId)).map(p=>{const logs=p.logs.filter(l=>String(l.game.id)===state.gameId);const line={...logs[0].line};return {...p,game:logs[0].game,logs,line,points:pts(line),yards:line.passYds+line.rushYds+line.recYds,td:line.passTd+line.rushTd+line.recTd}})}
 const rankPool=state.gameId?players.filter(p=>p.logs.some(l=>String(l.game.id)===state.gameId)).map(p=>{const logs=p.logs.filter(l=>String(l.game.id)===state.gameId);return {...p,points:pts(logs[0].line)}}):players;
