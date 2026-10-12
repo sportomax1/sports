@@ -20,7 +20,7 @@ const format=d=>d.toLocaleDateString(undefined,{month:'short',day:'numeric',year
 const iso=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
 const dateFrom=s=>{const d=new Date(s);return isNaN(+d)?new Date():d};
 const year=d=>d.getFullYear();
-const startWeek=d=>{const x=new Date(d);x.setHours(12,0,0,0);x.setDate(x.getDate()-x.getDay());return x};
+const startWeek=d=>{const x=new Date(d);x.setHours(12,0,0,0);x.setDate(x.getDate()-((x.getDay()+5)%7));return x};
 const weekEnd=d=>{const x=startWeek(d);x.setDate(x.getDate()+6);return x};
 function interval(){let a=new Date(state.date),b=new Date(state.date);if(state.mode==='week'){a=startWeek(a);b=weekEnd(a)}if(state.mode==='season'){a=new Date(year(a),0,1);b=new Date(year(a),11,31)}a.setHours(0,0,0,0);b.setHours(23,59,59,999);return[a,b]}
 function label(){const [a,b]=interval();$('periodLabel').textContent=state.mode==='day'?format(a):state.mode==='season'?String(year(a)):format(a)+' – '+format(b)}
