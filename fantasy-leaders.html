@@ -45,7 +45,7 @@ function extractStats(raw){const r={};for(const group of raw||[]){const labels=g
 function parseLine(groups){const s=extractStats(groups);const number=(...keys)=>findNumber(s,keys);const pair=v=>{const m=String(v||'').match(/^(\d+)\s*\/\s*(\d+)$/);return m?[+m[1],+m[2]]:[0,0]};
 const pass=pair(s.catt||s.completionsattempts),rush=s.rushing||'',rec=s.receiving||'';
 return{passYds:number('yds','passingyards','passyards'),passTd:number('td','passingtd','passingtds'),interception:number('int','interceptions'),rushYds:number('rushyds','rushingyards'),recYds:number('recyds','receivingyards'),rec:number('rec','receptions'),rushTd:number('rushingtd','rushtd'),recTd:number('receivingtd','rectd'),fumbles:number('fumbleslost','fumlost'),fg0:number('fg0','fieldgoalsmade'),fg40:number('fg40'),fg50:number('fg50'),xp:number('xp','extrapointsmade'),raw:s}}
-function athleteRows(box,g){const out=[];const sections=box.boxscore?.players||[];for(const team of sections){for(const section of team.statistics||[]){const labels=section.labels||[];const keys=section.keys||[];const name=(section.name||'').toLowerCase();for(const a of section.athletes||[]){const values=a.stats||[];const raw={};labels.forEach((l,i)=>raw[String(l).toLowerCase().replace(/[^a-z0-9]/g,'')]=values[i]);keys.forEach((l,i)=>raw[String(l).toLowerCase().replace(/[^a-z0-9]/g,'')]=values[i]);const n=(...k)=>findNumber(raw,k),p=v=>{const m=String(v||'').match(/^(\d+)\s*\/\s*(\d+)$/);return m?[+m[1],+m[2]]:[0,0]};
+function athleteRows(box,g){const out=[];const rosterPos=new Map();for(const roster of box.rosters||[]){for(const entry of roster.roster||roster.athletes||[]){const athlete=entry.athlete||entry;const pos=entry.position?.abbreviation||athlete.position?.abbreviation||entry.position?.name||'';if(athlete.id&&pos)rosterPos.set(String(athlete.id),String(pos).toUpperCase())}}const sections=box.boxscore?.players||[];for(const team of sections){for(const section of team.statistics||[]){const labels=section.labels||[];const keys=section.keys||[];const name=(section.name||'').toLowerCase();for(const a of section.athletes||[]){const values=a.stats||[];const raw={};labels.forEach((l,i)=>raw[String(l).toLowerCase().replace(/[^a-z0-9]/g,'')]=values[i]);keys.forEach((l,i)=>raw[String(l).toLowerCase().replace(/[^a-z0-9]/g,'')]=values[i]);const n=(...k)=>findNumber(raw,k),p=v=>{const m=String(v||'').match(/^(\d+)\s*\/\s*(\d+)$/);return m?[+m[1],+m[2]]:[0,0]};
 let line={passYds:0,passTd:0,interception:0,passAtt:0,passComp:0,rushAtt:0,targets:0,rushYds:0,recYds:0,rec:0,rushTd:0,recTd:0,fumbles:0,fg0:0,fg40:0,fg50:0,xp:0};
 if(name.includes('pass')){line.passYds=n('yds','passingyards');line.passTd=n('td','passingtds');line.interception=n('int');const pa=p(raw.catt||raw.completionsattempts||raw.cmpatt);line.passComp=pa[0]||n('cmp','completions');line.passAtt=pa[1]||n('att','attempts','passingattempts');}
 else if(name.includes('rush')){line.rushYds=n('yds','rushingyards');line.rushTd=n('td');line.rushAtt=n('car','att','rushingattempts','carries');}
@@ -53,7 +53,7 @@ else if(name.includes('receiv')){line.recYds=n('yds','receivingyards');line.rec=
 else if(name.includes('kick')){line.fg0=n('fg','fgm','fieldgoalsmade');if(!line.fg0)line.fg0=p(raw.fg||raw.fgmadeattempted)[0];line.xp=n('xp','xpm');if(!line.xp)line.xp=p(raw.xp||raw.xpmadeattempted)[0];}
 else continue;
 const athlete=a.athlete||{},id=String(athlete.id||athlete.uid||athlete.displayName||'');if(!id)continue;
-const pos=(athlete.position?.abbreviation||athlete.position?.name||'').toUpperCase();const position=pos==='TIGHT END'?'TE':pos==='WIDE RECEIVER'?'WR':pos==='RUNNING BACK'?'RB':pos==='QUARTERBACK'?'QB':pos==='PLACE KICKER'?'K':pos|| (name.includes('kick')?'K':name.includes('pass')?'QB':name.includes('rush')?'RB':name.includes('receiv')?'WR':'');
+const pos=(rosterPos.get(id)||athlete.position?.abbreviation||athlete.position?.name||a.position?.abbreviation||'').toUpperCase();const position=(pos==='TIGHT END'||pos==='TIGHTEND')?'TE':pos==='WIDE RECEIVER'?'WR':pos==='RUNNING BACK'?'RB':pos==='QUARTERBACK'?'QB':pos==='PLACE KICKER'?'K':pos|| (name.includes('kick')?'K':name.includes('pass')?'QB':name.includes('rush')?'RB':name.includes('receiv')?'WR':'');
 out.push({id,name:athlete.displayName||athlete.fullName||'Unknown',position,head:athlete.headshot?.href||('https://a.espncdn.com/i/headshots/'+(g.league==='nfl'?'nfl':'college-football')+'/players/full/'+encodeURIComponent(id)+'.png'),team:team.team||{},game:g,line});}}}return out}
 async function gamePlayers(g){const key=g.league+':'+g.id;if(statsCache.has(key)&&g.status==='finished')return statsCache.get(key);const j=await json(base+g.league+'/summary?event='+encodeURIComponent(g.id));const rows=athleteRows(j,g);if(g.status==='finished')statsCache.set(key,rows);return rows}
 function pts(l){return l.passYds*scoring.passYds+l.passTd*scoring.passTd+l.interception*scoring.interception+l.rushYds*scoring.rushYds+l.recYds*scoring.recYds+l.rec*scoring.rec+l.rushTd*scoring.rushTd+l.recTd*scoring.recTd+l.fumbles*scoring.fumbles+l.fg0*scoring.fg0+l.fg40*scoring.fg40+l.fg50*scoring.fg50+l.xp*scoring.xp}
@@ -70,49 +70,51 @@ const playerBase='https://site.web.api.espn.com/apis/common/v3/sports/football/'
 function tableForLogs(logs){return '<div class="tablewrap"><table><thead><tr><th>Date / Opponent</th><th>Comp/Att</th><th>Pass Yds</th><th>Rushes</th><th>Rush Yds</th><th>Targets</th><th>Catches</th><th>Rec Yds</th><th>TD</th><th>FP</th></tr></thead><tbody>'+logs.map(x=>'<tr><td>'+esc(format(x.game.date))+' · '+esc(matchup(x))+'</td><td>'+x.line.passComp+'/'+x.line.passAtt+'</td><td>'+x.line.passYds+'</td><td>'+x.line.rushAtt+'</td><td>'+x.line.rushYds+'</td><td>'+(x.line.targets||'—')+'</td><td>'+x.line.rec+'</td><td>'+x.line.recYds+'</td><td>'+(x.line.passTd+x.line.rushTd+x.line.recTd)+'</td><td>'+pts(x.line).toFixed(1)+'</td></tr>').join('')+'</tbody></table></div>'}
 function externalStatTable(data){const cats=data?.categories||data?.statistics?.splits?.categories||[];const lines=[];for(const c of cats){for(const st of c.stats||c.statistics||[]){const value=st.displayValue??st.value;if(value!==undefined)lines.push([c.displayName||c.name||'Stats',st.displayName||st.name||'',value])}}return lines.length?'<div class="tablewrap"><table><thead><tr><th>Category</th><th>Statistic</th><th>Value</th></tr></thead><tbody>'+lines.slice(0,150).map(a=>'<tr><td>'+esc(a[0])+'</td><td>'+esc(a[1])+'</td><td>'+esc(a[2])+'</td></tr>').join('')+'</tbody></table></div>':''}
 function athleteGameLogTable(data){
-const labels=data?.labels||data?.displayNames||[];
-const events=Array.isArray(data?.events)?data.events:Object.values(data?.events||{}).filter(x=>x&&typeof x==='object'&&x.id);
-if(!events.length)return '';
-const columns=labels.length?labels.slice(0,16):[];
-return '<div class="tablewrap"><table><thead><tr><th>Date / Opponent</th>'+columns.map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr></thead><tbody>'+events.map(e=>'<tr><td>'+esc(e.date?format(dateFrom(e.date)):'')+' '+esc((e.homeAway==='away'?'@ ':'vs ')+(e.opponent?.abbreviation||e.opponent?.displayName||''))+'</td>'+columns.map((c,i)=>'<td>'+esc(e.stats?.[i]??'—')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'
+const labels=Array.isArray(data.labels)?data.labels:[];
+const meta=data.events||{},statsByGame=new Map();
+for(const season of data.seasonTypes||[]){for(const cat of season.categories||[]){for(const event of cat.events||[]){const id=String(event.eventId||event.id||'');if(!id)continue;const current=statsByGame.get(id)||[];const values=event.stats||[];values.forEach((v,i)=>{if(v!==null&&v!==undefined)current[i]=v});statsByGame.set(id,current)}}}
+const rows=[...statsByGame].map(([id,stats])=>({id,stats,meta:meta[id]||{}})).sort((a,b)=>(Number(b.meta.week)||0)-(Number(a.meta.week)||0));
+if(!rows.length)return '';
+return '<div class="tablewrap"><table><thead><tr><th>Week / Opponent</th>'+labels.map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(row=>'<tr><td>'+esc('W'+(row.meta.week||'—')+' '+(row.meta.atVs||'vs')+' '+(row.meta.opponent?.abbreviation||row.meta.opponent?.displayName||''))+'</td>'+labels.map((_,i)=>'<td>'+esc(row.stats[i]??'—')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'
 }
+function seasonStatValues(data){
+const roots=[data?.statistics?.splits?.categories,data?.statistics?.categories,data?.stats?.splits?.categories,data?.stats?.categories,data?.splits?.categories,data?.categories,...(Array.isArray(data?.statistics)?data.statistics.map(x=>x.splits?.categories||x.categories):[])];
+const out={};for(const categories of roots){if(!Array.isArray(categories))continue;for(const cat of categories){for(const stat of cat.stats||cat.statistics||[]){const name=String(stat.name||stat.abbreviation||stat.displayName||'').toLowerCase().replace(/[^a-z0-9]/g,'');if(name)out[name]=stat.displayValue??stat.value??0}}}
+return out
+}
+function statValue(stats,...keys){for(const key of keys){const v=stats[key.toLowerCase().replace(/[^a-z0-9]/g,'')];if(v!==undefined)return v}return '—'}
 async function showPlayer(p){
-$('detailTitle').textContent=p.name;
-$('detail').showModal();
+$('detailTitle').textContent=p.name;$('detail').showModal();
 const d=$('detailBody'),baseUrl=playerBase+p.game.league+'/athletes/'+encodeURIComponent(p.id)+'/';
-const todayYear=new Date().getFullYear(),years=Array.from({length:Math.min(20,todayYear-2000+1)},(_,i)=>todayYear-i);
-let selectedYear=todayYear,activeTab='games',request=0;
-const tabs='<div class="segments" style="margin:12px 0"><button class="active" data-log="games">Game log</button><button data-log="seasons">Season log</button></div>';
-d.innerHTML='<p class="muted">'+esc(p.position)+' · '+esc(p.team.displayName||'')+'</p><p class="muted">Player history is independent of the main leaderboard date range.</p>'+tabs+'<div class="row" style="margin-bottom:12px"><button class="btn" id="profilePrev">‹</button><select class="field" id="profileYear" aria-label="Player season">'+years.map(y=>'<option value="'+y+'">'+y+' season</option>').join('')+'</select><button class="btn" id="profileNext">›</button></div><div id="playerLog"></div>';
-const holder=d.querySelector('#playerLog'),yearSelect=d.querySelector('#profileYear'),cache=new Map();
-yearSelect.value=String(selectedYear);
-async function renderProfile(){
-const ticket=++request,year=selectedYear,tab=activeTab;
-holder.innerHTML='<p class="muted">Loading '+year+' '+(tab==='games'?'game log':'season statistics')+'…</p>';
-const key=tab+':'+year;
+const currentYear=new Date().getFullYear();let year=currentYear,tab='games',request=0;
+const years=Array.from({length:Math.min(22,currentYear-2000+1)},(_,i)=>currentYear-i);
+d.innerHTML='<p class="muted">'+esc(p.position)+' · '+esc(p.team.displayName||'')+'</p><div class="segments" style="margin:12px 0"><button class="active" data-log="games">Game log</button><button data-log="seasons">Season by season</button></div><div id="profileYearControls" class="row" style="margin-bottom:12px"><button class="btn" id="profilePrev">‹</button><select class="field" id="profileYear" aria-label="Game log season">'+years.map(y=>'<option value="'+y+'">'+y+' season</option>').join('')+'</select><button class="btn" id="profileNext">›</button></div><div id="playerLog"></div>';
+const holder=d.querySelector('#playerLog'),select=d.querySelector('#profileYear'),controls=d.querySelector('#profileYearControls'),cache=new Map();
+async function display(){
+const ticket=++request;controls.style.display=tab==='seasons'?'none':'flex';
+holder.innerHTML='<p class="muted">Loading ESPN '+(tab==='seasons'?'career seasons':year+' game log')+'…</p>';
 try{
-let output=cache.get(key);
-if(!output){
-const endpoint=tab==='games'?'gamelog':'stats';
-const data=await json(baseUrl+endpoint+'?season='+year);
 if(tab==='games'){
-output=athleteGameLogTable(data);
-if(!output){const local=p.logs.filter(x=>x.game.date.getFullYear()===year);output=local.length?tableForLogs(local):''}
+const key='games:'+year;let html=cache.get(key);
+if(!html){const data=await json(baseUrl+'gamelog?season='+year);html=athleteGameLogTable(data);if(!html){const local=p.logs.filter(x=>x.game.date.getFullYear()===year);html=local.length?tableForLogs(local):'<p class="muted">No ESPN game statistics available for '+year+'.</p>'}cache.set(key,html)}
+if(ticket===request)holder.innerHTML=html;
 }else{
-output=externalStatTable(data);
-if(!output&&Array.isArray(data?.categories))output=externalStatTable({categories:data.categories});
+let html=cache.get('career');
+if(!html){
+const results=[];const batchYears=years.filter(y=>y>=2010);
+for(let i=0;i<batchYears.length;i+=5){const batch=await Promise.allSettled(batchYears.slice(i,i+5).map(async y=>({year:y,stats:seasonStatValues(await json(baseUrl+'stats?season='+y+'&seasontype=2'))})));for(const result of batch)if(result.status==='fulfilled'&&Object.keys(result.value.stats).length)results.push(result.value);if(ticket!==request)return}
+const cols=[['Games','gamesPlayed','games'],['Comp','completions','passingCompletions'],['Att','passingAttempts','attempts'],['Pass Yds','passingYards'],['Pass TD','passingTouchdowns'],['Rush','rushingAttempts'],['Rush Yds','rushingYards'],['Rush TD','rushingTouchdowns'],['Targets','receivingTargets','targets'],['Rec','receptions'],['Rec Yds','receivingYards'],['Rec TD','receivingTouchdowns']];
+html=results.length?'<div class="tablewrap"><table><thead><tr><th>Season</th>'+cols.map(c=>'<th>'+c[0]+'</th>').join('')+'</tr></thead><tbody>'+results.map(row=>'<tr><td>'+row.year+'</td>'+cols.map(c=>'<td>'+esc(statValue(row.stats,...c.slice(1)))+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>':'<p class="muted">ESPN did not return season totals for this player.</p>';cache.set('career',html)
 }
-if(!output)output='<p class="muted">No '+(tab==='games'?'game logs':'season statistics')+' available from ESPN for '+year+'.</p>';
-cache.set(key,output)
+if(ticket===request)holder.innerHTML=html
 }
-if(ticket===request)holder.innerHTML=output
-}catch(e){if(ticket===request)holder.innerHTML='<p class="warning">Unable to load '+year+' history: '+esc(e.message)+'</p>'}
+}catch(e){if(ticket===request)holder.innerHTML='<p class="warning">ESPN history request failed: '+esc(e.message)+'</p>'}
 }
-d.querySelectorAll('[data-log]').forEach(btn=>btn.onclick=()=>{d.querySelectorAll('[data-log]').forEach(x=>x.classList.toggle('active',x===btn));activeTab=btn.dataset.log;renderProfile()});
-yearSelect.onchange=()=>{selectedYear=Number(yearSelect.value);renderProfile()};
-d.querySelector('#profilePrev').onclick=()=>{selectedYear=Math.max(years[years.length-1],selectedYear-1);yearSelect.value=String(selectedYear);renderProfile()};
-d.querySelector('#profileNext').onclick=()=>{selectedYear=Math.min(todayYear,selectedYear+1);yearSelect.value=String(selectedYear);renderProfile()};
-renderProfile()
+d.querySelectorAll('[data-log]').forEach(btn=>btn.onclick=()=>{d.querySelectorAll('[data-log]').forEach(x=>x.classList.toggle('active',x===btn));tab=btn.dataset.log;display()});
+select.onchange=()=>{year=Number(select.value);display()};
+d.querySelector('#profilePrev').onclick=()=>{year=Math.max(years.at(-1),year-1);select.value=String(year);display()};
+d.querySelector('#profileNext').onclick=()=>{year=Math.min(currentYear,year+1);select.value=String(year);display()};
+display()
 }
 async function load(){const token=++loadId;label();$('status').textContent='Loading schedules…';$('list').innerHTML='';try{const r=await selectedGames();if(token!==loadId)return;games=r.games.filter(g=>state.status==='all'||g.status===state.status);if(!games.length){players=[];render();$('status').textContent=r.errors.length?'Schedule request failed: '+r.errors[0].reason.message:'No games in this period';return}const playable=games.filter(g=>g.status!=='scheduled');$('status').textContent='Loading '+playable.length+' game box scores…';const results=[];let failed=0;for(let i=0;i<playable.length;i+=6){const batch=await Promise.allSettled(playable.slice(i,i+6).map(gamePlayers));if(token!==loadId)return;for(const x of batch){if(x.status==='fulfilled')results.push(...x.value);else failed++}$('status').textContent='Loaded '+Math.min(i+6,playable.length)+' / '+playable.length+' games…'}players=aggregate(results);render();if(failed)$('status').textContent+=' · '+failed+' box scores unavailable';if(r.errors.length)$('status').textContent+=' · '+r.errors.length+' schedule requests failed'}catch(e){if(token===loadId){$('status').textContent='Data unavailable: '+e.message;$('list').innerHTML='<div class="empty">Try another date or refresh. ESPN endpoints can be temporarily unavailable or block browser requests.</div>'}}}
 function activate(container,key,val){document.querySelectorAll('#'+container+' button').forEach(b=>b.classList.toggle('active',b.dataset.value===val))}
