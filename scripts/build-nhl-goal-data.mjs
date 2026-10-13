@@ -14,10 +14,14 @@ const day=(s,n)=>iso(new Date(Date.parse(s+'T12:00:00Z')+n*86400000));
 const begin=season+'-10-01',end=[(season+1)+'-06-30',iso(today)].sort()[0];
 const L=o=>typeof o==='string'?o:o?.default||o?.en||Object.values(o||{})[0]||'';
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
+// Pace all NHL requests through one queue to avoid CDN rate limits.
+let requestGate=Promise.resolve();
+function pace(){const turn=requestGate.then(()=>wait(900));requestGate=turn.catch(()=>{});return turn;}
 async function get(endpoint){
  let error;
  for(let i=0;i<5;i++){
   try{
+   await pace();
    const r=await fetch(API+endpoint,{headers:{accept:'application/json'},signal:AbortSignal.timeout(25000)});
    if(!r.ok)throw Error('HTTP '+r.status);
    return await r.json();
