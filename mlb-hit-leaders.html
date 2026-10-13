@@ -357,21 +357,38 @@ async function loadGames(id,force){
  render(false);
 }
 
-function seasonStatRow(item){
- var a=item.athlete||item.player||{},id=uid(a);if(!id)return null;
+function seasonStatRow(item,definitions){
+ var a=item.athlete||item.player||{},id=uid(a);
+ if(!id)return null;
  var tm=teamInfo(item.team||a.team||a.teams&&a.teams[0]||{});
- var cats=item.categories||item.statistics&&item.statistics.categories||[];
- var st={};cats.forEach(function(c){
-  if(c.name&&lab(c.name)!=='batting'&&lab(c.name)!=='hitting'&&lab(c.name)!=='general')return;
-  var vals=statFields(c.totals||c.values||c.stats||{},c.labels||c.displayNames||[],c.names||c.keys||[]);
-  Object.keys(vals).forEach(function(k){if(vals[k]!=null)st[k]=vals[k];});
+ var cats=Array.isArray(item.categories)?item.categories:Array.isArray(item.statistics&&item.statistics.categories)?item.statistics.categories:[];
+ var st={},gp=null;
+ cats.forEach(function(cat,index){
+  var def=(definitions||[]).find(function(d){return lab(d.name)===lab(cat.name);})||(definitions||[])[index]||{};
+  var name=lab(cat.name||def.name||cat.type||'');
+  if(name!=='batting'&&name!=='hitting'&&name!=='offense'&&name!=='general')return;
+  // ESPN's byathlete feed keeps stat field names in the response-wide
+  // categories array, while individual athletes often only have totals[].
+  var labels=cat.labels||cat.displayNames||def.labels||def.displayNames||[];
+  var keys=cat.names||cat.keys||def.names||def.keys||[];
+  var raw=cat.totals||cat.values||cat.stats||cat.statistics||{};
+  var valueMap=fields(raw,labels,keys);
+  var parsed=statFields(raw,labels,keys);
+  if(gp==null)gp=take(valueMap,['gp','g','gamesplayed','games']);
+  Object.keys(parsed).forEach(function(key){if(parsed[key]!=null)st[key]=parsed[key];});
  });
- if(Object.keys(st).length===0){var other=statFields(item.stats||item.totals||{},item.labels||[],item.names||[]);Object.keys(other).forEach(function(k){if(other[k]!=null)st[k]=other[k];});}
- var row=playerRow(id,a.displayName||a.fullName||a.shortName,a.headshot&&a.headshot.href,tm);
+ if(!Object.keys(st).length){
+  var raw=item.stats||item.totals||item.statistics||{};
+  var other=statFields(raw,item.labels||[],item.names||[]);
+  Object.keys(other).forEach(function(k){if(other[k]!=null)st[k]=other[k];});
+ }
+ var row=playerRow(id,a.displayName||a.fullName||a.shortName||item.displayName,a.headshot&&a.headshot.href,tm);
  ['k','bb','h','double','triple','hr'].forEach(function(k){if(st[k]!=null)row[k]=st[k];});
  row.missing=['h','double','triple','hr'].some(function(k){return st[k]==null;});
- row.games=take(fields(cats[0]&&cats[0].totals,cats[0]&&cats[0].labels,cats[0]&&cats[0].names),['gp','gamesplayed'])||0;
- derive(row);if(tm.id)teams.set(tm.id,tm);return row;
+ row.games=gp||0;
+ derive(row);
+ if(tm.id)teams.set(tm.id,tm);
+ return row;
 }
 async function loadSeason(id){
  setStatus('Loading ESPN batting statistics for '+year+'…');
@@ -381,7 +398,7 @@ async function loadSeason(id){
   var j=await get(url,aborter.signal);if(!active(id))return;
   var items=j.athletes||j.players||j.entries||[];
   if(!Array.isArray(items))throw Error('Unexpected ESPN season stats response');
-  items.forEach(function(a){var row=seasonStatRow(a);if(row)all.set(row.id,row);});
+  items.forEach(function(a){var row=seasonStatRow(a,j.categories||[]);if(row)all.set(row.id,row);});
   count+=items.length;last=items.length;
   players=Array.from(all.values());loaded=page;render(true);
   setStatus('ESPN batting leaders · '+players.length+' players fetched…');
@@ -389,7 +406,7 @@ async function loadSeason(id){
  }
  players=Array.from(all.values());incomplete=players.filter(function(p){return p.missing;}).length;
  if(!players.length)throw Error('ESPN returned no batting statistics for this season');
- if(incomplete)warn('ESPN did not return the hit-type breakdown for '+incomplete+' player(s). Unknown singles are displayed as unavailable, not estimated.');
+ if(incomplete)warn('ESPN did not supply a complete hit-type breakdown for '+incomplete+' player(s). Missing values are shown as unavailable rather than estimated.');
  setStatus('ESPN batting leaderboard · '+year+' '+(seasonType==='2'?'regular season':'postseason')+' · '+players.length+' players.');
  render(false);
 }
