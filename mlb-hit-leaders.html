@@ -78,11 +78,11 @@ dialog::backdrop{background:#000a;backdrop-filter:blur(3px)}
 <div id="status" role="status" aria-live="polite"></div><div id="progress" class="progress"><i id="progressBar"></i></div>
 </div>
 <div class="filterbar"><select id="teamFilter" aria-label="Filter by team"><option value="">All Teams</option></select><input id="search" type="search" placeholder="Find a player…" aria-label="Find a player"><select id="limit" aria-label="Players per category"><option value="10">Top 10</option><option value="20" selected>Top 20</option><option value="50">Top 50</option><option value="0">All players</option></select></div>
-<div class="note" id="scopeNote">ESPN data. Singles = hits − doubles − triples − home runs. Each category is ranked independently; strikeouts are batter strikeouts (K).</div>
+<div class="note" id="scopeNote">ESPN batting data, with MLB official box-score fallback for missing hit types. Singles = hits − doubles − triples − home runs. Each category is ranked independently; strikeouts are batter strikeouts (K).</div>
 <div id="warning" class="warn"></div>
 <div id="meta"></div>
 <section class="board" id="board" aria-label="MLB player category leaders"></section>
-<footer>Source: ESPN MLB scoreboard, game summaries, and batting statistics. ESPN APIs are unofficial and can change. Live games can produce provisional figures.</footer>
+<footer>Sources: ESPN MLB scoreboard, game summaries, batting statistics; official MLB StatsAPI box scores for hit types omitted by ESPN. Live games can produce provisional figures.</footer>
 </main>
 <dialog id="profile"><div id="profileContent"></div></dialog>
 <script>
@@ -93,7 +93,9 @@ var $=function(id){return document.getElementById(id);};
 var TODAY=new Date().toLocaleDateString('en-CA',{timeZone:'America/Denver',year:'numeric',month:'2-digit',day:'2-digit'});
 if(!/^\d{4}-\d{2}-\d{2}$/.test(TODAY)){var n=new Date();TODAY=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');}
 var mode='day',anchor=TODAY,year=Number(TODAY.slice(0,4)),seasonType='2',players=[],games=[],requestId=0,loaded=0,failed=0,pending=0,incomplete=0,live=false,notice='',teams=new Map();
-var cache=new Map(),dbPromise=null,aborter=null;
+var cache=new Map(),dbPromise=null,aborter=null,officialGames=[];
+// ESPN provides the main batting data; MLB official boxscores fill missing hit types.
+var MLB_TEAM_IDS={ARI:109,ATL:144,BAL:110,BOS:111,CHC:112,CHW:145,CWS:145,CIN:113,CLE:114,COL:115,DET:116,HOU:117,KC:118,KCR:118,LAA:108,LAD:119,MIA:146,MIL:158,MIN:142,NYM:121,NYY:147,OAK:133,ATH:133,PHI:143,PIT:134,SD:135,SDP:135,SF:137,SFG:137,SEA:136,STL:138,TB:139,TBR:139,TEX:140,TOR:141,WSH:120,WAS:120};
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function safe(s){return /^\d+$/.test(String(s||''))?String(s):'';}
 function fmt(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
@@ -109,7 +111,7 @@ function updateNav(){
  if(mode==='season')$('period').textContent=year+' Season';else{var r=range();$('period').textContent=mode==='day'?nice(anchor,{weekday:'short',month:'short',day:'numeric',year:'numeric'}):mode==='week'?nice(r[0])+' – '+nice(r[1],{month:'short',day:'numeric',year:'numeric'}):nice(r[0],{month:'long',year:'numeric'});}
  var atEnd=mode==='season'?year>=Number(TODAY.slice(0,4)):mode==='day'?anchor>=TODAY:mode==='week'?plus(range()[0],7)>TODAY:monthStart(plus(range()[1],1))>TODAY;
  $('next').disabled=atEnd;
- $('scopeNote').textContent=mode==='season'?'ESPN batting leaders for '+year+' ('+(seasonType==='2'?'regular season':'postseason')+'). Singles are calculated as H − 2B − 3B − HR. Strikeouts are batter strikeouts.':'ESPN game-by-game player totals, aggregated for the selected '+mode+'. Singles = H − 2B − 3B − HR. Current/live games may change.';
+ $('scopeNote').textContent=mode==='season'?'ESPN batting leaders for '+year+' ('+(seasonType==='2'?'regular season':'postseason')+'). Singles are calculated as H − 2B − 3B − HR. Strikeouts are batter strikeouts.':'ESPN batting data plus MLB hit-type fallback, aggregated for the selected '+mode+'. Singles = H − 2B − 3B − HR. Current/live games may change.';
 }
 function badge(text){var el=document.createElement('span');el.className='chip';el.textContent=text;return el;}
 function setStatus(msg,isError){$('status').textContent=msg;$('status').classList.toggle('error',!!isError);}
@@ -217,7 +219,7 @@ function merge(rows){
 function setMeta(){
  $('meta').innerHTML='';
  var arr=mode==='season'?[players.length+' players',year+' season',seasonType==='2'?'Regular season':'Postseason']:[games.length+' games',loaded+' box scores',players.length+' batters'];
- if(failed)arr.push(failed+' failed');if(incomplete)arr.push(incomplete+' missing extra-base breakdowns');
+ if(failed)arr.push(failed+' failed');if(incomplete)arr.push(incomplete+' unverified game(s)');
  if(live)arr.push('Live / in progress');
  arr.forEach(function(t){$('meta').appendChild(badge(t));});
 }
@@ -268,27 +270,79 @@ async function get(url,signal){
  return r.json();
 }
 function active(id){return id===requestId;}
+function normalizeAthleteName(s){
+ return String(s||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
+ .replace(/[^a-z0-9 ]/g,' ').replace(/\b(jr|sr|ii|iii|iv)\b/g,'').replace(/\s+/g,' ').trim();
+}
+function findMlbGame(game){
+ var home=MLB_TEAM_IDS[(game.home||'').toUpperCase()],away=MLB_TEAM_IDS[(game.away||'').toUpperCase()];
+ if(!home||!away)return null;
+ var matches=officialGames.filter(function(g){
+  return g.day===game.day&&Number(g.teams&&g.teams.home&&g.teams.home.team&&g.teams.home.team.id)===home&&
+   Number(g.teams&&g.teams.away&&g.teams.away.team&&g.teams.away.team.id)===away;
+ });
+ if(matches.length===1)return matches[0];
+ if(!matches.length)return null;
+ var byScore=matches.filter(function(g){return Number(g.teams.home.score)===game.homeScore&&Number(g.teams.away.score)===game.awayScore;});
+ if(byScore.length===1)return byScore[0];
+ matches=(byScore.length?byScore:matches).sort(function(a,b){return Math.abs(Date.parse(a.gameDate)-Date.parse(game.date))-Math.abs(Date.parse(b.gameDate)-Date.parse(game.date));});
+ return matches[0];
+}
+function matchMlbBatter(players,name){
+ var wanted=normalizeAthleteName(name),list=Object.values(players||{}),match=list.filter(function(p){return normalizeAthleteName(p.person&&p.person.fullName)===wanted;});
+ if(match.length===1)return match[0];
+ var w=wanted.split(' '),surname=w[w.length-1],first=w[0]&&w[0][0];
+ match=list.filter(function(p){
+  var v=normalizeAthleteName(p.person&&p.person.fullName).split(' ');
+  return v.length>1&&v[v.length-1]===surname&&v[0][0]===first;
+ });
+ return match.length===1?match[0]:null;
+}
+function applyMlbBoxscore(parsed,j,game){
+ (['away','home']).forEach(function(side){
+  var group=j&&j.teams&&j.teams[side]||{},abbr=game[side],mlbTeam=MLB_TEAM_IDS[(abbr||'').toUpperCase()];
+  parsed.players.forEach(function(p){
+   if(MLB_TEAM_IDS[(p.team||'').toUpperCase()]!==mlbTeam||!mlbTeam||!p.missing)return;
+   if(p.h===0){p.double=0;p.triple=0;p.hr=0;p.missing=false;derive(p);return;}
+   var athlete=matchMlbBatter(group.players,p.name),st=athlete&&athlete.stats&&athlete.stats.batting;
+   if(!st)return;
+   var h=num(st.hits),d=num(st.doubles),t=num(st.triples),hr=num(st.homeRuns);
+   if([h,d,t,hr].some(function(x){return x==null;})||h!==p.h||d+t+hr>h)return;
+   p.double=d;p.triple=t;p.hr=hr;p.missing=false;p.mlbVerified=true;derive(p);
+  });
+ });
+ parsed.unresolved=parsed.players.some(function(p){return p.missing;});
+ return !parsed.unresolved;
+}
 async function boxGame(game,signal,force){
  var id=String(game.id),cached=await cacheRead(id);
- if(!force&&cached&&cached.version===3&&(cached.final||Date.now()-cached.at<120000))return cached.data;
- var url='https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/summary?event='+encodeURIComponent(id);
- var j=await get(url,signal),parsed=normalizeGame(j,id);
+ if(!force&&cached&&cached.version===5&&(cached.final||Date.now()-cached.at<120000))return cached.data;
+ var j=await get('https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/summary?event='+encodeURIComponent(id),signal);
+ var parsed=normalizeGame(j,id);
+ // ESPN summary can omit 2B and 3B entirely even when H, BB and K are present.
  if(parsed.unresolved){
-  try{var pb=await get('https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/playbyplay?event='+encodeURIComponent(id),signal);var b={players:parsed.players,has:{double:false,triple:false,hr:false}};
-   if(applyExtra(b,pb)){parsed.unresolved=false;parsed.players.forEach(function(p){p.missing=false;derive(p);});}
-  }catch(e){if(e.name==='AbortError')throw e;}
+  var official=findMlbGame(game);
+  if(official){
+   try{
+    var detail=await get('https://statsapi.mlb.com/api/v1/game/'+encodeURIComponent(official.gamePk)+'/boxscore',signal);
+    applyMlbBoxscore(parsed,detail,game);
+   }catch(e){if(e.name==='AbortError')throw e;}
+  }
  }
  parsed.final=game.final;
- await cacheWrite(id,{version:3,at:Date.now(),final:game.final&&!parsed.unresolved,data:parsed});
+ await cacheWrite(id,{version:5,at:Date.now(),final:game.final&&!parsed.unresolved,data:parsed});
  return parsed;
 }
 function flattenEvents(j){
- var events=Array.isArray(j.events)?j.events:[];return events.map(function(e){
+ var events=Array.isArray(j.events)?j.events:[];
+ return events.map(function(e){
   var c=e.competitions&&e.competitions[0]||{},s=e.status||c.status||{},state=s.type&&s.type.state||'',done=!!(s.type&&s.type.completed)||state==='post';
-  return {id:String(e.id||c.id||''),final:done,live:state==='in',name:e.shortName||e.name||''};
+  var sides=c.competitors||[],home=sides.find(function(x){return x.homeAway==='home';})||{},away=sides.find(function(x){return x.homeAway==='away';})||{};
+  return{id:String(e.id||c.id||''),final:done,live:state==='in',name:e.shortName||e.name||'',date:e.date||c.date||'',
+   home:home.team&&home.team.abbreviation||'',away:away.team&&away.team.abbreviation||'',
+   homeScore:num(home.score),awayScore:num(away.score)};
  }).filter(function(e){return e.id;});
 }
-
 async function loadGames(id,force){
  var pair=range(),start=pair[0],end=pair[1],cap=end>TODAY?TODAY:end;
  if(start>TODAY){players=[];games=[];setStatus('This period is in the future. No games have been played.');render(false);return;}
@@ -305,7 +359,7 @@ async function loadGames(id,force){
     var response=await get(url,aborter.signal);
     if(!active(id))return;
     if(!Array.isArray(response.events))throw Error('Invalid scoreboard response');
-    flattenEvents(response).forEach(function(game){scoreboardEvents.set(game.id,game);});
+    flattenEvents(response).forEach(function(game){game.day=day;scoreboardEvents.set(game.id,game);});
    }catch(error){
     if(error.name==='AbortError')return;
     dayFailures.push(day);
@@ -326,6 +380,13 @@ async function loadGames(id,force){
   if(dayFailures.length)warn('ESPN scoreboard failed for '+dayFailures.length+' day(s): '+dayFailures.join(', ')+'. The selected period is not complete.');
   showProgress(0,0);render(false);return;
  }
+ // One official MLB schedule lookup per period supports verified hit-type fallback.
+ officialGames=[];
+ try{
+  var sched=await get('https://statsapi.mlb.com/api/v1/schedule?sportId=1&startDate='+start+'&endDate='+cap,aborter.signal);
+  if(!active(id))return;
+  (sched.dates||[]).forEach(function(d){(d.games||[]).forEach(function(g){g.day=d.date;officialGames.push(g);});});
+ }catch(e){if(e.name==='AbortError')return;}
  var results=[],cursor=0,processed=0,tot=targets.length;
  showProgress(tot,0);render(true);
  async function worker(){
@@ -351,7 +412,7 @@ async function loadGames(id,force){
  var issues=[];
  if(dayFailures.length)issues.push(dayFailures.length+' scoreboard date(s) could not be retrieved ('+dayFailures.join(', ')+')');
  if(failed)issues.push(failed+' game box score(s) failed');
- if(incomplete)issues.push(incomplete+' game(s) had incomplete extra-base-hit details');
+ if(incomplete)issues.push(incomplete+' game(s) lack verified hit-type data from ESPN and MLB');
  if(issues.length)warn(issues.join('. ')+'. Affected stats are unavailable or totals may be incomplete; the app does not estimate them.');
  setStatus('ESPN · '+loaded+'/'+tot+' box scores · '+players.length+' batters'+(pending?' · '+pending+' upcoming game(s)':'')+(live?' · live stats provisional':'')+(issues.length?' · incomplete source coverage':'')+'.',!!(dayFailures.length||failed));
  render(false);
@@ -411,7 +472,7 @@ async function loadSeason(id){
  render(false);
 }
 async function load(force){
- var id=++requestId;if(aborter)aborter.abort();aborter=new AbortController();
+ var id=++requestId;if(aborter)aborter.abort();aborter=new AbortController();officialGames=[];
  loaded=0;failed=0;incomplete=0;pending=0;live=false;players=[];games=[];teams.clear();warn('');updateNav();render(true);showProgress(0,0);
  try{if(mode==='season')await loadSeason(id);else await loadGames(id,force===true);}catch(e){
   if(!active(id)||e.name==='AbortError')return;
