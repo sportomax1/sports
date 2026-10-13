@@ -69,7 +69,7 @@ dialog::backdrop{background:#000a;backdrop-filter:blur(3px)}
 </head>
 <body>
 <main>
-<header><div><small>Sportomax · MLB Analytics</small><h1>MLB Hit Leaders</h1><p>Strikeouts, walks, singles, doubles, triples &amp; home runs, sorted high to low.</p></div><a class="home" href="./index.html">← Sports Home</a></header>
+<header><div><small>Sportomax · MLB Analytics</small><h1>MLB Hit Leaders</h1><p>Strikeouts, other outs, walks, singles, doubles, triples &amp; home runs, ranked high to low.</p></div><a class="home" href="./index.html">← Sports Home</a></header>
 <div class="toolbar">
 <div class="segment" id="modes" aria-label="Time period"><button data-mode="day" class="active">DAY</button><button data-mode="week">WEEK</button><button data-mode="month">MONTH</button><button data-mode="season">SEASON</button></div>
 <div class="datecontrol"><button id="prev" aria-label="Previous period">‹</button><span class="period" id="period"></span><input id="date" type="date" aria-label="Select date"><select id="year" aria-label="Season year" hidden></select><button id="next" aria-label="Next period">›</button></div>
@@ -78,7 +78,7 @@ dialog::backdrop{background:#000a;backdrop-filter:blur(3px)}
 <div id="status" role="status" aria-live="polite"></div><div id="progress" class="progress"><i id="progressBar"></i></div>
 </div>
 <div class="filterbar"><select id="teamFilter" aria-label="Filter by team"><option value="">All Teams</option></select><input id="search" type="search" placeholder="Find a player…" aria-label="Find a player"><select id="limit" aria-label="Players per category"><option value="10">Top 10</option><option value="20" selected>Top 20</option><option value="50">Top 50</option><option value="0">All players</option></select></div>
-<div class="note" id="scopeNote">ESPN batting data, with MLB official box-score fallback for missing hit types. Singles = hits − doubles − triples − home runs. Each category is ranked independently; strikeouts are batter strikeouts (K).</div>
+<div class="note" id="scopeNote">Other Outs = groundouts + air outs + sacrifice outs; excludes strikeouts, hits, and walks. ESPN batting data with MLB official game box-score details. Singles = H − 2B − 3B − HR. Each category is ranked independently; strikeouts are batter strikeouts (K).</div>
 <div id="warning" class="warn"></div>
 <div id="meta"></div>
 <section class="board" id="board" aria-label="MLB player category leaders"></section>
@@ -88,7 +88,7 @@ dialog::backdrop{background:#000a;backdrop-filter:blur(3px)}
 <script>
 (function(){
 'use strict';
-var METRICS=[['k','Strikeouts','K'],['bb','Walks','BB'],['single','Singles','1B'],['double','Doubles','2B'],['triple','Triples','3B'],['hr','Home Runs','HR']];
+var METRICS=[['k','Strikeouts','K'],['outs','Other Outs','OUT'],['bb','Walks','BB'],['single','Singles','1B'],['double','Doubles','2B'],['triple','Triples','3B'],['hr','Home Runs','HR']];
 var $=function(id){return document.getElementById(id);};
 var TODAY=new Date().toLocaleDateString('en-CA',{timeZone:'America/Denver',year:'numeric',month:'2-digit',day:'2-digit'});
 if(!/^\d{4}-\d{2}-\d{2}$/.test(TODAY)){var n=new Date();TODAY=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');}
@@ -111,7 +111,7 @@ function updateNav(){
  if(mode==='season')$('period').textContent=year+' Season';else{var r=range();$('period').textContent=mode==='day'?nice(anchor,{weekday:'short',month:'short',day:'numeric',year:'numeric'}):mode==='week'?nice(r[0])+' – '+nice(r[1],{month:'short',day:'numeric',year:'numeric'}):nice(r[0],{month:'long',year:'numeric'});}
  var atEnd=mode==='season'?year>=Number(TODAY.slice(0,4)):mode==='day'?anchor>=TODAY:mode==='week'?plus(range()[0],7)>TODAY:monthStart(plus(range()[1],1))>TODAY;
  $('next').disabled=atEnd;
- $('scopeNote').textContent=mode==='season'?'ESPN batting leaders for '+year+' ('+(seasonType==='2'?'regular season':'postseason')+'). Singles are calculated as H − 2B − 3B − HR. Strikeouts are batter strikeouts.':'ESPN batting data plus MLB hit-type fallback, aggregated for the selected '+mode+'. Singles = H − 2B − 3B − HR. Current/live games may change.';
+ $('scopeNote').textContent=mode==='season'?'ESPN batting leaders for '+year+' ('+(seasonType==='2'?'regular season':'postseason')+'). Other Outs exclude strikeouts, hits, and safe outcomes. Singles = H − 2B − 3B − HR. Strikeouts are batter strikeouts.':'ESPN batting data plus MLB hit-type fallback, aggregated for the selected '+mode+'. Other Outs track ground/air/sacrifice batting outs, not Ks. Singles = H − 2B − 3B − HR. Current/live games may change.';
 }
 function badge(text){var el=document.createElement('span');el.className='chip';el.textContent=text;return el;}
 function setStatus(msg,isError){$('status').textContent=msg;$('status').classList.toggle('error',!!isError);}
@@ -120,7 +120,7 @@ function showProgress(total,count){$('progress').style.display=total?'block':'no
 function uid(a){var v=a&&a.id||'';if(!v&&a&&a.$ref){var m=a.$ref.match(/athletes\/(\d+)/);if(m)v=m[1];}return safe(v);}
 function teamInfo(t){t=t||{};var id=String(t.id||''),abbr=t.abbreviation||t.shortDisplayName||t.teamShortName||'',logo=t.logo||t.logos&&t.logos[0]&&t.logos[0].href||'';if(!logo&&abbr)logo='https://a.espncdn.com/i/teamlogos/mlb/500/'+encodeURIComponent(String(abbr).toLowerCase())+'.png';return {id:id,abbr:String(abbr),name:t.displayName||t.name||abbr,logo:logo};}
 function face(id,custom){return custom||'https://a.espncdn.com/i/headshots/mlb/players/full/'+encodeURIComponent(id||'0')+'.png';}
-function playerRow(id,name,head,tm){return{id:String(id),name:name||'Unknown player',head:face(id,head),teamId:tm.id,team:tm.abbr,logo:tm.logo,k:0,bb:0,h:0,double:0,triple:0,hr:0,single:null,games:0,missing:false};}
+function playerRow(id,name,head,tm){return{id:String(id),name:name||'Unknown player',head:face(id,head),teamId:tm.id,team:tm.abbr,logo:tm.logo,k:0,outs:null,bb:0,h:0,double:0,triple:0,hr:0,single:null,games:0,missing:false};}
 function num(x){if(x==null||x==='--'||x==='—'||x==='')return null;var n=Number(String(x).replace(/,/g,''));return Number.isFinite(n)?n:null;}
 function lab(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');}
 function take(o,aliases){for(var i=0;i<aliases.length;i++){if(o&&o[aliases[i]]!=null){var n=num(o[aliases[i]]);if(n!=null)return n;}}return null;}
@@ -212,6 +212,10 @@ function merge(rows){
   var old=map.get(p.id);if(!old){old=playerRow(p.id,p.name,p.head,teamInfo({id:p.teamId,abbreviation:p.team,logo:p.logo}));map.set(p.id,old);}
   if(p.teamId){old.teamId=p.teamId;old.team=p.team;old.logo=p.logo;}
   ['k','bb','h','double','triple','hr'].forEach(function(key){old[key]+=p[key]||0;});
+  // Missing one game's out stats makes the entire period's count unknown.
+  if(p.outs==null)old.outsMissing=true;
+  if(old.outsMissing)old.outs=null;
+  else old.outs=(old.outs||0)+p.outs;
   old.games+=p.games||1;old.missing=old.missing||p.missing;
  });});
  return Array.from(map.values()).map(function(p){derive(p);return p;});
@@ -298,15 +302,38 @@ function matchMlbBatter(players,name){
  });
  return match.length===1?match[0]:null;
 }
+// "Other Outs" counts plate appearances with a non-strikeout batter out.
+// StatsAPI's airOuts covers aerial outs; flyOuts/lineOuts/popOuts are
+// components of that value and are NEVER also added to it.
+// Sacrifice outs are separate in the hitting split. Do not use AB-H-K,
+// which wrongly includes reaching on a fielder's choice or an error.
+function otherBattingOuts(st){
+ if(!st||typeof st!=='object')return null;
+ var go=num(st.groundOuts),ao=num(st.airOuts),fly=num(st.flyOuts),
+     line=num(st.lineOuts),pop=num(st.popOuts),sh=num(st.sacBunts),sf=num(st.sacFlies);
+ var air=ao!=null?ao:(fly!=null||line!=null||pop!=null?(fly||0)+(line||0)+(pop||0):null);
+ if(go==null&&air==null&&sh==null&&sf==null)return null;
+ // If one counter family is entirely absent, never guess it as zero unless
+ // the whole batting line is demonstrably empty (zero plate appearances).
+ if(go==null||air==null){
+  if(num(st.plateAppearances)===0)return 0;
+  return null;
+ }
+ return go+air+(sh||0)+(sf||0);
+}
 function applyMlbBoxscore(parsed,j,game){
- (['away','home']).forEach(function(side){
-  var group=j&&j.teams&&j.teams[side]||{},abbr=game[side],mlbTeam=MLB_TEAM_IDS[(abbr||'').toUpperCase()];
+ ['away','home'].forEach(function(side){
+  var team=j&&j.teams&&j.teams[side]||{},abbr=game[side],
+      mlbTeam=MLB_TEAM_IDS[(abbr||'').toUpperCase()];
   parsed.players.forEach(function(p){
-   if(MLB_TEAM_IDS[(p.team||'').toUpperCase()]!==mlbTeam||!mlbTeam||!p.missing)return;
-   if(p.h===0){p.double=0;p.triple=0;p.hr=0;p.missing=false;derive(p);return;}
-   var athlete=matchMlbBatter(group.players,p.name),st=athlete&&athlete.stats&&athlete.stats.batting;
-   if(!st)return;
-   var h=num(st.hits),d=num(st.doubles),t=num(st.triples),hr=num(st.homeRuns);
+   if(!mlbTeam||MLB_TEAM_IDS[(p.team||'').toUpperCase()]!==mlbTeam)return;
+   var athlete=matchMlbBatter(team.players,p.name),
+       batting=athlete&&athlete.stats&&athlete.stats.batting;
+   if(!batting)return;
+   var outs=otherBattingOuts(batting);if(outs!=null)p.outs=outs;
+   if(!p.missing)return;
+   var h=num(batting.hits),d=num(batting.doubles),
+       t=num(batting.triples),hr=num(batting.homeRuns);
    if([h,d,t,hr].some(function(x){return x==null;})||h!==p.h||d+t+hr>h)return;
    p.double=d;p.triple=t;p.hr=hr;p.missing=false;p.mlbVerified=true;derive(p);
   });
@@ -316,11 +343,13 @@ function applyMlbBoxscore(parsed,j,game){
 }
 async function boxGame(game,signal,force){
  var id=String(game.id),cached=await cacheRead(id);
- if(!force&&cached&&cached.version===5&&(cached.final||Date.now()-cached.at<120000))return cached.data;
+ if(!force&&cached&&cached.version===6&&(cached.final||Date.now()-cached.at<120000))return cached.data;
  var j=await get('https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/summary?event='+encodeURIComponent(id),signal);
  var parsed=normalizeGame(j,id);
  // ESPN summary can omit 2B and 3B entirely even when H, BB and K are present.
- if(parsed.unresolved){
+ // An official game boxscore is needed for the new Other Outs category
+ // even when ESPN already provided all six original stat categories.
+ if(parsed.unresolved||parsed.players.some(function(p){return p.outs==null;})){
   var official=findMlbGame(game);
   if(official){
    try{
@@ -330,7 +359,8 @@ async function boxGame(game,signal,force){
   }
  }
  parsed.final=game.final;
- await cacheWrite(id,{version:5,at:Date.now(),final:game.final&&!parsed.unresolved,data:parsed});
+ parsed.outsMissing=parsed.players.some(function(p){return p.outs==null;});
+ await cacheWrite(id,{version:6,at:Date.now(),final:game.final&&!parsed.unresolved,data:parsed});
  return parsed;
 }
 function flattenEvents(j){
@@ -413,6 +443,8 @@ async function loadGames(id,force){
  if(dayFailures.length)issues.push(dayFailures.length+' scoreboard date(s) could not be retrieved ('+dayFailures.join(', ')+')');
  if(failed)issues.push(failed+' game box score(s) failed');
  if(incomplete)issues.push(incomplete+' game(s) lack verified hit-type data from ESPN and MLB');
+ var outGaps=results.filter(function(g){return g.outsMissing;}).length;
+ if(outGaps)issues.push(outGaps+' game(s) have unavailable other-outs statistics');
  if(issues.length)warn(issues.join('. ')+'. Affected stats are unavailable or totals may be incomplete; the app does not estimate them.');
  setStatus('ESPN · '+loaded+'/'+tot+' box scores · '+players.length+' batters'+(pending?' · '+pending+' upcoming game(s)':'')+(live?' · live stats provisional':'')+(issues.length?' · incomplete source coverage':'')+'.',!!(dayFailures.length||failed));
  render(false);
@@ -451,6 +483,30 @@ function seasonStatRow(item,definitions){
  if(tm.id)teams.set(tm.id,tm);
  return row;
 }
+// Augment ESPN season leaders with MLB season hitting outs. Name-matching
+// must be unique to avoid attributing stats to a similarly named player.
+function seasonOtherOuts(esRows,mlbResponse){
+ var splits=(mlbResponse.stats||[]).flatMap(function(group){return group.splits||[];});
+ var matches=new Map();
+ splits.forEach(function(split){
+  var person=split.player||split.person||{},name=normalizeAthleteName(person.fullName||person.displayName);
+  if(!name)return;
+  var arr=matches.get(name)||[];arr.push(split);matches.set(name,arr);
+ });
+ var matched=0;
+ esRows.forEach(function(player){
+  var candidates=matches.get(normalizeAthleteName(player.name))||[];
+  var teamId=MLB_TEAM_IDS[(player.team||'').toUpperCase()];
+  if(candidates.length>1&&teamId){
+   var byTeam=candidates.filter(function(split){return Number(split.team&&split.team.id)===teamId;});
+   if(byTeam.length===1)candidates=byTeam;
+  }
+  if(candidates.length!==1)return;
+  var score=otherBattingOuts(candidates[0].stat||{});
+  if(score!=null){player.outs=score;matched++;}
+ });
+ return matched;
+}
 async function loadSeason(id){
  setStatus('Loading ESPN batting statistics for '+year+'…');
  var all=new Map(),count=0,last=0;
@@ -465,10 +521,25 @@ async function loadSeason(id){
   setStatus('ESPN batting leaders · '+players.length+' players fetched…');
   if(last<200||count>=1200)break;
  }
- players=Array.from(all.values());incomplete=players.filter(function(p){return p.missing;}).length;
+ players=Array.from(all.values());
  if(!players.length)throw Error('ESPN returned no batting statistics for this season');
- if(incomplete)warn('ESPN did not supply a complete hit-type breakdown for '+incomplete+' player(s). Missing values are shown as unavailable rather than estimated.');
- setStatus('ESPN batting leaderboard · '+year+' '+(seasonType==='2'?'regular season':'postseason')+' · '+players.length+' players.');
+ incomplete=players.filter(function(p){return p.missing;}).length;
+ setStatus('ESPN batting stats loaded. Checking official MLB season outs…');
+ var outsError='';
+ try{
+  var gameType=seasonType==='3'?'P':'R';
+  var link='https://statsapi.mlb.com/api/v1/stats?stats=season&group=hitting&sportIds=1&season='+year+'&gameType='+gameType+'&playerPool=All&limit=2000';
+  var official=await get(link,aborter.signal);if(!active(id))return;
+  var matched=seasonOtherOuts(players,official);
+  if(!matched)outsError='Official MLB season-out statistics could not be matched to ESPN players.';
+ }catch(e){if(e.name==='AbortError')throw e;outsError='Official MLB season-outs feed unavailable: '+e.message;}
+ if(!active(id))return;
+ var issues=[];
+ if(incomplete)issues.push('ESPN lacks hit-type detail for '+incomplete+' player(s)');
+ if(outsError)issues.push(outsError);
+ else{var missing=players.filter(function(p){return p.outs==null;}).length;if(missing)issues.push('Outs unavailable for '+missing+' player(s) without a verified MLB season match');}
+ if(issues.length)warn(issues.join('. ')+'. Missing counts remain unavailable; they are not estimated.');
+ setStatus('MLB '+year+' '+(seasonType==='2'?'regular season':'postseason')+' · '+players.length+' ESPN players · '+players.filter(function(p){return p.outs!=null;}).length+' with verified other-outs totals.');
  render(false);
 }
 async function load(force){
