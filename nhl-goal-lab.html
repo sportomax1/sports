@@ -61,11 +61,9 @@ dialog{background:#0e1d2a;border:1px solid #416078;border-radius:15px;color:var(
 const $=s=>document.querySelector(s);
 const $$=s=>Array.from(document.querySelectorAll(s));
 const TEAMS={ANA:'Anaheim Ducks',BOS:'Boston Bruins',BUF:'Buffalo Sabres',CAR:'Carolina Hurricanes',CBJ:'Columbus Blue Jackets',CGY:'Calgary Flames',CHI:'Chicago Blackhawks',COL:'Colorado Avalanche',DAL:'Dallas Stars',DET:'Detroit Red Wings',EDM:'Edmonton Oilers',FLA:'Florida Panthers',LAK:'Los Angeles Kings',MIN:'Minnesota Wild',MTL:'Montreal Canadiens',NJD:'New Jersey Devils',NSH:'Nashville Predators',NYI:'New York Islanders',NYR:'New York Rangers',OTT:'Ottawa Senators',PHI:'Philadelphia Flyers',PIT:'Pittsburgh Penguins',SEA:'Seattle Kraken',SJS:'San Jose Sharks',STL:'St. Louis Blues',TBL:'Tampa Bay Lightning',TOR:'Toronto Maple Leafs',UTA:'Utah Mammoth',VAN:'Vancouver Canucks',VGK:'Vegas Golden Knights',WSH:'Washington Capitals',WPG:'Winnipeg Jets',ARI:'Arizona Coyotes'};
-const API='/nhl-api/v1';
 const TODAY=new Date();
 const seasonNow=TODAY.getFullYear()-(TODAY.getMonth()<8?1:0);
 const state={period:'week',date:ymd(TODAY),season:seasonNow,view:'leaders',favorite:'leaders',team:'ALL',strength:'ALL',search:'',sort:'P',games:[],mode:'live',isLoading:false,abort:null,run:0,failed:0};
-const memory=new Map();
 const titleMap={leaders:['Leaderboard','Sortable player production, including G, A1, A2, primary points and scoring mix.'],lanes:['Three Lanes','Side-by-side goal, primary-assist and secondary-assist leaderboards.'],cards:['Player Cards','Portrait-driven scoring mix cards for quick scanning.'],feed:['Goal Feed','Every scored goal, with the credited goal scorer, A1 and A2.'],connections:['Connections','Most frequent scorer ← primary assister and A2-supported connections.'],teams:['Teams','Offensive scoring mixes across the selected date range.']};
 function ymd(date){const d=new Date(date);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function dateOf(s){return new Date(s+'T12:00:00')}
@@ -88,47 +86,7 @@ function makeYears(){const sel=$('#seasonSelect');for(let y=seasonNow;y>=2019;y-
 function updateTeams(){const current=state.team;const codes=new Set(Object.keys(TEAMS));for(const g of state.games){if(g.home)codes.add(g.home);if(g.away)codes.add(g.away)}$('#teamSelect').innerHTML='<option value="ALL">All teams</option>'+Array.from(codes).sort((a,b)=>(TEAMS[a]||a).localeCompare(TEAMS[b]||b)).map(t=>'<option value="'+esc(t)+'">'+esc(TEAMS[t]||t)+'</option>').join('');state.team=codes.has(current)||current==='ALL'?current:'ALL'}
 function resolvedYear(){const d=dateOf(state.date);return d.getFullYear()-(d.getMonth()<8?1:0)}
 function shift(n){if(state.period==='season'){state.season=Math.min(seasonNow,Math.max(2019,state.season+n));state.date=state.season+'-10-13'}else if(state.period==='month'){let d=dateOf(state.date);d.setMonth(d.getMonth()+n);state.date=ymd(d)}else state.date=addDays(state.date,n*(state.period==='week'?7:1));if(state.date>ymd(new Date()))state.date=ymd(new Date());if(state.period!=='season')state.season=resolvedYear();state.games=[];render();syncUI();load()}
-function strengthOf(code,owner,homeId,awayId){const s=String(code||'');if(!/^[01][3456][3456][01]$/.test(s))return 'UNK';const home=String(owner)===String(homeId);const away=String(owner)===String(awayId);if(!home&&!away)return 'UNK';const own=home?Number(s[2]):Number(s[1]);const opp=home?Number(s[1]):Number(s[2]);return own>opp?'PP':own<opp?'SH':'EV'}
-function lng(obj){if(typeof obj==='string')return obj;if(obj&&typeof obj==='object')return obj.default||obj.en||Object.values(obj)[0]||'';return ''}
-function transform(pbp,g){
-const roster=pbp.rosterSpots||[];
-const playerMap={};const homeId=pbp.homeTeam?.id??g.homeId,awayId=pbp.awayTeam?.id??g.awayId;
-for(const p of roster){const id=String(p.playerId||p.id||'');if(!id)continue;const name=(lng(p.firstName)+' '+lng(p.lastName)).trim()||lng(p.name)||('Player '+id);const team=String(p.teamId)===String(homeId)?g.home:String(p.teamId)===String(awayId)?g.away:g.home;playerMap[id]={id,name,team}}
-const goals=[];
-for(const play of pbp.plays||[]){if(play.typeDescKey!=='goal')continue;const dt=play.details||{};const team=String(dt.eventOwnerTeamId)===String(homeId)?g.home:String(dt.eventOwnerTeamId)===String(awayId)?g.away:'';if(!team)continue;const scorer=dt.scoringPlayerId==null?null:String(dt.scoringPlayerId),a1=dt.assist1PlayerId==null?null:String(dt.assist1PlayerId),a2=dt.assist2PlayerId==null?null:String(dt.assist2PlayerId);if(!scorer)continue;for(const id of [scorer,a1,a2])if(id&&!playerMap[id])playerMap[id]={id,name:'Player '+id,team};goals.push({id:String(play.eventId||play.sortOrder||goals.length),gameId:String(g.id),date:g.date,home:g.home,away:g.away,team,period:play.periodDescriptor?.number||play.period?.number||1,time:play.timeInPeriod||'',scorer,a1,a2,strength:strengthOf(play.situationCode,dt.eventOwnerTeamId,homeId,awayId),score:(dt.awayScore==null||dt.homeScore==null)?'':dt.awayScore+'–'+dt.homeScore})}
-return{id:String(g.id),date:g.date,home:g.home,away:g.away,homeId,awayId,state:g.state||'OFF',players:playerMap,goals,cachedAt:Date.now()}
-}
-function openDb(){return new Promise(resolve=>{if(!('indexedDB'in window))return resolve(null);const r=indexedDB.open('sportomax-nhl-goal-lab',1);r.onupgradeneeded=()=>{r.result.createObjectStore('games',{keyPath:'id'})};r.onsuccess=()=>resolve(r.result);r.onerror=()=>resolve(null)})}
-const dbPromise=openDb();
-async function fromCache(id){if(memory.has(id))return memory.get(id);const db=await dbPromise;if(!db)return null;return new Promise(resolve=>{try{const tx=db.transaction('games','readonly');const q=tx.objectStore('games').get(String(id));q.onsuccess=()=>resolve(q.result||null);q.onerror=()=>resolve(null)}catch{resolve(null)}})}
-async function storeCache(record){memory.set(String(record.id),record);const db=await dbPromise;if(!db)return;try{const tx=db.transaction('games','readwrite');tx.objectStore('games').put(record)}catch{}}
-async function json(path,signal){let last;for(let attempt=0;attempt<2;attempt++){try{const r=await fetch(API+path,{signal,headers:{Accept:'application/json'}});if(!r.ok)throw new Error('HTTP '+r.status+' · '+path);const type=r.headers.get('content-type')||'';if(!type.includes('json'))throw new Error('Expected JSON; verify the Vercel /nhl-api rewrite');return await r.json()}catch(e){if(signal.aborted)throw e;last=e;if(attempt===0)await new Promise(r=>setTimeout(r,350))}}throw last}
-async function pool(items,n,fn,cb){let index=0,done=0;const out=new Array(items.length);await Promise.all(Array.from({length:Math.min(n,items.length)},async()=>{while(index<items.length){const i=index++;try{out[i]=await fn(items[i])}catch(e){out[i]={error:String(e.message||e)}}done++;cb(done,items.length)}}));return out}
 function cancel(){if(state.abort)state.abort.abort();state.run++;state.isLoading=false;state.abort=null;$('#meter').style.display='none';syncUI();setStatus('Load canceled. Previous results preserved.')}
-async function loadViaProxy(){
-if(state.isLoading)cancel();const r=range();if(r.end<r.start){setStatus('No games in this future date range.',true);return}
-const run=++state.run;const ctrl=new AbortController();state.abort=ctrl;state.isLoading=true;state.mode='live';$('#meter').style.display='block';progress(0,1);syncUI();const old=state.games;
-try{
-const weekStarts=[];for(let day=r.start;day<=r.end;day=addDays(day,6))weekStarts.push(day);
-setStatus('Looking up NHL games ('+weekStarts.length+' schedule requests)…');
-const schedules=await pool(weekStarts,5,day=>json('/schedule/'+day,ctrl.signal),(d,t)=>{if(run===state.run){progress(d,t);setStatus('Schedules '+d+' / '+t)}});
-if(run!==state.run)return;
-const badSchedules=schedules.filter(x=>x?.error).length;
-const scheduleMap=new Map();
-for(const s of schedules)if(s&&!s.error)for(const w of s.gameWeek||[])for(const g of w.games||[]){const date=g.gameDate||w.date||'';if(date<r.start||date>r.end||g.gameType!==2||!g.id)continue;if(['FUT','PRE'].includes(g.gameState))continue;const home=g.homeTeam?.abbrev,away=g.awayTeam?.abbrev;if(!home||!away)continue;scheduleMap.set(String(g.id),{id:String(g.id),date,home,away,homeId:g.homeTeam.id,awayId:g.awayTeam.id,state:g.gameState})}
-if(!scheduleMap.size&&badSchedules===weekStarts.length)throw new Error('Could not read NHL schedules. Deploy on Vercel with vercel.json proxy; direct browser calls are blocked by CORS.');
-const selected=[...scheduleMap.values()].sort((a,b)=>a.date.localeCompare(b.date));
-let cached=0;setStatus('Loading '+selected.length+' NHL play-by-play records…');
-const records=await pool(selected,7,async g=>{const prior=await fromCache(g.id);if(prior&&(prior.state==='OFF'||prior.state==='FINAL'||prior.state==='COMPLETED'||Date.now()-prior.cachedAt<120000)){cached++;return prior}const raw=await json('/gamecenter/'+g.id+'/play-by-play',ctrl.signal);const record=transform(raw,g);await storeCache(record);return record},(d,t)=>{if(run===state.run){progress(d,t);setStatus('Goal events '+d+' / '+t+' games · '+cached+' cached')}})
-if(run!==state.run)return;
-state.failed=records.filter(g=>g?.error).length+badSchedules;
-state.games=records.filter(g=>g&&!g.error);
-updateTeams();render();syncUI();$('#meter').style.display='none';setStatus('Loaded '+state.games.length+' games · '+state.games.reduce((n,g)=>n+g.goals.length,0)+' goals'+(state.failed?' · '+state.failed+' requests failed':'')+'.'+(cached?' Cached games: '+cached+'.':''),!!state.failed);
-$('#notice').textContent=(state.failed?'Partial data: some schedule or play-by-play requests failed. Counts may be incomplete. ':'')+'Source: NHL goal event records. A1 and A2 are separately credited; only completed/in-progress games are included. '+(state.period==='season'?'Season-wide loads can take time on the first visit.':'');
-}catch(e){if(run!==state.run)return;state.games=old;render();setStatus('Load failed: '+e.message,true);$('#meter').style.display='none'}
-finally{if(run===state.run){state.isLoading=false;state.abort=null;syncUI()}}
-}
-
 /* GitHub Pages cannot rewrite /nhl-api. Load CORS-safe, GitHub Actions-generated JSON. */
 const DATA_BASE='https://raw.githubusercontent.com/sportomax1/sports/main/data/nhl/';
 function dataMonths(a,b){
