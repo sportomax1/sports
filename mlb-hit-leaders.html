@@ -136,7 +136,7 @@ function statFields(stats,labels,keys){var o=fields(stats,labels,keys);return{
  hr:take(o,['hr','homeruns','homerun'])
 };}
 function addValues(dest,st){['k','bb','h','double','triple','hr'].forEach(function(k){if(st[k]!=null)dest[k]+=st[k];});}
-function derive(p){p.single=p.missing?null:Math.max(0,p.h-p.double-p.triple-p.hr);}
+function derive(p){if(p.missing){p.single=null;p.double=null;p.triple=null;p.hr=null;}else{p.single=Math.max(0,p.h-p.double-p.triple-p.hr);}}
 function teamOf(g){return teamInfo(g.team||g.competitor||{});}
 function parseBox(json,eventId){
  var root=json.gamepackageJSON||json,groups=root.boxscore&&root.boxscore.players||[],results=new Map(),has={k:false,bb:false,h:false,double:false,triple:false,hr:false};
@@ -160,13 +160,13 @@ function parseBox(json,eventId){
  return{players:Array.from(results.values()),has:has,event:eventId,extraReady:has.double&&has.triple&&has.hr};
 }
 function maybePlays(j){
- var root=j.gamepackageJSON||j;var candidates=[root.plays,root.playByPlay&&root.playByPlay.plays,root.atBats,root.playByPlay&&root.playByPlay.items,root.gamepackageJSON&&root.gamepackageJSON.plays];
+ var root=j.gamepackageJSON||j;var candidates=[root.plays,root.playByPlay,root.playByPlay&&root.playByPlay.plays,root.atBats,root.playByPlay&&root.playByPlay.items,root.gamepackageJSON&&root.gamepackageJSON.plays];
  for(var i=0;i<candidates.length;i++){var v=candidates[i];if(Array.isArray(v)&&v.length)return v;if(v&&Array.isArray(v.allPlays)&&v.allPlays.length)return v.allPlays;}
  return [];
 }
 function parseExtraPlays(j,box){
  var plays=maybePlays(j),rows=box.players,found={};
- rows.forEach(function(p){found[p.id]={double:0,triple:0,hr:0};});
+ rows.forEach(function(p){found[p.id]={single:0,double:0,triple:0,hr:0};});
  var count=0;
  plays.forEach(function(play){
   var type=lab(play.type&&play.type.text||play.result&&play.result.eventType||play.result&&play.result.type||play.result&&play.result.event||play.eventType||'');
@@ -175,6 +175,7 @@ function parseExtraPlays(j,box){
   if(/homerun|homered|homers/.test(type)||/\bhomers?\b|\bhomered\b|\bhome run\b/i.test(description))hit='hr';
   else if(/tripled|triple/.test(type)||/\btriples?\b|\btripled\b/i.test(description))hit='triple';
   else if(/doubled|double/.test(type)||/\bdoubles?\b|\bdoubled\b/i.test(description))hit='double';
+  else if(/single/.test(type)||/\bsingles?\b|\bsingled\b/i.test(description))hit='single';
   if(!hit)return;
   var p=play.batter||play.athlete||play.player||play.result&&play.result.batter||{};
   var id=uid(p);
@@ -182,15 +183,18 @@ function parseExtraPlays(j,box){
   if(!found[id]&&description){var matched=rows.filter(function(r){var full=r.name.toLowerCase(),surname=full.split(' ').slice(-1)[0];return description.toLowerCase().startsWith(full)||description.toLowerCase().startsWith(surname+' ');});if(matched.length===1)id=matched[0].id;}
   if(found[id]){found[id][hit]++;count++;}
  });
- return{values:found,count:count,available:plays.length>0};
+ // ESPN PBP can be a partial feed or pitch-level feed. Only trust reconstructed
+ // doubles/triples/homers if every box-score hit can be reconciled to one hit event.
+ var complete=!!box.has.h&&rows.every(function(p){var v=found[p.id];return v&&v.single+v.double+v.triple+v.hr===p.h;});
+ return{values:found,count:count,available:complete};
 }
 function applyExtra(box,source){
  var inferred=parseExtraPlays(source,box);
  if(!inferred.available)return false;
- for(var i=0;i<box.players.length;i++){
-  var p=box.players[i],ex=inferred.values[p.id];if(!ex)continue;
+ box.players.forEach(function(p){
+  var ex=inferred.values[p.id];
   ['double','triple','hr'].forEach(function(k){if(!box.has[k])p[k]=ex[k];});
- }
+ });
  return true;
 }
 function normalizeGame(json,id){
@@ -264,9 +268,9 @@ async function get(url,signal){
  return r.json();
 }
 function active(id){return id===requestId;}
-async function boxGame(game,signal){
+async function boxGame(game,signal,force){
  var id=String(game.id),cached=await cacheRead(id);
- if(cached&&cached.version===2&&(cached.final||Date.now()-cached.at<120000))return cached.data;
+ if(!force&&cached&&cached.version===3&&(cached.final||Date.now()-cached.at<120000))return cached.data;
  var url='https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/summary?event='+encodeURIComponent(id);
  var j=await get(url,signal),parsed=normalizeGame(j,id);
  if(parsed.unresolved){
@@ -275,7 +279,7 @@ async function boxGame(game,signal){
   }catch(e){if(e.name==='AbortError')throw e;}
  }
  parsed.final=game.final;
- await cacheWrite(id,{version:2,at:Date.now(),final:game.final&&!parsed.unresolved,data:parsed});
+ await cacheWrite(id,{version:3,at:Date.now(),final:game.final&&!parsed.unresolved,data:parsed});
  return parsed;
 }
 function flattenEvents(j){
@@ -284,7 +288,7 @@ function flattenEvents(j){
   return {id:String(e.id||c.id||''),final:done,live:state==='in',name:e.shortName||e.name||''};
  }).filter(function(e){return e.id;});
 }
-async function loadGames(id){
+async function loadGames(id,force){
  var pair=range(),start=pair[0],end=pair[1],cap=end>TODAY?TODAY:end;
  if(start>TODAY){players=[];games=[];setStatus('This period is in the future. No games have been played.');render(false);return;}
  var dateParam=start.replace(/-/g,'')+'-'+cap.replace(/-/g,'');
@@ -301,7 +305,7 @@ async function loadGames(id){
  async function worker(){
   while(active(id)&&cursor<tot){
    var idx=cursor++,g=targets[idx];
-   try{var item=await boxGame(g,aborter.signal);if(!active(id))return;results.push(item);loaded++;if(item.unresolved)incomplete++;}
+   try{var item=await boxGame(g,aborter.signal,force);if(!active(id))return;results.push(item);loaded++;if(item.unresolved)incomplete++;}
    catch(e){if(e.name==='AbortError')return;failed++;}
    processed++;
    if(active(id)&&(processed%5===0||processed===tot)){
@@ -354,10 +358,10 @@ async function loadSeason(id){
  setStatus('ESPN batting leaderboard · '+year+' '+(seasonType==='2'?'regular season':'postseason')+' · '+players.length+' players.');
  render(false);
 }
-async function load(){
+async function load(force){
  var id=++requestId;if(aborter)aborter.abort();aborter=new AbortController();
  loaded=0;failed=0;incomplete=0;pending=0;live=false;players=[];games=[];teams.clear();warn('');updateNav();render(true);showProgress(0,0);
- try{if(mode==='season')await loadSeason(id);else await loadGames(id);}catch(e){
+ try{if(mode==='season')await loadSeason(id);else await loadGames(id,force===true);}catch(e){
   if(!active(id)||e.name==='AbortError')return;
   setStatus('ESPN request failed: '+e.message,true);
   warn('No replacement statistics were invented. ESPN may be temporarily unavailable or may have changed an endpoint.');showProgress(0,0);render(false);
@@ -376,7 +380,7 @@ $('date').onchange=function(){if(this.value&&this.value<=TODAY){anchor=this.valu
 $('year').innerHTML=Array.from({length:Number(TODAY.slice(0,4))-1990+1},function(_,i){var y=Number(TODAY.slice(0,4))-i;return '<option value="'+y+'">'+y+'</option>';}).join('');
 $('year').onchange=function(){year=Number(this.value);load();};
 $('seasonType').onchange=function(){seasonType=this.value;load();};
-$('refresh').onclick=load;
+$('refresh').onclick=function(){load(true);};
 $('teamFilter').onchange=function(){render(false);};
 $('search').oninput=function(){render(false);};
 $('limit').onchange=function(){render(false);};
