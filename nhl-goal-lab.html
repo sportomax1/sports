@@ -166,7 +166,7 @@ function snapshot(){
 const byId=new Map(),playerGp=new Map(),goals=[];
 const strength=state.strength,team=state.team;
 for(const game of state.games){
-const rows=game.goals.filter(g=>(team==='ALL'||g.team===team)&&(strength==='ALL'||g.strength===strength));
+const rows=game.goals.filter(g=>Number(g.period)<5&&(team==='ALL'||g.team===team)&&(strength==='ALL'||g.strength===strength));
 for(const [id,p] of Object.entries(game.players||{})){if(team!=='ALL'&&p.team!==team)continue;if(!playerGp.has(id))playerGp.set(id,new Set());playerGp.get(id).add(game.id);if(!byId.has(id))byId.set(id,{...p,G:0,A1:0,A2:0,P:0})}
 for(const g of rows){
 goals.push(g);
@@ -211,7 +211,7 @@ const entries=[...teams.values()].sort((a,b)=>b.G-a.G);return '<div class="teams
 function showPlayer(id){
 const s=snapshot();const p=s.all.get(String(id));if(!p)return;
 const appearances=state.games.filter(g=>g.players?.[p.id]&&(state.team==='ALL'||g.players[p.id].team===state.team));const logs=[];
-for(const game of state.games){let g=0,a1=0,a2=0;for(const event of game.goals){if(state.team!=='ALL'&&event.team!==state.team)continue;if(state.strength!=='ALL'&&event.strength!==state.strength)continue;g+=Number(event.scorer===p.id);a1+=Number(event.a1===p.id);a2+=Number(event.a2===p.id)}if(g+a1+a2>0)logs.push({game,g,a1,a2})}
+for(const game of state.games){let g=0,a1=0,a2=0;for(const event of game.goals){if(Number(event.period)>=5)continue;if(state.team!=='ALL'&&event.team!==state.team)continue;if(state.strength!=='ALL'&&event.strength!==state.strength)continue;g+=Number(event.scorer===p.id);a1+=Number(event.a1===p.id);a2+=Number(event.a2===p.id)}if(g+a1+a2>0)logs.push({game,g,a1,a2})}
 logs.sort((a,b)=>b.game.date.localeCompare(a.game.date));
 $('#playerDetail').innerHTML='<div class="modalhead">'+face(p)+'<div><h2>'+esc(p.name)+'</h2><p>'+esc(TEAMS[p.team]||p.team)+' · '+(p.gp||'—')+' games in loaded range</p></div><button class="close" id="closeDialog" aria-label="Close">×</button></div><div class="modalbody"><div class="modalnums"><div><strong class="metric-goal">'+p.G+'</strong><small>Goals</small></div><div><strong class="metric-a1">'+p.A1+'</strong><small>Primary</small></div><div><strong class="metric-a2">'+p.A2+'</strong><small>Secondary</small></div><div><strong>'+p.primary+'</strong><small>Primary P</small></div><div><strong>'+p.P+'</strong><small>Points</small></div></div><h3 class="modaltitle">Scoring mix</h3>'+bar(p.G,p.A1,p.A2)+'<h3 class="modaltitle">Scoring game log</h3>'+(logs.length?logs.map(row=>'<div class="logrow"><span>'+esc(row.game.date)+' · '+esc(row.game.away)+' @ '+esc(row.game.home)+'</span><b>G '+row.g+' · A1 '+row.a1+' · A2 '+row.a2+'</b></div>').join(''):'<p>No scoring events in filtered games.</p>')+'<p class="sub">Game count reflects roster appearances from the loaded NHL game records where available. This may differ from official season GP.</p></div>';
 $('#closeDialog').onclick=()=>$('#playerDialog').close();$('#playerDialog').showModal();
