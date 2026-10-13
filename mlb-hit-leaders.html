@@ -17,7 +17,7 @@ header small{display:block;font-size:10px;font-weight:900;letter-spacing:.13em;t
 h1{font-size:clamp(24px,4vw,35px);letter-spacing:-.04em;margin:3px 0 2px}
 header p{margin:0;color:var(--muted);font-size:11px}
 .home{font-size:11px;font-weight:900;text-decoration:none;background:var(--panel);border:1px solid var(--line);padding:10px 12px;border-radius:9px;white-space:nowrap}
-.toolbar{position:sticky;top:0;z-index:8;display:flex;flex-wrap:wrap;align-items:center;gap:7px;padding:9px;background:#090e17f2;backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:13px}
+.toolbar{position:relative;z-index:3;display:flex;flex-wrap:wrap;align-items:center;gap:7px;padding:9px;background:#090e17f2;backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:13px}
 .segment{display:flex;gap:3px;padding:3px;background:#060b13;border:1px solid var(--line);border-radius:10px}
 button,.control{min-height:37px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:0 10px;font-size:11px;font-weight:850}
 .segment button{border:0;background:transparent;min-height:32px;padding:0 13px;color:var(--muted)}
@@ -39,9 +39,9 @@ button:disabled{opacity:.43;cursor:not-allowed}
 #meta{display:flex;flex-wrap:wrap;gap:6px;margin:7px 0 11px}
 .chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:#121d2d;border-radius:100px;color:var(--muted);font-size:10px;font-weight:800;padding:6px 10px}
 .chip b{color:#fff}
-.board{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px;align-items:start}
+.board{display:flex;gap:9px;align-items:stretch;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;padding-bottom:10px}.lane{flex:1 0 210px}
 .lane{background:linear-gradient(180deg,#151f2e,#0c1420);border:1px solid var(--line);border-radius:13px;min-width:0;overflow:hidden}
-.lanehead{position:sticky;top:65px;background:#172335;z-index:2;padding:11px 10px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:4px}
+.lanehead{position:relative;top:auto;background:#172335;z-index:2;padding:11px 10px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:4px}
 .lanehead strong{font-size:13px;white-space:nowrap}.lanehead span{font-size:9px;font-weight:950;color:var(--gold)}
 .lanecount{padding:6px 10px;background:#0d1724;color:var(--muted);font-size:9px;font-weight:800}
 .rows{padding:3px 5px 7px}
@@ -62,9 +62,9 @@ dialog::backdrop{background:#000a;backdrop-filter:blur(3px)}
 .close{margin-left:auto;align-self:flex-start;border-radius:99px;width:34px;padding:0;font-size:20px}
 .modalstats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:15px}.modalstat{background:#152238;border:1px solid var(--line);border-radius:9px;padding:12px}.modalstat small{color:var(--muted);font-size:10px;display:block}.modalstat b{font-size:23px}
 .modalfoot{padding:0 17px 17px;font-size:11px;line-height:1.5;color:var(--muted)}.modalfoot a{color:var(--gold);font-weight:850}
-@media(max-width:1380px){.board{grid-template-columns:repeat(3,minmax(0,1fr))}.player{min-height:51px}.lanehead{top:64px}.name{font-size:11px}}
-@media(max-width:720px){main{width:calc(100% - 12px);padding-top:10px}header{align-items:flex-start}header p{font-size:10px}.toolbar{position:relative;padding:7px}.segment{width:100%}.segment button{flex:1;padding:0 5px}.datecontrol{flex-basis:100%;min-width:0}.datecontrol input{width:108px;flex-basis:108px}.datecontrol .period{font-size:11px}#refresh{flex:1}.filterbar select{flex:1 1 100px;max-width:none}.board{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:8px;padding-bottom:9px;scrollbar-width:thin}.lane{flex:0 0 min(76vw,305px);scroll-snap-align:start}.lanehead{position:relative;top:auto}.player{min-height:55px}.name{font-size:12px}.note{font-size:10px}.modalstats{grid-template-columns:repeat(3,1fr)}}
-@media(min-width:721px) and (max-width:1000px){.board{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:1380px){.player{min-height:51px}.name{font-size:11px}}
+@media(max-width:720px){main{width:calc(100% - 12px);padding-top:10px}header{align-items:flex-start}header p{font-size:10px}.toolbar{position:relative;padding:7px}.segment{width:100%}.segment button{flex:1;padding:0 5px}.datecontrol{flex-basis:100%;min-width:0}.datecontrol input{width:108px;flex-basis:108px}.datecontrol .period{font-size:11px}#refresh{flex:1}.filterbar select{flex:1 1 100px;max-width:none}.board{scroll-snap-type:x mandatory;gap:8px;padding-bottom:9px}.board .lane{flex:0 0 min(76vw,305px);scroll-snap-align:start}.lanehead{position:relative;top:auto}.player{min-height:55px}.name{font-size:12px}.note{font-size:10px}.modalstats{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:721px) and (max-width:1000px){.board .lane{flex:0 0 235px}}
 </style>
 </head>
 <body>
@@ -116,7 +116,7 @@ function setStatus(msg,isError){$('status').textContent=msg;$('status').classLis
 function warn(msg){$('warning').textContent=msg;$('warning').style.display=msg?'block':'none';}
 function showProgress(total,count){$('progress').style.display=total?'block':'none';$('progressBar').style.width=total?Math.min(100,Math.round(count/total*100))+'%':'0%';}
 function uid(a){var v=a&&a.id||'';if(!v&&a&&a.$ref){var m=a.$ref.match(/athletes\/(\d+)/);if(m)v=m[1];}return safe(v);}
-function teamInfo(t){t=t||{};var id=String(t.id||''),abbr=t.abbreviation||t.shortDisplayName||'',logo=t.logo||t.logos&&t.logos[0]&&t.logos[0].href||'';if(!logo&&abbr)logo='https://a.espncdn.com/i/teamlogos/mlb/500/'+encodeURIComponent(String(abbr).toLowerCase())+'.png';return {id:id,abbr:String(abbr),name:t.displayName||t.name||abbr,logo:logo};}
+function teamInfo(t){t=t||{};var id=String(t.id||''),abbr=t.abbreviation||t.shortDisplayName||t.teamShortName||'',logo=t.logo||t.logos&&t.logos[0]&&t.logos[0].href||'';if(!logo&&abbr)logo='https://a.espncdn.com/i/teamlogos/mlb/500/'+encodeURIComponent(String(abbr).toLowerCase())+'.png';return {id:id,abbr:String(abbr),name:t.displayName||t.name||abbr,logo:logo};}
 function face(id,custom){return custom||'https://a.espncdn.com/i/headshots/mlb/players/full/'+encodeURIComponent(id||'0')+'.png';}
 function playerRow(id,name,head,tm){return{id:String(id),name:name||'Unknown player',head:face(id,head),teamId:tm.id,team:tm.abbr,logo:tm.logo,k:0,bb:0,h:0,double:0,triple:0,hr:0,single:null,games:0,missing:false};}
 function num(x){if(x==null||x==='--'||x==='—'||x==='')return null;var n=Number(String(x).replace(/,/g,''));return Number.isFinite(n)?n:null;}
@@ -288,40 +288,75 @@ function flattenEvents(j){
   return {id:String(e.id||c.id||''),final:done,live:state==='in',name:e.shortName||e.name||''};
  }).filter(function(e){return e.id;});
 }
+
 async function loadGames(id,force){
  var pair=range(),start=pair[0],end=pair[1],cap=end>TODAY?TODAY:end;
  if(start>TODAY){players=[];games=[];setStatus('This period is in the future. No games have been played.');render(false);return;}
- var dateParam=start.replace(/-/g,'')+'-'+cap.replace(/-/g,'');
- var endpoint='https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard?dates='+(mode==='day'?start.replace(/-/g,''):dateParam)+'&limit=1000';
- setStatus('Finding ESPN MLB games for '+start+(start!==cap?' through '+cap:'')+'…');
- var board=await get(endpoint,aborter.signal);if(!active(id))return;
- games=flattenEvents(board).filter(function(g){return g.id;});
- var unique=new Map();games.forEach(function(g){unique.set(g.id,g);});games=Array.from(unique.values());
- var listed=games.length;live=games.some(function(g){return g.live;});pending=games.filter(function(g){return !g.final&&!g.live;}).length;
+ // ESPN's site v2 MLB scoreboard no longer supports YYYYMMDD-YYYYMMDD.
+ // Each date must be queried separately, with a bounded worker pool.
+ var days=[];for(var d=start;d<=cap;d=plus(d,1))days.push(d);
+ var scoreboardEvents=new Map(),cursorDay=0,doneDays=0,dayFailures=[];
+ showProgress(days.length,0);setStatus('Finding MLB games across '+days.length+' day'+(days.length===1?'':'s')+'…');
+ async function dayWorker(){
+  while(active(id)&&cursorDay<days.length){
+   var day=days[cursorDay++],stamp=day.replace(/-/g,'');
+   var url='https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard?dates='+stamp+'&limit=100';
+   try{
+    var response=await get(url,aborter.signal);
+    if(!active(id))return;
+    if(!Array.isArray(response.events))throw Error('Invalid scoreboard response');
+    flattenEvents(response).forEach(function(game){scoreboardEvents.set(game.id,game);});
+   }catch(error){
+    if(error.name==='AbortError')return;
+    dayFailures.push(day);
+   }
+   doneDays++;
+   if(active(id)){showProgress(days.length,doneDays);setStatus('Checking games · '+doneDays+'/'+days.length+' days · '+scoreboardEvents.size+' games found'+(dayFailures.length?' · '+dayFailures.length+' dates failed':'')+'…');}
+  }
+ }
+ await Promise.all(Array.from({length:Math.min(4,days.length)},function(){return dayWorker();}));
+ if(!active(id))return;
+ games=Array.from(scoreboardEvents.values());
+ live=games.some(function(g){return g.live;});
+ pending=games.filter(function(g){return !g.final&&!g.live;}).length;
  var targets=games.filter(function(g){return g.final||g.live;});
- if(!targets.length){players=[];setStatus(listed?listed+' game(s) scheduled, no active batting box scores yet.':'No MLB games returned for this period.');render(false);return;}
+ if(!targets.length){
+  players=[];
+  setStatus(games.length?games.length+' game(s) scheduled. No batting box scores yet.':'No MLB games returned for this period.'+(dayFailures.length?' Some dates failed.':''));
+  if(dayFailures.length)warn('ESPN scoreboard failed for '+dayFailures.length+' day(s): '+dayFailures.join(', ')+'. The selected period is not complete.');
+  showProgress(0,0);render(false);return;
+ }
  var results=[],cursor=0,processed=0,tot=targets.length;
  showProgress(tot,0);render(true);
  async function worker(){
   while(active(id)&&cursor<tot){
-   var idx=cursor++,g=targets[idx];
-   try{var item=await boxGame(g,aborter.signal,force);if(!active(id))return;results.push(item);loaded++;if(item.unresolved)incomplete++;}
-   catch(e){if(e.name==='AbortError')return;failed++;}
+   var index=cursor++,game=targets[index];
+   try{
+    var item=await boxGame(game,aborter.signal,force);
+    if(!active(id))return;
+    results.push(item);loaded++;
+    if(item.unresolved)incomplete++;
+   }catch(error){if(error.name==='AbortError')return;failed++;}
    processed++;
-   if(active(id)&&(processed%5===0||processed===tot)){
-    players=merge(results);setStatus('Loaded '+processed+' / '+tot+' game box scores · '+players.length+' batters'+(failed?' · '+failed+' failed':'')+'…');
+   if(active(id)&&(processed%8===0||processed===tot)){
+    players=merge(results);
+    setStatus('Batting box scores · '+processed+'/'+tot+' games · '+players.length+' batters'+(failed?' · '+failed+' failed':'')+'…');
     showProgress(tot,processed);render(true);
    }
   }
  }
- await Promise.all(Array.from({length:Math.min(7,tot)},function(){return worker();}));
+ await Promise.all(Array.from({length:Math.min(6,tot)},function(){return worker();}));
  if(!active(id))return;
  players=merge(results);showProgress(0,0);
- if(failed)warn(failed+' ESPN game box score(s) could not be retrieved. Totals are incomplete. Try Refresh.');
- else if(incomplete)warn(incomplete+' game(s) lack verifiable extra-base-hit detail. Singles and affected extra-base categories exclude those unknown values; no estimates are made.');
- setStatus('ESPN · '+loaded+' / '+tot+' game box scores loaded'+(pending?' · '+pending+' upcoming game(s)':'')+(live?' · live statistics are provisional':'')+'.'+(failed?' Some requests failed.':''),!!failed);
+ var issues=[];
+ if(dayFailures.length)issues.push(dayFailures.length+' scoreboard date(s) could not be retrieved ('+dayFailures.join(', ')+')');
+ if(failed)issues.push(failed+' game box score(s) failed');
+ if(incomplete)issues.push(incomplete+' game(s) had incomplete extra-base-hit details');
+ if(issues.length)warn(issues.join('. ')+'. Affected stats are unavailable or totals may be incomplete; the app does not estimate them.');
+ setStatus('ESPN · '+loaded+'/'+tot+' box scores · '+players.length+' batters'+(pending?' · '+pending+' upcoming game(s)':'')+(live?' · live stats provisional':'')+(issues.length?' · incomplete source coverage':'')+'.',!!(dayFailures.length||failed));
  render(false);
 }
+
 function seasonStatRow(item){
  var a=item.athlete||item.player||{},id=uid(a);if(!id)return null;
  var tm=teamInfo(item.team||a.team||a.teams&&a.teams[0]||{});
