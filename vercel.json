@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/nhl-api/:path*",
+      "destination": "https://api-web.nhle.com/:path*"
+    }
+  ]
+}
