@@ -245,7 +245,7 @@ function render(loading){
     '<span class="playertext"><span class="name">'+esc(p.name)+'</span><span class="club">'+esc(p.team||'MLB')+'</span></span>'+
     '<span class="value">'+p[key]+'</span></button>';
   }).join('');
-  return '<article class="lane"><div class="lanehead"><strong>'+metric[1]+'</strong><span>'+metric[2]+'</span></div><div class="lanecount">'+valid.length+' players · high to low</div><div class="rows">'+(content||(loading?'<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>':'<div class="empty">'+(players.length?'No recorded '+metric[1].toLowerCase()+' in this selection.':'No statistics available.')+'</div>'))+'</div></article>';
+  return '<article class="lane"><div class="lanehead"><strong>'+metric[1]+'</strong><span>'+metric[2]+'</span></div><div class="lanecount">'+valid.length+' players · high to low</div><div class="rows">'+(content||(loading?'<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>':'<div class="empty">'+(filter.some(function(p){return p[key]===null;})?'Hit details unavailable for one or more games. Try Refresh.':players.length?'No recorded '+metric[1].toLowerCase()+' in this selection.':'No statistics available.')+'</div>'))+'</div></article>';
  }).join('');
  $('board').querySelectorAll('[data-id]').forEach(function(b){b.addEventListener('click',function(){openProfile(b.dataset.id);});});
 }
