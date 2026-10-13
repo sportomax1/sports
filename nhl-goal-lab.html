@@ -105,7 +105,7 @@ async function storeCache(record){memory.set(String(record.id),record);const db=
 async function json(path,signal){let last;for(let attempt=0;attempt<2;attempt++){try{const r=await fetch(API+path,{signal,headers:{Accept:'application/json'}});if(!r.ok)throw new Error('HTTP '+r.status+' · '+path);const type=r.headers.get('content-type')||'';if(!type.includes('json'))throw new Error('Expected JSON; verify the Vercel /nhl-api rewrite');return await r.json()}catch(e){if(signal.aborted)throw e;last=e;if(attempt===0)await new Promise(r=>setTimeout(r,350))}}throw last}
 async function pool(items,n,fn,cb){let index=0,done=0;const out=new Array(items.length);await Promise.all(Array.from({length:Math.min(n,items.length)},async()=>{while(index<items.length){const i=index++;try{out[i]=await fn(items[i])}catch(e){out[i]={error:String(e.message||e)}}done++;cb(done,items.length)}}));return out}
 function cancel(){if(state.abort)state.abort.abort();state.run++;state.isLoading=false;state.abort=null;$('#meter').style.display='none';syncUI();setStatus('Load canceled. Previous results preserved.')}
-async function load(){
+async function loadViaProxy(){
 if(state.isLoading)cancel();const r=range();if(r.end<r.start){setStatus('No games in this future date range.',true);return}
 const run=++state.run;const ctrl=new AbortController();state.abort=ctrl;state.isLoading=true;state.mode='live';$('#meter').style.display='block';progress(0,1);syncUI();const old=state.games;
 try{
@@ -128,6 +128,78 @@ $('#notice').textContent=(state.failed?'Partial data: some schedule or play-by-p
 }catch(e){if(run!==state.run)return;state.games=old;render();setStatus('Load failed: '+e.message,true);$('#meter').style.display='none'}
 finally{if(run===state.run){state.isLoading=false;state.abort=null;syncUI()}}
 }
+
+/* GitHub Pages cannot rewrite /nhl-api. Load CORS-safe, GitHub Actions-generated JSON. */
+const DATA_BASE='https://raw.githubusercontent.com/sportomax1/sports/main/data/nhl/';
+function dataMonths(a,b){
+ const arr=[],d=dateOf(a),end=dateOf(b);
+ d.setDate(1);end.setDate(1);
+ while(d<=end){arr.push(String(d.getMonth()+1).padStart(2,'0'));d.setMonth(d.getMonth()+1)}
+ return [...new Set(arr)];
+}
+async function load(){
+ if(state.isLoading)cancel();
+ const run=++state.run,r=range(),ctl=new AbortController();
+ if(r.end<r.start){setStatus('This date range is in the future. Choose an earlier period.',true);return}
+ const months=dataMonths(r.start,r.end);
+ state.abort=ctl;state.isLoading=true;state.mode='live';state.failed=0;
+ progress(0,months.length);syncUI();
+ setStatus('Loading GitHub-hosted NHL goal data ('+months.length+' month'+(months.length===1?'':'s')+')…');
+ const old=state.games;
+ try{
+  const results=await Promise.all(months.map(async (month,index)=>{
+   const file=state.season+'-'+month+'.json';
+   try{
+    // Raw GitHub responds with browser-compatible CORS headers even on GitHub Pages.
+    const url=DATA_BASE+file+'?v='+Math.floor(Date.now()/300000);
+    const response=await fetch(url,{signal:ctl.signal,cache:'no-store'});
+    if(response.status===404)return{month,missing:true};
+    if(!response.ok)throw Error('HTTP '+response.status);
+    const data=await response.json();
+    if(data.season!==state.season||!Array.isArray(data.games))throw Error('Invalid season data');
+    return{month,games:data.games,updatedAt:data.updatedAt};
+   }catch(e){
+    if(ctl.signal.aborted)throw e;
+    return{month,error:e.message||String(e)};
+   }finally{
+    if(run===state.run)progress(++state.failed,months.length);
+   }
+  }));
+  if(run!==state.run)return;
+  const missing=results.filter(x=>x.missing).map(x=>x.month);
+  const errors=results.filter(x=>x.error).map(x=>x.month+': '+x.error);
+  const available=results.filter(x=>Array.isArray(x.games));
+  if(!available.length){
+   state.games=old;
+   render();
+   const detail=missing.length?'No NHL data generated for season '+state.season+' ('+missing.join(', ')+'). Open GitHub Actions → NHL Goal Lab Data → Run workflow, and select this season.':'Could not load NHL data snapshots ('+errors.join('; ')+').';
+   setStatus(detail,true);
+   $('#notice').textContent='This site uses GitHub Actions to collect NHL data because GitHub Pages cannot proxy the NHL API. Dashboard data will populate after the data workflow completes.';
+   return;
+  }
+  const gameMap=new Map();
+  for(const record of available)for(const g of record.games){
+   if(g.date>=r.start&&g.date<=r.end&&Array.isArray(g.goals))gameMap.set(String(g.id),g);
+  }
+  state.games=[...gameMap.values()].sort((a,b)=>a.date.localeCompare(b.date));
+  updateTeams();render();
+  const latest=available.map(x=>x.updatedAt).filter(Boolean).sort().at(-1);
+  let label='Loaded '+state.games.length+' games · '+state.games.reduce((n,g)=>n+g.goals.length,0)+' goals';
+  const partial=missing.length||errors.length;
+  if(partial)label+=' · INCOMPLETE: '+missing.length+' missing month(s)'+(errors.length?' · '+errors.length+' request error(s)':'');
+  if(latest)label+=' · refreshed '+new Date(latest).toLocaleString();
+  if(!state.games.length&&!partial)label+=' · no NHL regular-season games recorded in this period';
+  setStatus(label,!!partial);
+  $('#notice').textContent=(partial?'Incomplete coverage: unavailable months '+missing.join(', ')+(errors.length?'; errors: '+errors.join('; '):'')+'. ':'')+'GitHub Actions builds official NHL game scoring data every two hours. Results are cached snapshots, not live scores.';
+ }catch(e){
+  if(run!==state.run)return;
+  state.games=old;render();
+  setStatus('Data load canceled or failed: '+(e.message||String(e)),true);
+ }finally{
+  if(run===state.run){state.isLoading=false;state.abort=null;$('#meter').style.display='none';state.failed=0;syncUI()}
+ }
+}
+
 function demo(){
 if(state.isLoading)cancel();const specs=[['demo1','Nathan MacKinnon','COL'],['demo2','Cale Makar','COL'],['demo3','Mikko Rantanen','DAL'],['demo4','Connor McDavid','EDM'],['demo5','Leon Draisaitl','EDM'],['demo6','Jack Eichel','VGK'],['demo7','Mitch Marner','VGK'],['demo8','Auston Matthews','TOR'],['demo9','William Nylander','TOR'],['demo10','Matthew Tkachuk','FLA'],['demo11','Sam Reinhart','FLA'],['demo12','Jack Hughes','NJD'],['demo13','Nico Hischier','NJD'],['demo14','Miro Heiskanen','DAL'],['demo15','Artemi Panarin','NYR'],['demo16','Adam Fox','NYR']];
 const pairs=[['COL','EDM'],['DAL','VGK'],['TOR','FLA'],['NJD','NYR'],['COL','DAL'],['EDM','TOR'],['FLA','VGK'],['NYR','COL']];
