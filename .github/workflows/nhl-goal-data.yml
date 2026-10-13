@@ -1,0 +1,56 @@
+name: NHL Goal Lab Data
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/nhl-goal-data.yml'
+      - 'scripts/build-nhl-goal-data.mjs'
+  schedule:
+    - cron: '17 */2 * * *'
+  workflow_dispatch:
+    inputs:
+      season:
+        description: 'NHL starting year (e.g. 2025). Blank uses the current season.'
+        required: false
+        type: string
+      full_refresh:
+        description: 'Re-download all games in the selected season'
+        required: false
+        type: boolean
+        default: false
+permissions:
+  contents: write
+concurrency:
+  group: nhl-goal-data-main
+  cancel-in-progress: false
+jobs:
+  update:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fetch and normalize NHL scoring data
+        env:
+          NHL_SEASON: ${{ inputs.season }}
+          NHL_FULL_REFRESH: ${{ inputs.full_refresh && '1' || '0' }}
+        run: node scripts/build-nhl-goal-data.mjs
+      - name: Commit NHL data snapshots
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/nhl/
+          if git diff --cached --quiet; then
+            echo "Data unchanged."
+            exit 0
+          fi
+          git commit -m "data: refresh NHL goals and credited assists"
+          git push origin HEAD:main
