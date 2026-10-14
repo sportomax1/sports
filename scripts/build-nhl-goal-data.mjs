@@ -63,13 +63,20 @@ const scheduleErrors=await mapLimit(weekDays,3,async d=>{
  }
 });
 if(scheduleErrors)throw Error(scheduleErrors+' schedule requests failed. No incomplete data published.');
-function strength(s,owner,homeId,awayId){
+// Situation code is [home goalie, HOME skaters, AWAY skaters, away goalie].
+// Use skaters relative to the SCORING team and reject empty-net/extra-attacker
+// situations so five manpower lanes represent genuine on-ice strength.
+function classifyManpower(s,owner,homeId,awayId){
  s=String(s||'');
  if(!/^[01][3456][3456][01]$/.test(s))return 'UNK';
+ if(s[0]!=='1'||s[3]!=='1'||Number(s[1])>5||Number(s[2])>5)return 'OTHER';
  const h=String(owner)===String(homeId),a=String(owner)===String(awayId);
  if(!h&&!a)return 'UNK';
- const ours=Number(h?s[2]:s[1]),theirs=Number(h?s[1]:s[2]);
- return ours>theirs?'PP':ours<theirs?'SH':'EV';
+ const ours=Number(h?s[1]:s[2]),theirs=Number(h?s[2]:s[1]);
+ return ({'-2':'SH2','-1':'SH1','0':'EV','1':'PP1','2':'PP2'})[String(ours-theirs)]||'OTHER';
+}
+function strengthFromManpower(manpower){
+ return manpower==='EV'?'EV':manpower.startsWith('PP')?'PP':manpower.startsWith('SH')?'SH':'UNK';
 }
 function normalize(pbp,g){
  const homeId=pbp.homeTeam?.id??g.homeId,awayId=pbp.awayTeam?.id??g.awayId;
@@ -88,13 +95,13 @@ function normalize(pbp,g){
   if(!team||d.scoringPlayerId==null)continue;
   const scorer=String(d.scoringPlayerId),a1=d.assist1PlayerId==null?null:String(d.assist1PlayerId),a2=d.assist2PlayerId==null?null:String(d.assist2PlayerId);
   for(const id of [scorer,a1,a2])if(id&&!players[id])players[id]={id,name:'Player '+id,team};
-  goals.push({id:String(play.eventId??play.sortOrder??goals.length),gameId:g.id,date:g.date,home:g.home,away:g.away,team,period:play.periodDescriptor?.number||1,time:play.timeInPeriod||'',scorer,a1,a2,strength:strength(play.situationCode,d.eventOwnerTeamId,homeId,awayId),score:d.homeScore==null||d.awayScore==null?'':d.awayScore+'–'+d.homeScore});
+  goals.push({id:String(play.eventId??play.sortOrder??goals.length),gameId:g.id,date:g.date,home:g.home,away:g.away,team,period:play.periodDescriptor?.number||1,time:play.timeInPeriod||'',scorer,a1,a2,strength:strengthFromManpower(classifyManpower(play.situationCode,d.eventOwnerTeamId,homeId,awayId)),manpower:classifyManpower(play.situationCode,d.eventOwnerTeamId,homeId,awayId),situationCode:String(play.situationCode||''),score:d.homeScore==null||d.awayScore==null?'':d.awayScore+'–'+d.homeScore});
  }
  return {id:g.id,date:g.date,home:g.home,away:g.away,homeId,awayId,state:g.state,players,goals,cachedAt:Date.now()};
 }
 const todo=[...games.values()].filter(g=>{
  const old=months.get(g.date.slice(5,7))?.get(g.id);
- return !old||full||!['OFF','FINAL','COMPLETED'].includes(old.state);
+ return !old||full||!['OFF','FINAL','COMPLETED'].includes(old.state)||(old.goals||[]).some(goal=>!('manpower' in goal)||!('situationCode' in goal));
 });
 console.log('Season',season,'range',scan,end,'games',games.size,'to update',todo.length);
 const touched=new Set();
