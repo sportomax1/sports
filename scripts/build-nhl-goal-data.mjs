@@ -41,10 +41,26 @@ async function mapLimit(list,workers,fn){
  return fail;
 }
 const months=new Map();
+const dirtyMonths=new Set();
 for(let m=1;m<=12;m++){
  const mm=pad(m),file=path.join(dest,season+'-'+mm+'.json');
  if(fs.existsSync(file)){
-  try{const data=JSON.parse(fs.readFileSync(file,'utf8'));if(data.season===season&&Array.isArray(data.games))months.set(mm,new Map(data.games.map(g=>[String(g.id),g])))}catch(e){console.warn('Unusable cache',file,e.message)}
+  try{const data=JSON.parse(fs.readFileSync(file,'utf8'));if(data.season===season&&Array.isArray(data.games)){
+   // Previous snapshots used a reversed NHL situation-code interpretation.
+   // Repair stored goals directly from their original raw situation codes.
+   for(const game of data.games){
+    for(const goal of game.goals||[]){
+     if(!goal.situationCode)continue; // old schema will be downloaded below
+     const owner=goal.team===game.home?game.homeId:goal.team===game.away?game.awayId:null;
+     const mp=classifyManpower(goal.situationCode,owner,game.homeId,game.awayId);
+     const strength=strengthFromManpower(mp);
+     if(goal.manpower!==mp||goal.strength!==strength){
+      goal.manpower=mp;goal.strength=strength;dirtyMonths.add(mm);
+     }
+    }
+   }
+   months.set(mm,new Map(data.games.map(g=>[String(g.id),g])));
+  }}catch(e){console.warn('Unusable cache',file,e.message)}
  }
 }
 const firstRun=!months.size,scan=(firstRun||full)?begin:[begin,day(iso(today),-15)].sort().at(-1);
@@ -63,7 +79,7 @@ const scheduleErrors=await mapLimit(weekDays,3,async d=>{
  }
 });
 if(scheduleErrors)throw Error(scheduleErrors+' schedule requests failed. No incomplete data published.');
-// Situation code is [home goalie, HOME skaters, AWAY skaters, away goalie].
+// Situation code is [away goalie, AWAY skaters, HOME skaters, home goalie].
 // Use skaters relative to the SCORING team and reject empty-net/extra-attacker
 // situations so five manpower lanes represent genuine on-ice strength.
 function classifyManpower(s,owner,homeId,awayId){
@@ -72,7 +88,7 @@ function classifyManpower(s,owner,homeId,awayId){
  if(s[0]!=='1'||s[3]!=='1'||Number(s[1])>5||Number(s[2])>5)return 'OTHER';
  const h=String(owner)===String(homeId),a=String(owner)===String(awayId);
  if(!h&&!a)return 'UNK';
- const ours=Number(h?s[1]:s[2]),theirs=Number(h?s[2]:s[1]);
+ const ours=Number(h?s[2]:s[1]),theirs=Number(h?s[1]:s[2]);
  return ({'-2':'SH2','-1':'SH1','0':'EV','1':'PP1','2':'PP2'})[String(ours-theirs)]||'OTHER';
 }
 function strengthFromManpower(manpower){
@@ -104,7 +120,7 @@ const todo=[...games.values()].filter(g=>{
  return !old||full||!['OFF','FINAL','COMPLETED'].includes(old.state)||(old.goals||[]).some(goal=>!('manpower' in goal)||!('situationCode' in goal));
 });
 console.log('Season',season,'range',scan,end,'games',games.size,'to update',todo.length);
-const touched=new Set();
+const touched=new Set(dirtyMonths);
 const gameErrors=await mapLimit(todo,4,async g=>{
  const pbp=await get('/gamecenter/'+g.id+'/play-by-play');
  const mm=g.date.slice(5,7);
