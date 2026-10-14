@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#071019">
+<meta name="description" content="NHL scoring leaders across five exact on-ice manpower situations, by day, week, or season.">
+<title>NHL Manpower Leaders | Sports Tools</title>
+<style>
+:root{color-scheme:dark;--bg:#071019;--panel:#101e2a;--panel2:#152838;--line:#294051;--text:#f3f7fb;--muted:#91aabc;--accent:#71ddca;--sh2:#ec8593;--sh1:#f0af6c;--ev:#76b9fa;--pp1:#70dbb9;--pp2:#c3a1ff}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font:14px/1.4 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+body{background:radial-gradient(ellipse at 10% -5%,#18566b60,transparent 40%),radial-gradient(ellipse at 90% 12%,#34245150,transparent 34%),var(--bg)}
+button,input,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.48;cursor:not-allowed}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+a{color:inherit}.app{width:min(1640px,calc(100% - 28px));margin:auto;padding:18px 0 38px}
+.top{display:flex;gap:16px;align-items:flex-start;justify-content:space-between}.eyebrow{font-size:10px;font-weight:900;letter-spacing:.17em;color:var(--accent);text-transform:uppercase}
+h1{font-size:clamp(25px,4.2vw,39px);line-height:1.08;letter-spacing:-.05em;margin:4px 0 5px}.sub{color:var(--muted);font-size:11px;margin:0;line-height:1.6}
+.back{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:9px 11px;text-decoration:none;white-space:nowrap;font-size:11px;font-weight:800}
+.toolbar{position:sticky;top:0;z-index:15;display:flex;align-items:end;flex-wrap:wrap;gap:9px;margin:13px 0 7px;padding:10px;background:#0d1b28ee;backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:14px;box-shadow:0 5px 20px #02060b55}
+.field{display:grid;gap:4px;min-width:0}.field>label{color:var(--muted);font-size:9px;letter-spacing:.1em;text-transform:uppercase;font-weight:950}
+.seg{display:flex;align-items:center;gap:3px;background:#091723;border:1px solid #355063;border-radius:10px;padding:3px;min-height:37px}
+.seg button{height:29px;border:0;border-radius:7px;background:transparent;color:#b9ccdb;font-size:11px;font-weight:850;padding:0 12px;white-space:nowrap}
+.seg button.active{background:var(--accent);color:#0a2625}
+.ctrl{height:37px;min-width:0;background:#162c3d;border:1px solid #355063;border-radius:9px;color:var(--text);padding:0 11px;font-size:12px}
+.nav{display:flex;gap:4px}.nav button{width:33px;padding:0;font-size:18px}.nav input{width:127px}.season{width:110px}.team{width:135px}
+.search{min-width:110px;flex:1 1 140px}.search input{width:100%}
+.refresh{background:#215c60;border-color:#379a94;font-weight:900;white-space:nowrap}.refresh:disabled{color:#9bb0b5}
+.status{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-height:26px;margin:4px 1px 7px;color:var(--muted);font-size:11px}
+.status.error{color:#ffacae}.dot{height:7px;width:7px;background:var(--accent);border-radius:50%;flex:none}.status.error .dot{background:#ff8488}
+.track{height:4px;width:110px;background:#253a49;border-radius:9px;overflow:hidden;display:none}.track i{display:block;background:var(--accent);height:100%;width:0}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:8px 0 11px}
+.kpi{border:1px solid var(--line);border-radius:11px;background:linear-gradient(120deg,#152b3a,#0f1e2b);padding:10px 13px;min-width:0}
+.kpi strong{display:block;font-size:clamp(18px,2.5vw,28px);letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.kpi small{color:var(--muted);font-size:9px;font-weight:850;text-transform:uppercase;letter-spacing:.075em}
+.dateheading{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 1px 9px}.dateheading h2{margin:0;font-size:17px;letter-spacing:-.035em}.dateheading .small{color:var(--muted);font-size:10px}
+.lane{--lane:var(--ev);margin:0 0 12px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(110deg,color-mix(in srgb,var(--lane) 7%,var(--panel)),#101c28 25%);overflow:hidden}
+.lane[data-lane="SH2"]{--lane:var(--sh2)}.lane[data-lane="SH1"]{--lane:var(--sh1)}.lane[data-lane="EV"]{--lane:var(--ev)}.lane[data-lane="PP1"]{--lane:var(--pp1)}.lane[data-lane="PP2"]{--lane:var(--pp2)}
+.lane-head{padding:11px 12px 8px;display:flex;justify-content:space-between;align-items:center;gap:12px;border-left:4px solid var(--lane)}
+.lane-title{display:flex;align-items:center;gap:9px;min-width:0}.lane-icon{height:33px;width:37px;border:1px solid color-mix(in srgb,var(--lane) 45%,transparent);border-radius:8px;display:grid;place-items:center;font-weight:950;color:var(--lane);background:#071525bd;white-space:nowrap;font-size:11px}
+.lane h3{margin:0;font-size:15px;letter-spacing:-.02em}.lane-desc{color:var(--muted);font-size:10px;margin-top:1px}.lane-total{text-align:right;flex:none}.lane-total strong{display:block;font-size:22px;color:var(--lane);line-height:1.1;font-variant-numeric:tabular-nums}.lane-total small{font-size:9px;color:var(--muted);text-transform:uppercase}
+.cards{display:flex;gap:8px;overflow-x:auto;overscroll-behavior-inline:contain;scrollbar-width:thin;scroll-snap-type:x proximity;padding:3px 12px 12px;-webkit-overflow-scrolling:touch}
+.cards::-webkit-scrollbar{height:7px}.cards::-webkit-scrollbar-thumb{background:#345064;border-radius:9px}
+.card{flex:0 0 169px;min-width:0;scroll-snap-align:start;display:flex;flex-direction:column;align-items:stretch;text-align:left;border:1px solid #30495c;border-radius:11px;background:#142737;color:var(--text);min-height:160px;padding:9px;transition:border-color .1s,background .1s}
+.card:hover{border-color:var(--lane);background:#1b3446}.card:active{transform:scale(.99)}
+.cardtop{display:flex;justify-content:space-between;align-items:center;gap:6px;color:var(--muted);font-size:10px;font-weight:800}
+.cardtop em{font-style:normal;color:var(--lane)}
+.profile{display:flex;align-items:center;gap:8px;min-width:0;min-height:55px;margin:6px 0}
+.portrait{flex:0 0 49px;width:49px;height:51px;border-radius:9px;background:linear-gradient(160deg,#2c4b63,#122334);border:1px solid #3c5363;display:grid;place-items:center;position:relative;overflow:hidden}
+.portrait>span{font-size:12px;font-weight:900;color:#a5c1d6}.portrait .face{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top}.portrait .logo{width:22px;height:22px;position:absolute;bottom:0;right:-1px;filter:drop-shadow(0 1px 2px #000);background:#122537bb;border-radius:50%}
+.pname{font-size:11px;line-height:1.23;font-weight:900;overflow-wrap:anywhere;max-height:41px;overflow:hidden}.teamname{display:block;color:var(--muted);font-weight:700;font-size:10px;margin-top:3px}
+.cardbottom{display:flex;justify-content:space-between;align-items:end;margin-top:auto;gap:4px;border-top:1px solid #2b4253;padding-top:7px}
+.big{font-size:29px;font-weight:950;line-height:1;font-variant-numeric:tabular-nums;color:var(--lane)}
+.biglabel{display:block;font-size:8px;text-transform:uppercase;font-weight:900;color:var(--muted);margin-top:2px}
+.breakdown{text-align:right;color:#a6bfce;font-size:9px;line-height:1.55;font-variant-numeric:tabular-nums}.breakdown b{color:#eef6fb}
+.empty{padding:18px 14px 22px;color:var(--muted);font-size:11px}.blank{border:1px dashed #385164;border-radius:13px;padding:30px 15px;text-align:center;color:var(--muted)}
+.notice{font-size:10px;color:var(--muted);line-height:1.7;padding:6px 2px}.notice strong{color:#f0c990}
+dialog{color:var(--text);background:#0d1c2b;border:1px solid #3a5668;border-radius:16px;width:min(580px,calc(100vw - 20px));max-height:86dvh;padding:0;box-shadow:0 28px 85px #000b}
+dialog::backdrop{background:#000b;backdrop-filter:blur(3px)}
+.modalhead{display:flex;align-items:center;gap:12px;padding:16px;border-bottom:1px solid var(--line)}.modalhead .portrait{width:58px;height:63px;flex-basis:58px}
+.modalhead h2{margin:0;font-size:19px;line-height:1.2}.modalhead p{margin:4px 0 0;color:var(--muted);font-size:11px}
+.close{margin-left:auto;align-self:flex-start;height:32px;width:32px;background:#243c4e;color:white;border:1px solid #365266;border-radius:8px;font-size:20px}
+.modalbody{padding:14px 16px 20px;overflow:auto}.modalnums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:16px}
+.modalnums div{background:#142c3d;padding:11px;border-radius:9px;text-align:center}.modalnums strong{display:block;font-size:27px}.modalnums small{font-size:9px;text-transform:uppercase;font-weight:800;color:var(--muted)}
+.modalbody h3{font-size:13px;margin:12px 0 7px}.event{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 2px;border-bottom:1px solid #2c455366;font-size:11px}.event:last-child{border-bottom:0}.event small{display:block;color:var(--muted);font-size:10px;margin-top:2px}.event .role{color:var(--accent);border-radius:8px;background:#193b42;padding:4px 7px;font-size:10px;font-weight:900;flex:none}
+@media(max-width:920px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.toolbar{position:static}}
+@media(max-width:600px){
+.app{width:calc(100% - 16px);padding-top:11px}.top{gap:7px}.back{padding:8px;font-size:10px}h1{font-size:27px}
+.toolbar{padding:8px;gap:7px}.field.metric,.field.period{flex:1 1 100%}.field.metric .seg,.field.period .seg{width:100%}.field.metric button,.field.period button{flex:1;padding:0 6px}
+.field.datefield{flex:1 1 156px}.field.datefield .nav input{flex:1;width:100%;min-width:0}.field.datefield .nav{width:100%}
+.field.seasonfield{flex:0 0 110px}.field.teamfield{flex:1 1 120px}.field.search{flex:1 1 130px}.refresh{flex:0 0 auto}
+.kpis{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.kpi{padding:8px 9px}.kpi strong{font-size:21px}.kpi small{font-size:8px}
+.lane-head{padding:9px 9px 7px}.lane h3{font-size:13px}.lane-desc{font-size:9px}.lane-total strong{font-size:20px}
+.card{flex-basis:155px;min-height:148px;padding:8px}.cards{padding:2px 9px 10px;gap:6px}
+.portrait{width:44px;height:47px;flex-basis:44px}.profile{gap:6px}.pname{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+</style>
+</head>
+<body>
+<main class="app">
+<header class="top">
+ <div><div class="eyebrow">Sports / NHL / Scoring Analytics</div><h1>Manpower Leaders</h1><p class="sub">Goals, credited assists, and points across five on-ice strength situations.</p></div>
+ <a class="back" href="./index.html">← All Tools</a>
+</header>
+<section class="toolbar" aria-label="Dashboard filters">
+ <div class="field metric"><label>Leaderboard</label><div class="seg" id="metricSeg" role="group" aria-label="Scoring metric">
+ <button type="button" data-metric="G">Goals</button><button type="button" data-metric="A">Assists</button><button type="button" data-metric="P" class="active">Points</button>
+ </div></div>
+ <div class="field period"><label>Period</label><div class="seg" id="periodSeg" role="group" aria-label="Time period">
+ <button type="button" data-period="day">Day</button><button type="button" data-period="week" class="active">Week</button><button type="button" data-period="season">Season</button>
+ </div></div>
+ <div class="field datefield"><label for="date">Game date</label><div class="nav"><button class="ctrl" id="prev" aria-label="Previous period">‹</button><input class="ctrl" id="date" type="date" aria-label="NHL game date"><button class="ctrl" id="next" aria-label="Next period">›</button></div></div>
+ <div class="field seasonfield"><label for="season">Season</label><select id="season" class="ctrl season"></select></div>
+ <div class="field teamfield"><label for="team">Scoring team</label><select id="team" class="ctrl team"><option value="ALL">All teams</option></select></div>
+ <div class="field search"><label for="search">Player search</label><input id="search" class="ctrl" type="search" placeholder="Find a player…" autocomplete="off"></div>
+ <button id="refresh" class="ctrl refresh" type="button" title="Reload NHL scoring snapshots">↻ Refresh</button>
+</section>
+<div class="status" id="statusWrap" role="status" aria-live="polite"><span class="dot"></span><span id="status">Loading NHL goal snapshots…</span><div class="track" id="track"><i id="fill"></i></div></div>
+<section class="kpis" id="kpis" aria-label="Scoring summary"></section>
+<div class="dateheading"><h2 id="periodTitle">Five manpower lanes</h2><span class="small" id="periodMeta"></span></div>
+<div id="laneHost" aria-label="Strength leaderboards"><div class="blank">Loading scoring records…</div></div>
+<p class="notice" id="notice">Source: official NHL play-by-play, collected into static GitHub-hosted snapshots. Goals and both credited assists are assigned to the scoring team's on-ice manpower at the goal. Shootouts, unknown situations, and empty-net / pulled-goalie situations are not placed in the five lanes. Week = Monday through Sunday; season = regular season only.</p>
+</main>
+<dialog id="detail" aria-label="Player scoring details"><div id="detailContent"></div></dialog>
+<script>
+(()=>{'use strict';
+const $=q=>document.querySelector(q), $$=q=>[...document.querySelectorAll(q)];
+const LANES=[
+ {id:'SH2',title:'Shorthanded by 2',hint:'Scoring team down two skaters',icon:'−2'},
+ {id:'SH1',title:'Shorthanded by 1',hint:'Scoring team down one skater',icon:'−1'},
+ {id:'EV',title:'Even strength',hint:'Same skater count on both teams',icon:'EV'},
+ {id:'PP1',title:'Power play by 1',hint:'Scoring team up one skater',icon:'+1'},
+ {id:'PP2',title:'Power play by 2',hint:'Scoring team up two skaters',icon:'+2'}
+];
+const DATA_BASE='https://raw.githubusercontent.com/sportomax1/sports/main/data/nhl/';
+function nowDenver(){
+ const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/Denver',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+ const obj=Object.fromEntries(parts.filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
+ return obj.year+'-'+obj.month+'-'+obj.day;
+}
+function parseDay(s){return new Date(s+'T12:00:00Z')}
+function iso(d){return d.toISOString().slice(0,10)}
+function addDays(s,n){const d=parseDay(s);d.setUTCDate(d.getUTCDate()+n);return iso(d)}
+function dayOfWeek(s){return parseDay(s).getUTCDay()}
+function seasonFor(s){const m=+s.slice(5,7);return +s.slice(0,4)-(m<8?1:0)}
+const TODAY=nowDenver(),CURRENT_SEASON=seasonFor(TODAY);
+const state={period:'week',metric:'P',date:TODAY,season:CURRENT_SEASON,team:'ALL',search:'',games:[],months:new Map(),errors:[],missing:[],updated:null,loaded:false,loading:false,run:0,controller:null,summary:null,stats:null};
+const MAX_SEASON=CURRENT_SEASON;
+function html(v){return String(v==null?'':v).replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]))}
+function fmt(n){return (Number(n)||0).toLocaleString('en-US')}
+function fullSeason(){return state.season+String(state.season+1)}
+function labelDate(s){return parseDay(s).toLocaleDateString('en-US',{timeZone:'UTC',month:'short',day:'numeric',year:'numeric'})}
+function range(){
+ let a=state.date,b=state.date;
+ if(state.period==='week'){a=addDays(state.date,-((dayOfWeek(state.date)+6)%7));b=addDays(a,6)}
+ else if(state.period==='season'){a=state.season+'-10-01';b=(state.season+1)+'-06-30'}
+ if(b>TODAY)b=TODAY;
+ return {start:a,end:b};
+}
+function getMonths(a,b){
+ const months=[];if(a>b)return months;
+ const d=new Date(a.slice(0,7)+'-01T12:00:00Z'),end=b.slice(0,7);
+ for(let n=0;n<18&&iso(d).slice(0,7)<=end;n++){months.push(iso(d).slice(0,7));d.setUTCMonth(d.getUTCMonth()+1)}
+ return months;
+}
+function updateInputs(){
+ $('#date').value=state.date;$('#date').max=TODAY;
+ $('#season').value=String(state.season);
+ $('#team').value=state.team;$('#search').value=state.search;
+ $$('#metricSeg button').forEach(b=>{let on=b.dataset.metric===state.metric;b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on))});
+ $$('#periodSeg button').forEach(b=>{let on=b.dataset.period===state.period;b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on))});
+ const r=range();$('#next').disabled=state.period==='season'?state.season>=MAX_SEASON:r.end>=TODAY;
+ $('#prev').disabled=state.period==='season'&&state.season<=2019;
+ $('#periodTitle').textContent=state.period==='season'?state.season+'–'+String(state.season+1).slice(-2)+' regular season':state.period==='day'?labelDate(state.date):labelDate(r.start)+' – '+labelDate(r.end);
+ $('#periodMeta').textContent=({G:'Goals',A:'Assists',P:'Points'})[state.metric]+' · '+(state.period==='week'?'Monday–Sunday':'NHL game dates');
+}
+function setStatus(msg,error){$('#status').textContent=msg;$('#statusWrap').classList.toggle('error',!!error)}
+function progress(done,total){$('#track').style.display=total?'block':'none';$('#fill').style.width=(total?100*done/total:0)+'%'}
+function photo(p){return 'https://assets.nhle.com/mugs/nhl/'+fullSeason()+'/'+encodeURIComponent(p.team)+'/'+encodeURIComponent(p.id)+'.png'}
+function logo(team){return 'https://assets.nhle.com/logos/nhl/svg/'+encodeURIComponent(team)+'_light.svg'}
+function face(p){
+ const initials=String(p.name).trim().split(/\s+/).slice(-2).map(x=>x.charAt(0)).join('').toUpperCase();
+ return '<span class="portrait"><span>'+html(initials)+'</span><img class="face" loading="lazy" alt="" src="'+html(photo(p))+'" onerror="this.remove()"><img class="logo" loading="lazy" alt="" src="'+html(logo(p.team))+'" onerror="this.remove()"></span>';
+}
+function stopLoad(){if(state.controller)state.controller.abort();state.controller=null;state.loading=false;state.run++}
+async function readMonth(month,signal,force){
+ const existing=state.months.get(month),ttl=existing&&existing.missing?90000:240000;
+ if(!force&&existing&&Date.now()-existing.at<ttl)return existing.result;
+ const file=month+'.json',urls=['./data/nhl/'+file,DATA_BASE+file];
+ let error;
+ for(let i=0;i<urls.length;i++){
+  try{
+   const res=await fetch(urls[i]+'?v='+Math.floor(Date.now()/120000),{cache:'no-store',signal});
+   if(res.status===404){const result={missing:true,month};state.months.set(month,{at:Date.now(),missing:true,result});return result}
+   if(!res.ok)throw Error('HTTP '+res.status);
+   const data=await res.json();
+   if(!Array.isArray(data.games)||!Number.isInteger(data.season)||data.season!==+month.slice(0,4)&&!(+month.slice(5,7)<8&&data.season===+month.slice(0,4)-1))throw Error('Invalid NHL month data');
+   const result={month,games:data.games,updatedAt:data.updatedAt||null};
+   state.months.set(month,{at:Date.now(),result});
+   return result;
+  }catch(e){if(signal.aborted)throw e;error=e}
+ }
+ throw Error(month+': '+(error?.message||'Could not reach GitHub snapshots'));
+}
+async function load(force=false){
+ if(state.loading)stopLoad();
+ const run=++state.run,ctl=new AbortController();state.controller=ctl;state.loading=true;state.loaded=false;state.errors=[];state.missing=[];
+ const r=range(),months=getMonths(r.start,r.end);
+ updateInputs();
+ if(r.end<r.start){state.games=[];state.loaded=true;render();setStatus('This period is in the future. Choose an earlier date.');state.loading=false;return}
+ setStatus('Reading '+months.length+' monthly NHL snapshot'+(months.length===1?'':'s')+'…');
+ progress(0,months.length);$('#refresh').disabled=true;
+ // Hide stale results immediately rather than showing previous-period numbers.
+ $('#laneHost').innerHTML='<div class="blank">Loading NHL scoring data for '+html($('#periodTitle').textContent)+'…</div>';
+ $('#kpis').innerHTML='';
+ try{
+  let done=0;
+  const settled=await Promise.allSettled(months.map(async m=>{try{return await readMonth(m,ctl.signal,force)}finally{if(run===state.run)progress(++done,months.length)}}));
+  if(run!==state.run)return;
+  const records=[];let last=null;
+  for(let i=0;i<settled.length;i++){
+   const item=settled[i];
+   if(item.status==='rejected'){if(!ctl.signal.aborted)state.errors.push(item.reason?.message||months[i]+' failed');continue}
+   const data=item.value;
+   if(data.missing){state.missing.push(data.month);continue}
+   records.push(...data.games);
+   if(data.updatedAt&&(!last||data.updatedAt>last))last=data.updatedAt;
+  }
+  const map=new Map();
+  for(const g of records)if(g.date>=r.start&&g.date<=r.end&&Array.isArray(g.goals)&&g.id)map.set(String(g.id),g);
+  state.games=[...map.values()].sort((a,b)=>a.date.localeCompare(b.date)||String(a.id).localeCompare(String(b.id)));
+  state.updated=last;state.loaded=true;
+  populateTeams();render();
+  const missing=state.missing.length,errors=state.errors.length;
+  let msg=fmt(state.games.length)+' games in range';
+  if(last)msg+=' · snapshot '+new Date(last).toLocaleString();
+  if(missing||errors)msg+=' · '+missing+' unavailable month(s), '+errors+' fetch error(s)';
+  const goals=state.games.flatMap(g=>g.goals);
+  if(goals.length&&goals.some(g=>!g.manpower))msg+=' · refresh of old-format goals pending';
+  setStatus(msg,!!errors||!!missing||(goals.length>0&&goals.some(g=>!g.manpower)));
+ }catch(e){
+  if(run!==state.run)return;
+  state.loaded=true;state.games=[];render();
+  setStatus('NHL data could not be loaded: '+(e.message||String(e)),true);
+ }finally{
+  if(run===state.run){state.loading=false;state.controller=null;progress(0,0);$('#refresh').disabled=false}
+ }
+}
+function populateTeams(){
+ const set=new Set();for(const g of state.games){if(g.home)set.add(g.home);if(g.away)set.add(g.away)}
+ const selected=state.team;$('#team').innerHTML='<option value="ALL">All teams</option>'+[...set].sort().map(t=>'<option value="'+html(t)+'">'+html(t)+'</option>').join('');
+ state.team=set.has(selected)?selected:'ALL';$('#team').value=state.team;
+}
+function aggregate(){
+ const byLane=new Map(LANES.map(l=>[l.id,new Map()]));
+ const totals={G:0,A:0,P:0,unknown:0,emptyNet:0,scored:0};
+ const available=new Set(LANES.map(x=>x.id));
+ for(const game of state.games){
+  for(const goal of game.goals||[]){
+   if(Number(goal.period)>=5)continue;
+   totals.scored++;
+   const lane=goal.manpower;
+   if(!available.has(lane)){if(lane==='OTHER')totals.emptyNet++;else totals.unknown++;continue}
+   if(state.team!=='ALL'&&goal.team!==state.team)continue;
+   const roster=game.players||{};
+   function credit(id,role){
+    if(id==null||id==='')return;
+    id=String(id);
+    const table=byLane.get(lane);
+    let p=table.get(id);
+    const person=roster[id]||{};
+    if(!p){p={id,name:person.name||'Player '+id,team:goal.team,G:0,A:0,A1:0,A2:0,P:0,events:[]};table.set(id,p)}
+    else if(game.date>=String(p.lastDate||'')){p.team=goal.team;if(person.name)p.name=person.name}
+    p.lastDate=game.date;
+    if(role==='G')p.G++;else{p.A++;p[role]++}
+    p.P++;
+    p.events.push({date:game.date,gameId:game.id,home:game.home,away:game.away,period:goal.period,time:goal.time,role,score:goal.score||'',opponent:goal.home===goal.team?goal.away:goal.home});
+   }
+   totals.G++;totals.A+=Number(goal.a1!=null)+Number(goal.a2!=null);totals.P+=1+Number(goal.a1!=null)+Number(goal.a2!=null);
+   credit(goal.scorer,'G');credit(goal.a1,'A1');credit(goal.a2,'A2');
+  }
+ }
+ const rows={};
+ const query=state.search.trim().toLowerCase();
+ for(const lane of LANES){
+  const players=[...byLane.get(lane.id).values()];
+  players.sort((a,b)=>b[state.metric]-a[state.metric]||b.P-a.P||b.G-a.G||a.name.localeCompare(b.name));
+  rows[lane.id]={all:players,players:query?players.filter(p=>p.name.toLowerCase().includes(query)||p.team.toLowerCase().includes(query)):players};
+ }
+ return {rows,totals};
+}
+function metricLabel(){return {G:'Goals',A:'Assists',P:'Points'}[state.metric]}
+function card(p,rank,lane){
+ const metric=state.metric;
+ return '<button class="card" type="button" data-id="'+html(p.id)+'" data-lane="'+html(lane)+'" aria-label="'+html(p.name+' '+p[metric]+' '+metricLabel()+', open scoring log')+'">'
+  +'<div class="cardtop"><em>#'+fmt(rank)+'</em><span>'+fmt(p.events.length)+' scoring credits</span></div>'
+  +'<div class="profile">'+face(p)+'<div><div class="pname">'+html(p.name)+'</div><span class="teamname">'+html(p.team)+'</span></div></div>'
+  +'<div class="cardbottom"><div><div class="big">'+fmt(p[metric])+'</div><span class="biglabel">'+html(metricLabel())+'</span></div>'
+  +'<div class="breakdown"><b>'+fmt(p.G)+'</b> G · <b>'+fmt(p.A)+'</b> A<br><b>'+fmt(p.P)+'</b> P</div></div></button>';
+}
+function render(){
+ updateInputs();if(!state.loaded)return;
+ const {rows,totals}=aggregate();state.stats=rows;state.summary=totals;
+ const kpis=[
+  [totals.G,'Classified goals'],[totals.A,'Credited assists'],[totals.P,'Total points'],[state.games.length,'Games loaded'],
+  [totals.unknown+totals.emptyNet,'Unclassified / excluded']
+ ];
+ $('#kpis').innerHTML=kpis.map(x=>'<div class="kpi"><strong>'+fmt(x[0])+'</strong><small>'+html(x[1])+'</small></div>').join('');
+ $('#laneHost').innerHTML=LANES.map(l=>{
+  const r=rows[l.id],players=r.players;
+  const total=r.all.reduce((n,p)=>n+p[state.metric],0);
+  return '<section class="lane" data-lane="'+l.id+'"><div class="lane-head"><div class="lane-title"><span class="lane-icon">'+l.icon+'</span><div><h3>'+html(l.title)+'</h3><div class="lane-desc">'+html(l.hint)+'</div></div></div><div class="lane-total"><strong>'+fmt(total)+'</strong><small>'+html(metricLabel())+' · '+fmt(r.all.length)+' players</small></div></div>'
+   +(players.length?'<div class="cards" role="list" aria-label="'+html(l.title)+' leaders">'+players.map(p=>card(p,r.all.indexOf(p)+1,l.id)).join('')+'</div>':'<div class="empty">'+(state.search?'No players match your search in this lane.':state.games.length?'No scoring credits in this situation for the selected period.':'No games available for this period.')+'</div>')
+   +'</section>';
+ }).join('');
+ const problems=[];
+ if(state.errors.length)problems.push('Snapshot errors: '+state.errors.join('; ')+'.');
+ if(state.missing.length)problems.push('No snapshot for '+state.missing.join(', ')+'. This can mean archived data have not been generated or the month has no games.');
+ if(totals.unknown)problems.push(totals.unknown+' goal(s) lack a recognized on-ice manpower code, including older snapshots awaiting reprocessing.');
+ if(totals.emptyNet)problems.push(totals.emptyNet+' empty-net / extra-attacker or otherwise nonstandard goal(s) excluded.');
+ const inProgress=state.games.filter(g=>['LIVE','CRIT'].includes(g.state)).length;
+ if(inProgress)problems.push(inProgress+' in-progress game(s); numbers update when the scheduled data job runs.');
+ const source='Official NHL play-by-play captured by GitHub Actions into JSON snapshots; not a live feed. '+(state.updated?'Latest loaded snapshot: '+new Date(state.updated).toLocaleString()+'. ':'')+'Monday–Sunday weeks; regular-season games only. A1 and A2 are both counted as assists. Both goalies must be on ice for five-lane classification; 5v5, 4v4 and 3v3 are even strength.';
+ $('#notice').innerHTML=(problems.length?'<strong>Coverage: '+html(problems.join(' '))+'</strong> ':'')+html(source);
+}
+function detail(id,lane){
+ const p=state.stats?.[lane]?.all.find(x=>x.id===id);if(!p)return;
+ const label=LANES.find(l=>l.id===lane)?.title||lane;
+ const log=[...p.events].sort((a,b)=>b.date.localeCompare(a.date)||Number(b.period)-Number(a.period)||String(b.time).localeCompare(String(a.time)));
+ $('#detailContent').innerHTML='<div class="modalhead">'+face(p)+'<div><h2>'+html(p.name)+'</h2><p>'+html(p.team)+' · '+html(label)+' · '+html($('#periodTitle').textContent)+'</p></div><button class="close" id="close" type="button" aria-label="Close">×</button></div>'
+  +'<div class="modalbody"><div class="modalnums"><div><strong>'+fmt(p.G)+'</strong><small>Goals</small></div><div><strong>'+fmt(p.A)+'</strong><small>Assists ('+fmt(p.A1)+' A1 / '+fmt(p.A2)+' A2)</small></div><div><strong>'+fmt(p.P)+'</strong><small>Points</small></div></div><h3>Credited goal events · '+fmt(log.length)+'</h3>'
+  +log.map(e=>'<div class="event"><div><b>'+html(labelDate(e.date))+' · '+html(e.away)+' @ '+html(e.home)+'</b><small>Period '+html(e.period)+' · '+html(e.time)+(e.score?' · '+html(e.score):'')+'</small></div><span class="role">'+html(e.role==='G'?'Goal':e.role==='A1'?'Primary A':'Secondary A')+'</span></div>').join('')
+  +'</div>';
+ $('#close').onclick=()=>$('#detail').close();
+ $('#detail').showModal();
+}
+function shift(n){
+ if(state.period==='season'){state.season=Math.min(MAX_SEASON,Math.max(2019,state.season+n));state.date=state.season+'-10-13'}
+ else state.date=addDays(state.date,n*(state.period==='week'?7:1));
+ if(state.date>TODAY)state.date=TODAY;
+ if(state.period!=='season')state.season=seasonFor(state.date);
+ state.team='ALL';load();
+}
+function onPeriod(p){
+ if(state.period===p)return;state.period=p;
+ if(p==='season')state.season=seasonFor(state.date);
+ state.team='ALL';load();
+}
+for(let y=MAX_SEASON;y>=2019;y--){
+ const opt=document.createElement('option');opt.value=y;opt.textContent=y+'–'+String(y+1).slice(-2);$('#season').append(opt);
+}
+$('#metricSeg').addEventListener('click',e=>{const b=e.target.closest('[data-metric]');if(!b)return;state.metric=b.dataset.metric;render()});
+$('#periodSeg').addEventListener('click',e=>{const b=e.target.closest('[data-period]');if(b)onPeriod(b.dataset.period)});
+$('#date').addEventListener('change',e=>{if(!e.target.value)return;state.date=e.target.value>TODAY?TODAY:e.target.value;state.season=seasonFor(state.date);state.team='ALL';load()});
+$('#season').addEventListener('change',e=>{state.season=+e.target.value;const date=state.season+'-10-13';state.date=date>TODAY?TODAY:date;state.team='ALL';load()});
+$('#prev').onclick=()=>shift(-1);$('#next').onclick=()=>shift(1);
+$('#team').addEventListener('change',e=>{state.team=e.target.value;render()});
+$('#search').addEventListener('input',e=>{state.search=e.target.value;render()});
+$('#refresh').onclick=()=>load(true);
+$('#laneHost').addEventListener('click',e=>{const card=e.target.closest('.card[data-id][data-lane]');if(card)detail(card.dataset.id,card.dataset.lane)});
+$('#detail').onclick=e=>{if(e.target===$('#detail'))$('#detail').close()};
+updateInputs();load();
+})();
+</script>
+</body></html>
