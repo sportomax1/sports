@@ -1,17 +1,53 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#08121b"><meta name="description" content="Compare batting averages and pitcher opponent averages for every base-occupancy situation."><title>MLB Runners Lanes | Sports Tools</title><link rel="stylesheet" href="./mlb-situational-lanes.css"><script src="./mlb-situational-lanes.js" defer></script></head>
-<body data-page="runners"><main class="shell"><header class="header"><div><div class="eyebrow">Sportomax · MLB Analytics</div><h1>MLB Runners Lanes</h1><p class="intro">Compare batting averages and pitcher opponent averages for every base-occupancy situation.</p></div><nav class="links"><a href="./mlb-count-lanes.html">↗ Count Lanes</a><a href="./index.html">← Sports Home</a></nav></header>
-<section class="controls" aria-label="Filters"><div class="seg" id="perspectives"><button data-perspective="batter" class="active">BATTERS</button><button data-perspective="pitcher">PITCHERS</button></div>
-<div class="seg" id="periods"><button data-period="day">DAY</button><button data-period="week" class="active">WEEK</button><button data-period="month">MONTH</button><button data-period="season">SEASON</button></div>
-<div class="nav"><button id="prev" aria-label="Previous period">‹</button><span id="periodLabel"></span><input id="date" type="date" aria-label="Select date"><select id="seasonYear" aria-label="Choose season" hidden></select><button id="next" aria-label="Next period">›</button></div>
-<div class="field"><label for="seasonType">Games</label><select id="seasonType"><option value="R">Regular</option><option value="P">Playoffs</option></select></div>
-<div class="field"><label for="team">Team</label><select id="team"><option value="">All teams</option></select></div>
-<div class="field"><label for="metric">Statistic</label><select id="metric"><option value="avg">AVG</option><option value="obp">OBP</option><option value="k">K%</option><option value="bb">BB%</option><option value="hr">HR%</option></select></div>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07111b"><meta name="description" content="Hitting and pitching performance in every bases-occupied situation.">
+<title>MLB Runners Lanes | Sports Tools</title>
+<link rel="stylesheet" href="./mlb-situational-lanes.css">
+<script src="./mlb-situational-lanes.js" defer></script>
+</head>
+<body data-page="runners">
+<main class="shell">
+<header class="header">
+<div class="brand"><div class="brandicon" aria-hidden="true">⚾</div><div class="brandtext"><div class="eyebrow">SPORTOMAX / MLB ANALYTICS</div><h1>MLB Runners Lanes</h1><p class="intro">Hitting and pitching performance in every bases-occupied situation.</p></div></div>
+<nav class="links" aria-label="MLB navigation">
+<a href="./mlb-count-lanes.html" class="" >Count Lanes</a>
+<a href="./mlb-runners-lanes.html" class="selected" aria-current="page">Runners Lanes</a>
+<a href="./index.html" class="home">← Sports Home</a></nav>
+</header>
+<section class="toolbar" aria-label="Dashboard filters">
+<div class="controls-top">
+<div class="control-group"><span class="control-title">Perspective</span><div class="seg" id="perspectives" role="group" aria-label="Perspective"><button data-perspective="batter" class="active">BATTERS</button><button data-perspective="pitcher">PITCHERS</button></div></div>
+<div class="control-group"><span class="control-title">Time range</span><div class="seg" id="periods" role="group" aria-label="Time range"><button data-period="day">DAY</button><button data-period="week" class="active">WEEK</button><button data-period="month">MONTH</button><button data-period="season">SEASON</button></div></div>
+<div class="control-group date-group"><span class="control-title">Period</span><div class="nav"><button id="prev" aria-label="Previous period">‹</button><span id="periodLabel"></span><input id="date" type="date" aria-label="Choose date"><select id="seasonYear" aria-label="Choose season" hidden></select><button id="next" aria-label="Next period">›</button></div></div>
+</div>
+<div class="filters">
+<div class="field"><label for="seasonType">Season type</label><select id="seasonType"><option value="R">Regular</option><option value="P">Postseason</option></select></div>
+<div class="field team-field"><label for="team">Team</label><select id="team"><option value="">All teams</option></select></div>
+<div class="field metric-field"><label for="metric">Statistic</label><select id="metric"><option value="avg">AVG</option><option value="obp">OBP</option><option value="k">K%</option><option value="bb">BB%</option><option value="hr">HR%</option></select></div>
 <div class="field"><label for="minAB" id="minLabel">Min AB</label><select id="minAB"><option>1</option><option>2</option><option>3</option><option>5</option><option>10</option><option>12</option><option>20</option><option>50</option><option>100</option></select></div>
-<div class="field"><label for="ranking">Rank</label><select id="ranking"><option value="best">Best</option><option value="worst">Worst</option></select></div>
-<div class="field"><label for="limit">Top</label><select id="limit"><option value="5">5</option><option value="10" selected>10</option><option value="20">20</option><option value="50">50</option></select></div>
-<input id="search" type="search" placeholder="Find player…" aria-label="Find player"><button id="reload" class="action">↻ LOAD</button></section>
+<div class="field"><label for="ranking">Ranking</label><select id="ranking"><option value="best">Best</option><option value="worst">Worst</option></select></div>
+<div class="field"><label for="limit">Per lane</label><select id="limit"><option value="5">Top 5</option><option value="10" selected>Top 10</option><option value="20">Top 20</option><option value="50">Top 50</option></select></div>
+<div class="field search-field"><label for="search">Player search</label><input id="search" type="search" placeholder="Name…" autocomplete="off"></div>
+<button id="reload" class="action" title="Reload MLB game data">↻ Refresh</button>
+</div>
+</section>
 
-<div id="status" class="status" role="status" aria-live="polite">Loading…</div><div class="progress"><i id="barFill"></i></div><div id="alert" class="alert" hidden></div><section id="summary" class="chips" aria-label="Summary"></section><section id="board" class="board" aria-label="Runners on base leaderboards"></section>
-<p class="explainer"><strong>Runner state:</strong> Eight distinct configurations: empty, 1B, 2B, 1B+2B, 3B, 1B+3B, 2B+3B, and loaded. Runner occupancy is reconstructed from recorded MLB runner movements, and attributed at the <strong>start of the plate appearance</strong>, even when a runner steals or advances later in that plate appearance. <strong>RISP</strong> situations are the lanes containing a runner on second or third.<br><strong>Measures:</strong> AVG = H / AB. OBP = (H+BB+HBP) / (AB+BB+HBP+SF). K%, BB%, and HR% use completed plate appearances. In the pitcher view, these are <strong>opponent</strong> rates; higher K% and lower AVG/OBP/BB%/HR% are better. "Best / Worst" respects those directions. Each lane ranks players independently. Minimum AB applies to AVG, minimum PA to the other metrics. <strong>Coverage:</strong> MLB StatsAPI play-by-play is retrieved game-by-game; loaded games are shown immediately, and final-game data are saved in IndexedDB. Missing or unrecognized events are flagged rather than estimated. <span class="pagetip">Full-season loads may be slow on the first visit.</span></p></main>
-<dialog id="detail" aria-label="Player game log"><div id="dialogContents"></div></dialog></body></html>
+<div class="loadingline"><span id="status" class="status" role="status" aria-live="polite">Retrieving data…</span><span class="sourcehint">MLB StatsAPI · Final games cached</span></div>
+<div class="progress"><i id="barFill"></i></div>
+<div id="alert" class="alert" role="note" hidden></div>
+<section id="summary" class="chips" aria-label="Statistical summary"></section>
+<section class="board-shell" aria-label="Situation leaderboards">
+<div class="boardhead"><div><h2 class="boardtitle" id="boardTitle">Baserunner situation leaderboards</h2><p id="boardSub" class="boardsub">Compare situations at a glance and explore ranked players below.</p></div>
+<div class="boardtools"><div class="seg" role="group" aria-label="Layout"><button data-layout="lanes" class="active">Lanes</button><button data-layout="grid">Grid</button></div><button id="scrollPrev" class="arrow" aria-label="Scroll lanes left">‹</button><button id="scrollNext" class="arrow" aria-label="Scroll lanes right">›</button></div></div>
+<div class="quickhead"><strong>Situation overview · All qualifying and non-qualifying plate appearances</strong><span>Select a situation to jump to its lane</span></div>
+<div id="overview" class="situations" aria-label="Aggregate rates by situation"></div>
+<div id="board" class="board" aria-label="Runners on base leaderboard lanes"></div>
+<div class="boardfoot"><span>Each lane ranks players independently. Select a player for their game log.</span><span id="viewHint">Scroll horizontally to compare lanes →</span></div>
+</section>
+<details class="method"><summary>Methodology, definitions &amp; data coverage</summary><p class="explainer"><strong>Runner state:</strong> Eight distinct configurations: empty, 1B, 2B, 1B+2B, 3B, 1B+3B, 2B+3B, and loaded. Runner occupancy is reconstructed from recorded MLB runner movements, and attributed at the <strong>start of the plate appearance</strong>, even when a runner steals or advances later in that plate appearance. <strong>RISP</strong> situations are the lanes containing a runner on second or third.<br><strong>Measures:</strong> AVG = H / AB. OBP = (H+BB+HBP) / (AB+BB+HBP+SF). K%, BB%, and HR% use completed plate appearances. In the pitcher view, these are <strong>opponent</strong> rates; higher K% and lower AVG/OBP/BB%/HR% are better. "Best / Worst" respects those directions. Each lane ranks players independently. Minimum AB applies to AVG, minimum PA to the other metrics. <strong>Coverage:</strong> MLB StatsAPI play-by-play is retrieved game-by-game; loaded games are shown immediately, and final-game data are saved in IndexedDB. Missing or unrecognized events are flagged rather than estimated. <span class="pagetip">Full-season loads may be slow on the first visit.</span></p></details>
+</main>
+<dialog id="detail" aria-label="Player game log"><div id="dialogContents"></div></dialog>
+</body>
+</html>
