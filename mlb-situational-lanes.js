@@ -3,7 +3,7 @@
 var API='https://statsapi.mlb.com/api/v1', $=function(id){return document.getElementById(id);};
 var page=document.body.dataset.page==='runners'?'runners':'counts';
 function etDate(){var z={};new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).forEach(function(p){z[p.type]=p.value;});return z.year+'-'+z.month+'-'+z.day;}
-var TODAY=etDate(),anchor=TODAY,year=Number(TODAY.slice(0,4)),period='week',seasonType=Number(TODAY.slice(5,7))>=10?'P':'R',perspective='batter',split=page==='runners'?'runners':'count',metric='avg',ranking='best',sequence=0,controller=null,dbPromise=null;
+var TODAY=etDate(),anchor=TODAY,year=Number(TODAY.slice(0,4)),period='week',seasonType=Number(TODAY.slice(5,7))>=10?'P':'R',perspective='batter',split=page==='runners'?'runners':'count',metric='avg',ranking='best',layout='lanes',sequence=0,controller=null,dbPromise=null;
 var games=[],loaded=[],failures=[],teamNames=new Map(),complete=false,done=0;
 var GROUPS={
  count:Array.from({length:4},function(_,b){return Array.from({length:3},function(_,s){return b+'-'+s;});}).flat(),
@@ -137,13 +137,57 @@ function chips(){
  if(page==='counts'&&missing)notes.push(missing+' plate appearances had no recorded pitch and are excluded from pitch/count lanes.');
  $('alert').hidden=!notes.length;$('alert').textContent=notes.join(' ');
 }
+function situationTotals(){
+ var f=filters(),totals=GROUPS[split].map(function(_,i){return emptyRow(0,'',i);});
+ loaded.forEach(function(g){g.rows.forEach(function(r){
+  var i=groupIndex(r);if(i<0||i>=totals.length)return;
+  var team=perspective==='batter'?r[4]:r[5],name=perspective==='batter'?r[1]:r[3];
+  if(f.team&&f.team!==team||f.q&&!name.toLowerCase().includes(f.q))return;
+  addRow(totals[i],r,g);
+ });});
+ return totals;
+}
+function setLayout(next){
+ layout=next==='grid'?'grid':'lanes';
+ var board=$('board');board.classList.toggle('grid-view',layout==='grid');
+ document.querySelectorAll('[data-layout]').forEach(function(b){
+  var selected=b.dataset.layout===layout;
+  b.classList.toggle('active',selected);b.setAttribute('aria-pressed',String(selected));
+ });
+ $('scrollPrev').hidden=layout==='grid';$('scrollNext').hidden=layout==='grid';
+ $('viewHint').textContent=layout==='grid'?'Grid view · all situations visible':'Scroll horizontally to compare lanes →';
+}
+function jumpToLane(index){
+ var all=$('board').querySelectorAll('.lane'),target=all[index];if(!target)return;
+ all.forEach(function(card){card.classList.toggle('highlight-lane',card===target);});
+ if(layout==='grid'){target.scrollIntoView({behavior:'smooth',block:'nearest'});}
+ else{
+  var board=$('board'),left=target.offsetLeft-board.offsetLeft;
+  board.scrollTo({left:Math.max(0,left-12),behavior:'smooth'});
+ }
+}
 function render(){
- var lanes=buildLanes(),f=filters();
+ var lanes=buildLanes(),f=filters(),groups=GROUPS[split],totals=situationTotals();
+ var viewName=perspective==='pitcher'?'Pitchers · opponent rates':'Batters · offensive rates';
+ var title=split==='runners'?'Base occupancy':split==='count'?'Ball–strike counts':split==='pa'?'Pitch number in plate appearance':'Pitcher workload';
+ $('boardTitle').textContent=title+' · '+metricLabel();
+ $('boardSub').textContent=viewName+' · '+(ranking==='best'?'best':'worst')+' first · '+groups.length+' situations · minimum '+f.minimum+' '+(metric==='avg'?'AB':'PA');
+ var overallLabel=metricLabel();
+ $('overview').innerHTML=totals.map(function(x,i){
+  var label=groups[i],measure=formatted(x),isR=split==='runners';
+  var scope=metric==='avg'?x.ab+' AB':metric==='obp'?denominator(x)+' denominator':x.pa+' PA';
+  return '<button class="situation" type="button" data-go="'+i+'" aria-label="'+esc(label)+': '+esc(measure)+' '+esc(overallLabel)+', '+scope+'; jump to lane '+(i+1)+'"><span class="sit-top"><strong>'+esc(label)+'</strong>'+(isR?diamond(i):'')+'</span><span class="sit-number">'+measure+'</span><span class="sit-base">'+esc(scope)+' · '+x.h+' H</span></button>';
+ }).join('');
+ $('overview').querySelectorAll('[data-go]').forEach(function(b){b.onclick=function(){jumpToLane(Number(b.dataset.go));};});
  $('board').innerHTML=lanes.map(function(players,i){
-  var title=GROUPS[split][i],visible=players.slice(0,f.limit);
-  return '<article class="lane"><div class="lanehead"><div class="headingcluster">'+(split==='runners'?diamond(i):'')+'<div><strong>'+esc(title)+'</strong><small>'+ (split==='runners'?(i===0?'Bases empty':i===7?'Bases loaded':'Runners on '+title):split==='count'?'Count before final pitch':split==='pa'?'PA ending on pitch #':'Pitcher workload at PA end')+'</small></div><span>'+metricLabel()+'</span></div><div class="qual">'+players.length+' qualified player'+(players.length===1?'':'s')+'</div><div class="list">'+(visible.length?visible.map(laneRow).join(''):'<div class="empty">'+(done?'No qualified players — lower Min '+(metric==='avg'?'AB':'PA')+'.':'Waiting for game data…')+'</div>')+'</div></article>';
+  var label=groups[i],visible=players.slice(0,f.limit);
+  var subtitle=split==='runners'?(i===0?'Bases empty':i===7?'Bases loaded':'Runners on '+label):split==='count'?'Before terminal pitch':split==='pa'?'Final pitch number':'Pitches thrown, PA end';
+  var rows=visible.length?visible.map(laneRow).join(''):
+   '<div class="empty">'+(done?'No qualified players<br>Reduce minimum '+(metric==='avg'?'AB':'PA')+' to expand results.':'Awaiting game data…')+'</div>';
+  return '<article class="lane" data-lane="'+i+'"><div class="lanehead"><div class="headingcluster">'+(split==='runners'?diamond(i):'')+'<div><strong>'+esc(label)+'</strong><small>'+esc(subtitle)+'</small></div></div><span class="metric-pill">'+esc(overallLabel)+'</span></div><div class="qual">'+players.length+' qualified · showing '+visible.length+'</div><div class="list">'+rows+'</div></article>';
  }).join('');
  $('board').querySelectorAll('.athlete').forEach(function(b){b.onclick=function(){openPlayer(+b.dataset.id,+b.dataset.index);};});
+ setLayout(layout);
  chips();
 }
 function openPlayer(id,index){
@@ -220,6 +264,9 @@ function mount(){
  $('metric').onchange=function(){metric=this.value;dateNav();render();};
  $('ranking').onchange=function(){ranking=this.value;render();};
  $('search').oninput=render;
+ document.querySelectorAll('[data-layout]').forEach(function(b){b.onclick=function(){setLayout(this.dataset.layout);};});
+ $('scrollPrev').onclick=function(){$('board').scrollBy({left:-Math.max(300,$('board').clientWidth*.7),behavior:'smooth'});};
+ $('scrollNext').onclick=function(){$('board').scrollBy({left:Math.max(300,$('board').clientWidth*.7),behavior:'smooth'});};
  $('detail').onclick=function(e){if(e.target===this)this.close();};
  minimumDefault();dateNav();load();
 }
