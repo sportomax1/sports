@@ -25,9 +25,9 @@ function dateNav(){
  $('periodLabel').textContent=period==='season'?String(year):period==='day'?dateLabel(anchor):dateLabel(r[0])+' – '+dateLabel(end);
  $('date').hidden=period==='season';$('seasonYear').hidden=period!=='season';$('date').max=TODAY;$('date').value=anchor;$('seasonYear').value=String(year);
  $('next').disabled=period==='season'?year>=Number(TODAY.slice(0,4)):r[1]>=TODAY;
- document.querySelectorAll('[data-period]').forEach(function(x){x.classList.toggle('active',x.dataset.period===period);});
- document.querySelectorAll('[data-perspective]').forEach(function(x){x.classList.toggle('active',x.dataset.perspective===perspective);});
- document.querySelectorAll('[data-split]').forEach(function(x){x.classList.toggle('active',x.dataset.split===split);});
+ document.querySelectorAll('[data-period]').forEach(function(x){var current=x.dataset.period===period;x.classList.toggle('active',current);x.setAttribute('aria-pressed',String(current));});
+ document.querySelectorAll('[data-perspective]').forEach(function(x){var current=x.dataset.perspective===perspective;x.classList.toggle('active',current);x.setAttribute('aria-pressed',String(current));});
+ document.querySelectorAll('[data-split]').forEach(function(x){var current=x.dataset.split===split;x.classList.toggle('active',current);x.setAttribute('aria-pressed',String(current));});
  $('minLabel').textContent=metric==='avg'?'Min AB':'Min PA';
 }
 function openDb(){if(dbPromise)return dbPromise;dbPromise=new Promise(function(ok){if(!window.indexedDB){ok(null);return;}try{var q=indexedDB.open('sportomax-mlb-situational-splits-v1',1);q.onupgradeneeded=function(){q.result.createObjectStore('plays',{keyPath:'id'});};q.onsuccess=function(){ok(q.result);};q.onerror=function(){ok(null);};}catch(e){ok(null);}});return dbPromise;}
@@ -202,7 +202,7 @@ function openPlayer(id,index){
  var all=emptyRow(id,first.name,index);set.forEach(function(x){['h','ab','pa','bb','hbp','sf','k','hr'].forEach(function(k){all[k]+=x[k];});});
  var rows=Array.from(set.values()).sort(function(a,b){return b.date.localeCompare(a.date);});
  $('dialogContents').innerHTML='<div class="modalhead">'+photo(id,first.team)+'<div><h2>'+esc(first.name)+'</h2><p>'+esc(perspective==='batter'?'Batter':'Pitcher · opponent')+' · '+esc(GROUPS[split][index])+'</p></div><button class="close" id="close" aria-label="Close">×</button></div>'+
- '<div class="modalbody"><div class="modalstats">'+[['AVG',all.ab?(all.h/all.ab).toFixed(3).replace(/^0/,''):'—'],['H / AB',all.h+' / '+all.ab],['PA',all.pa],['K',all.k],['BB',all.bb],['HR',all.hr]].map(function(p){return '<div><b>'+p[1]+'</b><small>'+p[0]+'</small></div>';}).join('')+'</div>'+
+ '<div class="modalbody"><div class="modalstats">'+[[metricLabel(),formatted(all)],['H / AB',all.h+' / '+all.ab],['PA',all.pa],['K',all.k],['BB',all.bb],['HR',all.hr]].map(function(p){return '<div><b>'+p[1]+'</b><small>'+p[0]+'</small></div>';}).join('')+'</div>'+
  '<h3>Game-by-game · '+rows.length+' games</h3><div class="gamelog">'+rows.map(function(x){return '<div class="gamerow"><span>'+esc(dateLabel(x.date))+'</span><span>'+esc(x.game?x.game.awayName+' @ '+x.game.homeName:'Game')+'</span><b>'+x.h+' H / '+x.ab+' AB</b><b>'+esc(formatted(x))+'</b></div>';}).join('')+'</div></div>';
  $('close').onclick=function(){$('detail').close();};$('detail').showModal();
 }
