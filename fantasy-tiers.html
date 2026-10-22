@@ -99,41 +99,135 @@ dialog::backdrop{background:#01050cd9;backdrop-filter:blur(4px)}
 @media(max-width:850px){.wrap{padding:16px 12px 45px}.header{align-items:start}.statbar{grid-template-columns:repeat(2,1fr)}.toolbar{padding:12px}.group{gap:8px}.tier{padding:11px}.tier.pyramid{max-width:100%!important}}
 @media(max-width:520px){.home{font-size:11px;padding:7px 9px}.control{flex:1}.control select{width:100%}.segment-control{width:100%}.segmented button{flex:1;padding:8px 7px}.tierhead{align-items:start}.tier-count{font-size:10px}.cards{gap:6px}.player{width:calc(50% - 4px);min-height:183px;padding:8px 5px}.player-name{min-height:28px}.headshot{height:62px;width:66px}.stat-table{grid-template-columns:1fr}.modal-stats{grid-template-columns:repeat(3,1fr);gap:4px}.modal-stat{padding:8px}.modal-stat strong{font-size:17px}}
 @media(prefers-reduced-motion:reduce){.player{transition:none}}
+
+/* Pyramid-first layout */
+.wrap{max-width:1540px;padding:12px 16px 38px}
+.header{align-items:center;margin-bottom:10px;gap:12px}
+.brand{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.eyebrow{letter-spacing:.09em;font-size:10px}
+h1{margin:0;font-size:clamp(22px,2.7vw,30px);letter-spacing:-.035em}
+.home{padding:6px 10px;border-radius:8px;font-size:11px}
+.toolbar{padding:9px 11px;border-radius:11px;gap:0;box-shadow:none}
+.primary-tools{display:flex;align-items:end;gap:8px;flex-wrap:wrap}
+.control{gap:3px}
+.control label{font-size:9px;letter-spacing:.04em;white-space:nowrap}
+select,input[type="search"],input[type="number"]{min-height:32px;padding:5px 8px;border-radius:7px;font-size:12px}
+.segmented{padding:2px;border-radius:8px;gap:1px;flex-wrap:nowrap}
+.segmented button{padding:6px 9px;font-size:11px;border-radius:6px;white-space:nowrap}
+.positionControl .segmented button{min-width:30px}
+.action{min-height:32px;padding:5px 12px;border-radius:7px}
+.refreshPrimary{font-size:19px;line-height:1;padding:4px 10px;align-self:end}
+.advanced{align-self:end;position:relative;min-width:0}
+.advanced>summary{cursor:pointer;user-select:none;list-style:none;min-height:32px;border:1px solid #30445e;border-radius:7px;background:#0b1726;color:#cad6e6;padding:7px 10px;font-size:11px;font-weight:800;white-space:nowrap}
+.advanced>summary::-webkit-details-marker{display:none}
+.advanced[open]>summary{border-color:#4da697;color:#e3fff9}
+.advanced-grid{position:absolute;z-index:20;top:calc(100% + 8px);right:0;width:min(570px,calc(100vw - 32px));padding:12px;background:#142237;border:1px solid #48617f;box-shadow:0 18px 48px #0008;border-radius:12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.advanced-grid .control>select,.advanced-grid .control>input{width:100%}
+.advanced-grid .helper{grid-column:1/-1;margin:0;border-top:1px solid #2d435c;padding-top:9px;line-height:1.45}
+.infostrip{display:flex;align-items:center;flex-wrap:wrap;gap:5px 14px;padding:9px 4px 4px;margin:0;min-height:33px}
+.infostrip .mini-label{font-size:10px;letter-spacing:.04em;flex:1;min-width:220px}
+.overview-data{font-size:10px;color:#92a8c3;white-space:nowrap}
+.overview-data b{font-size:12px;color:#f0f6ff;font-variant-numeric:tabular-nums}
+.badge{font-size:10px;padding:4px 8px}
+.statusbar{font-size:10px;line-height:1.3;margin:0 4px 6px;min-height:13px;color:#889db4}
+.results{gap:6px}
+.results.pyramid-mode{gap:5px;max-width:1410px;margin:auto}
+.results.pyramid-mode .tier.pyramid{width:min(100%,calc(var(--level) * 134px + 136px));max-width:none;margin-inline:auto;display:grid;grid-template-columns:91px minmax(0,1fr);align-items:center;gap:7px;padding:7px 9px;border-radius:11px;background:linear-gradient(90deg,#162436cc,#0b1828 90%);overflow:visible}
+.results.pyramid-mode .tier.pyramid:nth-child(1){background:linear-gradient(90deg,#514021b5,#162334 85%);box-shadow:0 0 0 1px #ba913640}
+.results.pyramid-mode .tier.pyramid:nth-child(2){background:linear-gradient(90deg,#31435895,#122032 85%)}
+.results.pyramid-mode .tier.pyramid .tierhead{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:4px;margin:0}
+.results.pyramid-mode .tier.pyramid .tier-title{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.results.pyramid-mode .tier.pyramid .tier-num{min-width:29px;width:29px;height:24px;font-size:10px;border-radius:6px}
+.results.pyramid-mode .tier.pyramid h2{font-size:12px;line-height:1.1}
+.results.pyramid-mode .tier.pyramid p{font-size:9px;line-height:1.25;margin-top:3px}
+.results.pyramid-mode .tier.pyramid .tier-count{display:none}
+.results.pyramid-mode .tier.pyramid .cards{justify-content:center;align-items:stretch;gap:4px;flex-wrap:nowrap;min-width:0}
+.results.pyramid-mode .tier.pyramid .player{width:126px;flex:0 1 126px;min-width:0;min-height:126px;padding:5px 4px 6px;border-radius:9px}
+.results.pyramid-mode .tier.pyramid .rank{top:4px;left:5px;font-size:9px}
+.results.pyramid-mode .tier.pyramid .headshot{width:49px;height:45px;border-radius:6px;margin:0 auto 3px}
+.results.pyramid-mode .tier.pyramid .player-name{font-size:10px;min-height:22px;line-height:1.1}
+.results.pyramid-mode .tier.pyramid .teamline{font-size:9px;margin:1px 0;gap:3px}
+.results.pyramid-mode .tier.pyramid .logo{width:13px;height:13px}
+.results.pyramid-mode .tier.pyramid .player-score{font-size:16px;line-height:1.15}
+.results.pyramid-mode .tier.pyramid .player-score small{font-size:8px}
+.results.pyramid-mode .tier.pyramid .player-stats{font-size:8px;min-height:0;margin-top:2px;line-height:1.25}
+.results:not(.pyramid-mode) .tier{padding:12px}
+.results:not(.pyramid-mode) .player{width:135px;min-height:181px;padding:8px}
+.results:not(.pyramid-mode) .headshot{height:62px;width:66px}
+.results:not(.pyramid-mode) .tierhead{margin-bottom:9px}
+.next{padding:11px;border-radius:10px}
+.next .cards{gap:6px}
+.next .player{width:120px;min-height:175px}
+.note{font-size:10px;margin:12px 4px}
+@media(max-width:1100px){
+ .primary-tools{gap:6px}
+ .results.pyramid-mode .tier.pyramid{width:min(100%,calc(var(--level) * 116px + 116px));grid-template-columns:80px minmax(0,1fr)}
+ .results.pyramid-mode .tier.pyramid .player{width:105px;flex-basis:105px}
+}
+@media(max-width:750px){
+ .wrap{padding:9px 9px 27px}.header{margin-bottom:8px}.eyebrow{display:none}h1{font-size:23px}
+ .toolbar{padding:7px}.primary-tools{gap:5px 7px}.control{flex:0 0 auto}.control label{font-size:8px}
+ .segmented button{padding:6px 8px;font-size:10px}
+ .positionControl{order:-1;width:100%}
+ .positionControl .segmented{width:100%;display:flex}
+ .positionControl .segmented button{flex:1}
+ .advanced{margin-left:auto}.advanced-grid{right:0}
+ .infostrip{gap:4px 10px;padding:7px 2px 3px}.infostrip .mini-label{flex-basis:100%;min-width:0}
+ .statusbar{margin-bottom:5px}
+ .results.pyramid-mode .tier.pyramid{width:100%!important;max-width:100%!important;grid-template-columns:70px minmax(0,1fr);gap:3px;padding:6px}
+ .results.pyramid-mode .tier.pyramid .cards{justify-content:flex-start;overflow-x:auto;overscroll-behavior-inline:contain;scrollbar-width:thin}
+ .results.pyramid-mode .tier.pyramid .player{flex:0 0 100px;width:100px;min-height:132px}
+ .results.pyramid-mode .tier.pyramid .headshot{width:47px;height:46px}
+ .results.pyramid-mode .tier.pyramid .tier-num{height:21px;width:27px;min-width:27px}
+ .results.pyramid-mode .tier.pyramid p{font-size:8px}
+}
+@media(max-width:420px){
+ .segmented button{padding:6px 7px}
+ .advanced-grid{width:calc(100vw - 18px);grid-template-columns:1fr;max-height:70vh;overflow-y:auto}
+ .advanced-grid .helper{grid-column:1}
+ .infostrip .badge{display:none}
+ .results.pyramid-mode .tier.pyramid .player{flex-basis:96px;width:96px}
+}
+
 </style>
 </head>
 <body>
 <main class="wrap">
   <header class="header">
-    <div><div class="eyebrow">SPORTOMAX SPORTS · NFL FANTASY</div><h1>Fantasy <span>Tiers</span></h1><p class="subhead">A visual power ranking of actual fantasy production. Discover natural performance breaks or stack players into a strict rank pyramid.</p></div>
+    <div class="brand"><div class="eyebrow">SPORTOMAX · NFL FANTASY</div><h1>Fantasy <span>Pyramid</span></h1></div>
     <a class="home" href="./index.html">← Sports Tools</a>
   </header>
   <section class="toolbar" aria-label="Fantasy tier controls">
-    <div class="group">
-      <div class="control"><label for="season">NFL season</label><select id="season"></select></div>
+    <div class="primary-tools">
+      <div class="control modeControl"><label>Layout</label><div class="segmented" id="method"><button type="button" data-v="pyramid" class="on">△ Pyramid</button><button type="button" data-v="smart">✦ Smart</button></div></div>
+      <div class="control positionControl"><label>Position</label><div class="segmented" id="positions"><button type="button" data-v="QB" class="pos-on">QB</button><button type="button" data-v="RB">RB</button><button type="button" data-v="WR">WR</button><button type="button" data-v="TE">TE</button><button type="button" data-v="K">K</button><button type="button" data-v="DEF">D/ST</button></div></div>
+      <div class="control"><label for="season">Year</label><select id="season"></select></div>
       <div class="control"><label>Period</label><div class="segmented" id="period"><button type="button" data-v="season" class="on">Season</button><button type="button" data-v="week">Week</button></div></div>
       <div class="control" id="weekCtl" hidden><label for="week">Week</label><select id="week"></select></div>
-      <div class="control"><label for="scoring">Scoring</label><select id="scoring"><option value="pts_ppr">Full PPR</option><option value="pts_half_ppr">Half PPR</option><option value="pts_std">Standard</option></select></div>
-      <div class="control"><label for="sort">Rank by</label><select id="sort"><option value="total">Fantasy points</option><option value="avg">Points / game</option></select></div>
-      <button type="button" class="action" id="refresh">↻ Refresh data</button>
+      <div class="control"><label for="scoring">Scoring</label><select id="scoring"><option value="pts_ppr">PPR</option><option value="pts_half_ppr">Half PPR</option><option value="pts_std">Standard</option></select></div>
+      <div class="control"><label for="levels" id="levelsLabel">Pyramid layers</label><select id="levels"><option>3</option><option>4</option><option>5</option><option selected>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select></div>
+      <button class="action refreshPrimary" type="button" id="refresh" aria-label="Refresh NFL statistics" title="Refresh NFL statistics">↻</button>
+      <details class="advanced" id="advanced">
+        <summary title="Additional ranking and display options">⚙ Options ▾</summary>
+        <div class="advanced-grid">
+          <div class="control"><label for="sort">Rank by</label><select id="sort"><option value="total">Fantasy points</option><option value="avg">Points / game</option></select></div>
+          <div class="control"><label for="maxPlayers">Player pool</label><select id="maxPlayers"><option value="30">Top 30</option><option value="60" selected>Top 60</option><option value="100">Top 100</option><option value="150">Top 150</option></select></div>
+          <div class="control"><label for="minPoints">Minimum FPTS</label><input id="minPoints" type="number" step="0.5" value="1"></div>
+          <div class="control"><label for="search">Player or team</label><input id="search" type="search" placeholder="Search players / teams" autocomplete="off"></div>
+          <p class="helper" id="methodExplainer">The pyramid places 1, 2, 3, 4, 5, 6 players in each descending tier.</p>
+        </div>
+      </details>
     </div>
-    <div class="group"><div class="control"><label>Position</label><div class="segmented" id="positions"><button data-v="QB" class="pos-on">QB</button><button data-v="RB">RB</button><button data-v="WR">WR</button><button data-v="TE">TE</button><button data-v="K">K</button><button data-v="DEF">D/ST</button></div></div></div>
-    <div class="group">
-      <div class="control"><label>Tier method</label><div class="segmented" id="method"><button data-v="smart" class="on">✦ Smart tiers</button><button data-v="pyramid">△ Pyramid 1–2–3…</button></div></div>
-      <div class="control"><label for="levels" id="levelsLabel">Smart tier count</label><select id="levels"><option>3</option><option>4</option><option>5</option><option selected>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select></div>
-      <div class="control"><label for="maxPlayers">Player pool</label><select id="maxPlayers"><option value="30">Top 30</option><option value="60" selected>Top 60</option><option value="100">Top 100</option><option value="150">Top 150</option></select></div>
-      <div class="control"><label for="minPoints">Min FPTS</label><input id="minPoints" type="number" step="0.5" value="1" style="width:82px"></div>
-      <div class="control"><label for="search">Search</label><input id="search" type="search" placeholder="Player or team" style="width:190px" autocomplete="off"></div>
-    </div>
-    <div class="helper" id="methodExplainer">Smart tiers use optimized one-dimensional natural breaks (Jenks) on ranked fantasy points. Tier sizes are earned by actual gaps in production, never predetermined.</div>
+  </section>
+  <section class="infostrip" aria-label="Fantasy ranking overview">
+    <span class="mini-label" id="summary">NFL · SEASON TOTALS · QB · PPR</span>
+    <span class="overview-data"><b id="nPlayers">—</b> players</span>
+    <span class="overview-data"><b id="topScore">—</b> leader</span>
+    <span class="overview-data"><b id="avgScore">—</b> avg</span>
+    <span class="overview-data"><b id="nTiers">—</b> tiers</span>
+    <span class="badge" id="sourceBadge">△ PYRAMID</span>
   </section>
   <div id="status" role="status" aria-live="polite" class="statusbar">Loading NFL data…</div>
-  <section class="statbar" aria-label="Fantasy summary">
-    <div class="metric"><strong id="nPlayers">—</strong><small>Qualified players</small></div>
-    <div class="metric"><strong id="topScore">—</strong><small>Leader FPTS</small></div>
-    <div class="metric"><strong id="avgScore">—</strong><small>Average FPTS</small></div>
-    <div class="metric"><strong id="nTiers">—</strong><small>Visible tiers</small></div>
-  </section>
-  <div class="tabline"><span id="summary" class="mini-label">2026 REGULAR SEASON · QB · FULL PPR</span><span class="badge" id="sourceBadge">ACTUAL STATS · SLEEPER</span></div>
   <section class="results" id="results"><div class="empty">Loading player statistics…</div></section>
   <footer class="note">Source: Sleeper public NFL player directory and actual weekly/season statistics. Rankings are descriptive, not future projections. PPR, half-PPR and standard totals follow Sleeper scoring; league-specific rules can differ. Past seasons exclude playoffs. Refresh bypasses the stats cache; the player directory is cached for 24 hours.</footer>
 </main>
@@ -142,14 +236,14 @@ dialog::backdrop{background:#01050cd9;backdrop-filter:blur(4px)}
 (function(){
 'use strict';
 const $=id=>document.getElementById(id), POS=['QB','RB','WR','TE','K','DEF'], API='https://api.sleeper.com', API2='https://api.sleeper.app/v1', CACHENAME='fantasy-tier-payloads', CURRENT_YEAR=(new Date().getUTCMonth()>=6?new Date().getUTCFullYear():new Date().getUTCFullYear()-1), YEARS=Array.from({length:Math.min(12,Math.max(1,CURRENT_YEAR-2018+1))},(_,i)=>CURRENT_YEAR-i);
-const state={season:YEARS[0],period:'season',week:1,pos:'QB',scoring:'pts_ppr',sort:'total',method:'smart',levels:6,maxPlayers:60,minPoints:1,search:''};
+const state={season:YEARS[0],period:'season',week:1,pos:'QB',scoring:'pts_ppr',sort:'total',method:'pyramid',levels:6,maxPlayers:60,minPoints:1,search:''};
 let directory=null,statData=null,players=[],loadId=0,dbPromise=null,lastUpdated=0;
 const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const numeric=x=>x===null||x===undefined||x===''?NaN:Number(x);
 const fmt=(n,d=1)=>Number.isFinite(n)?n.toFixed(d):'—';
 const number=x=>Number.isFinite(numeric(x))?Number(x):0;
 function status(message,error){$('status').textContent=message;$('status').classList.toggle('error',!!error)}
-function readSettings(){try{const s=JSON.parse(localStorage.getItem('fantasy-tiers-ui')||'{}');for(const k of Object.keys(state))if(k in s)state[k]=s[k];if(!YEARS.includes(+state.season))state.season=YEARS[0];if(!POS.includes(state.pos))state.pos='QB';if(!['pts_ppr','pts_half_ppr','pts_std'].includes(state.scoring))state.scoring='pts_ppr';}catch(e){}}
+function readSettings(){try{const s=JSON.parse(localStorage.getItem('fantasy-tiers-ui')||'{}');for(const k of Object.keys(state))if(k in s)state[k]=s[k];if(!YEARS.includes(+state.season))state.season=YEARS[0];if(!POS.includes(state.pos))state.pos='QB';if(!['pts_ppr','pts_half_ppr','pts_std'].includes(state.scoring))state.scoring='pts_ppr';if(!localStorage.getItem('fantasy-tier-layout-v2')){state.method='pyramid';localStorage.setItem('fantasy-tier-layout-v2','1');localStorage.setItem('fantasy-tiers-ui',JSON.stringify(state));}}catch(e){}}
 function persist(){try{localStorage.setItem('fantasy-tiers-ui',JSON.stringify(state))}catch(e){}}
 function openDB(){if(!('indexedDB' in window))return Promise.resolve(null);if(!dbPromise)dbPromise=new Promise(resolve=>{try{const r=indexedDB.open('fantasy-tiers-cache',1);r.onupgradeneeded=()=>r.result.createObjectStore(CACHENAME);r.onsuccess=()=>resolve(r.result);r.onerror=()=>resolve(null)}catch(e){resolve(null)}});return dbPromise}
 async function cached(key,maxAge){const db=await openDB();if(!db)return null;return new Promise(resolve=>{try{const tx=db.transaction(CACHENAME,'readonly'),r=tx.objectStore(CACHENAME).get(key);r.onsuccess=()=>resolve(r.result&&Date.now()-r.result.at<maxAge?r.result.value:null);r.onerror=()=>resolve(null)}catch(e){resolve(null)}})}
@@ -204,7 +298,7 @@ function card(p,index){const val=sortValue(p);return '<button type="button" clas
  '<span class="teamline"><img class="logo" loading="lazy" src="'+safe(logo(p.team))+'" alt="">'+safe(p.team||'—')+' · '+safe(p.pos)+'</span>'+
  '<span class="player-score">'+fmt(val)+' <small>'+(state.sort==='avg'?'PPG':'FPTS')+'</small></span>'+
  '<span class="player-stats">'+safe(statLine(p))+'</span></button>'}
-function show(){if(!statData)return;const all=visible(),{groups,rest}=makeTiers(all);let n=0;const tiers=groups.map((g,i)=>{const first=n;n+=g.length;const hi=sortValue(g[0]),lo=sortValue(g.at(-1)),pyramid=state.method==='pyramid';return '<section class="tier'+(pyramid?' pyramid':'')+'" data-level="'+(i+1)+'"><div class="tierhead"><div class="tier-title"><div class="tier-num">T'+(i+1)+'</div><div><h2>'+(['Elite','Premium','Strong','Reliable','Solid','Depth'][i]||'Tier '+(i+1))+'</h2><p>Ranks '+(first+1)+'–'+n+' · '+fmt(hi)+'–'+fmt(lo)+' '+(state.sort==='avg'?'PPG':'FPTS')+'</p></div></div><span class="tier-count">'+g.length+' player'+(g.length===1?'':'s')+'</span></div><div class="cards">'+g.map((p,x)=>card(p,first+x)).join('')+'</div></section>'}).join('');
+function show(){if(!statData)return;const all=visible(),{groups,rest}=makeTiers(all);$('results').classList.toggle('pyramid-mode',state.method==='pyramid');let n=0;const tiers=groups.map((g,i)=>{const first=n;n+=g.length;const hi=sortValue(g[0]),lo=sortValue(g.at(-1)),pyramid=state.method==='pyramid';return '<section class="tier'+(pyramid?' pyramid':'')+'" data-level="'+(i+1)+'" style="--level:'+(i+1)+'"><div class="tierhead"><div class="tier-title"><div class="tier-num">T'+(i+1)+'</div><div><h2>'+(['Elite','Premium','Strong','Reliable','Solid','Depth'][i]||'Tier '+(i+1))+'</h2><p>Ranks '+(first+1)+'–'+n+' · '+fmt(hi)+'–'+fmt(lo)+' '+(state.sort==='avg'?'PPG':'FPTS')+'</p></div></div><span class="tier-count">'+g.length+' player'+(g.length===1?'':'s')+'</span></div><div class="cards">'+g.map((p,x)=>card(p,first+x)).join('')+'</div></section>'}).join('');
 $('results').innerHTML=tiers+(rest.length?'<details class="next"><summary>+ '+rest.length+' more players below the '+state.levels+'-tier pyramid · expand ↓</summary><div class="cards">'+rest.map((p,i)=>card(p,n+i)).join('')+'</div></details>':'')||'<div class="empty">No qualifying '+safe(state.pos)+' players in this selection. Try another week, a lower minimum, or a different season.</div>';
 $('nPlayers').textContent=all.length;$('topScore').textContent=all.length?fmt(sortValue(all[0])):'—';$('avgScore').textContent=all.length?fmt(all.reduce((sum,p)=>sum+sortValue(p),0)/all.length):'—';$('nTiers').textContent=groups.length;
 $('summary').textContent=state.season+' REGULAR SEASON · '+(state.period==='week'?'WEEK '+state.week:'SEASON TOTALS')+' · '+state.pos+' · '+({pts_ppr:'FULL PPR',pts_half_ppr:'HALF PPR',pts_std:'STANDARD'}[state.scoring])+' · '+(state.sort==='avg'?'PPG':'FPTS');
