@@ -237,7 +237,7 @@ select,input[type="search"],input[type="number"]{min-height:32px;padding:5px 8px
 'use strict';
 const $=id=>document.getElementById(id), POS=['QB','RB','WR','TE','K','DEF'], API='https://api.sleeper.com', API2='https://api.sleeper.app/v1', CACHENAME='fantasy-tier-payloads', CURRENT_YEAR=(new Date().getUTCMonth()>=6?new Date().getUTCFullYear():new Date().getUTCFullYear()-1), YEARS=Array.from({length:Math.min(12,Math.max(1,CURRENT_YEAR-2018+1))},(_,i)=>CURRENT_YEAR-i);
 const state={season:YEARS[0],period:'season',week:1,pos:'QB',scoring:'pts_ppr',sort:'total',method:'pyramid',levels:6,maxPlayers:60,minPoints:1,search:''};
-let directory=null,statData=null,players=[],loadId=0,dbPromise=null,lastUpdated=0;
+let directory=null,statData=null,players=[],loadId=0,dbPromise=null,lastUpdated=0,firstVisit=!(function(){try{return localStorage.getItem('fantasy-tiers-ui')}catch(e){return null}})();
 const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const numeric=x=>x===null||x===undefined||x===''?NaN:Number(x);
 const fmt=(n,d=1)=>Number.isFinite(n)?n.toFixed(d):'—';
@@ -337,7 +337,7 @@ if(state.period==='season'){const div=$('weeklyDetails');div.innerHTML='<h3>Week
 }
 async function suggestWeek(){
  try{
-  if(localStorage.getItem('fantasy-tiers-ui'))return;
+  if(!firstVisit)return;
   const x=await request(API2+'/state/nfl');
   const week=Number(x.week||x.display_week);
   if(Number(x.season)!==state.season||!Number.isInteger(week)||week<1||week>18)return;
