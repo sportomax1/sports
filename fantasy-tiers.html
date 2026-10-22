@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080e18">
+<title>Fantasy Tiers | Sportomax Sports</title>
+<style>
+:root{color-scheme:dark;--bg:#080e18;--panel:#101a2a;--panel2:#172437;--line:#293a50;--text:#f3f7fc;--muted:#9bacc1;--gold:#ffc44d;--teal:#52d7c0;--danger:#ff9999}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at 50% -180px,#21436770,transparent 65%),var(--bg);color:var(--text);font:14px/1.45 Inter,system-ui,-apple-system,sans-serif}
+button,select,input{font:inherit}button{cursor:pointer}button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+a{color:#9adad1}
+.wrap{max-width:1430px;margin:auto;padding:22px 22px 70px}
+.eyebrow{font-size:10px;letter-spacing:.16em;font-weight:900;color:var(--gold)}
+h1{font-size:clamp(30px,4vw,50px);line-height:1.08;margin:7px 0 9px;letter-spacing:-.045em}
+h1 span{color:var(--gold)}
+.subhead{color:var(--muted);max-width:680px;margin:0}
+.header{display:flex;justify-content:space-between;gap:16px;align-items:end;margin-bottom:22px}
+.home{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 12px;text-decoration:none;white-space:nowrap;color:var(--text);font-weight:800;font-size:12px}
+.toolbar{border:1px solid var(--line);background:#111d2deb;border-radius:17px;padding:16px;box-shadow:0 14px 40px #0003;display:grid;gap:14px}
+.group{display:flex;gap:9px;flex-wrap:wrap;align-items:end}
+.control{display:flex;flex-direction:column;gap:5px;min-width:0}
+.control label,.mini-label{color:var(--muted);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.08em}
+select,input[type="search"],input[type="number"]{background:#0a1422;border:1px solid #30445e;border-radius:9px;color:var(--text);min-height:39px;padding:7px 11px;min-width:0}
+select{cursor:pointer}
+.segmented{display:flex;background:#08111d;border:1px solid var(--line);padding:3px;border-radius:10px;gap:3px;flex-wrap:wrap}
+.segmented button{border:0;border-radius:8px;background:transparent;color:#b5c4d6;padding:8px 13px;font-weight:900;font-size:12px}
+.segmented button.on{background:var(--gold);color:#16191e}
+.segmented button.pos-on{background:#29665f;color:#fff}
+.action{background:#183d3b;border:1px solid #2a8c7e;border-radius:9px;padding:9px 14px;color:#dcfff7;font-weight:900}
+.action:hover{background:#24564f}
+.helper{font-size:11px;color:var(--muted)}
+.statusbar{display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap;margin:15px 2px 9px;min-height:24px;color:var(--muted);font-size:12px}
+.statusbar.error{color:var(--danger)}
+.statbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-bottom:16px}
+.metric{background:var(--panel);border:1px solid var(--line);padding:13px 16px;border-radius:13px}
+.metric strong{display:block;color:var(--text);font-size:26px;font-weight:900;font-variant-numeric:tabular-nums;line-height:1.2}
+.metric small{color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase}
+.tabline{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin:12px 2px}
+.badge{font-size:11px;color:#d4f1e8;border:1px solid #306258;background:#12362e;border-radius:30px;padding:6px 11px}
+.results{display:grid;gap:13px}
+.tier{position:relative;border:1px solid var(--line);background:linear-gradient(140deg,#162438,#0f1929 70%);border-radius:18px;padding:15px;overflow:hidden}
+.tier:nth-child(1){border-color:#a47d39;background:linear-gradient(110deg,#503a1d55,#0f1929 54%)}
+.tier:nth-child(2){border-color:#677c90;background:linear-gradient(110deg,#506b8140,#0f1929 54%)}
+.tier:nth-child(3){border-color:#88644d}
+.tierhead{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:13px}
+.tier-title{display:flex;align-items:center;gap:12px;min-width:0}
+.tier-num{height:38px;min-width:43px;display:grid;place-items:center;border-radius:10px;background:#304357;color:#fff;font-size:14px;font-weight:950}
+.tier:nth-child(1) .tier-num{background:#b78a32;color:#10151c}
+.tier h2{margin:0;font-size:15px}
+.tier p{margin:2px 0 0;color:var(--muted);font-size:11px}
+.tier-count{color:#c4d3e4;font-size:11px;font-weight:900;white-space:nowrap}
+.cards{display:flex;justify-content:center;gap:9px;flex-wrap:wrap}
+.player{display:flex;flex-direction:column;align-items:center;position:relative;text-align:center;width:145px;min-height:205px;background:#0a1523;border:1px solid #2a4057;border-radius:13px;padding:10px 8px 9px;color:var(--text);transition:transform .15s,border-color .15s}
+.player:hover{transform:translateY(-3px);border-color:#6ac8b8}
+.rank{position:absolute;top:8px;left:8px;color:#98acc4;font-size:10px;font-weight:900}
+.headshot{height:74px;width:78px;object-fit:contain;border-radius:11px;background:radial-gradient(circle,#304a63,#17283a 70%);display:block;margin:5px auto 6px}
+.player-name{font-size:12px;line-height:1.23;min-height:30px;font-weight:850;display:flex;align-items:center;justify-content:center;max-width:100%;overflow-wrap:anywhere}
+.teamline{display:flex;gap:5px;align-items:center;justify-content:center;color:#a5b7cb;font-size:10px;margin:3px 0}
+.logo{width:17px;height:17px;object-fit:contain}
+.player-score{font-size:21px;font-weight:950;letter-spacing:-.04em;font-variant-numeric:tabular-nums;color:var(--gold);line-height:1.25}
+.player-score small{font-size:9px;letter-spacing:0;color:var(--muted);font-weight:700}
+.player-stats{font-size:9px;color:#acbecf;line-height:1.45;margin-top:4px;min-height:25px}
+.tier.pyramid{margin-left:auto;margin-right:auto;max-width:100%}
+.tier.pyramid[data-level="1"]{max-width:300px}
+.tier.pyramid[data-level="2"]{max-width:460px}
+.tier.pyramid[data-level="3"]{max-width:635px}
+.tier.pyramid[data-level="4"]{max-width:790px}
+.tier.pyramid[data-level="5"]{max-width:960px}
+.tier.pyramid[data-level="6"]{max-width:1130px}
+.next{background:#0e1928;border:1px dashed #364a64;border-radius:16px;padding:16px;text-align:center}
+.next summary{list-style:none;cursor:pointer;font-weight:800;color:#cdd9e8}
+.next summary::-webkit-details-marker{display:none}
+.next .cards{margin-top:14px}
+.empty{text-align:center;padding:65px 15px;border:1px dashed var(--line);border-radius:16px;color:var(--muted)}
+.note{font-size:11px;color:var(--muted);margin:20px 4px}
+dialog{width:min(730px,calc(100% - 20px));max-height:min(92dvh,850px);background:#101a29;color:var(--text);border:1px solid #47617c;border-radius:18px;padding:20px;overflow:auto}
+dialog::backdrop{background:#01050cd9;backdrop-filter:blur(4px)}
+.modal-head{display:flex;justify-content:space-between;gap:12px;align-items:start}
+.modal-person{display:flex;gap:11px;align-items:center}
+.modal-person img{width:75px;height:75px;object-fit:contain;background:#1b2e42;border-radius:11px}
+.modal-person h2{margin:0;font-size:23px;line-height:1.15}
+.modal-person p{margin:5px 0 0;color:var(--muted)}
+.close{background:#25384d;border:1px solid var(--line);border-radius:9px;padding:7px 11px;color:var(--text);font-size:18px}
+.modal-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0}
+.modal-stat{padding:13px;border:1px solid var(--line);background:#17273a;border-radius:10px}
+.modal-stat strong{display:block;color:var(--gold);font-size:20px}
+.modal-stat small{color:var(--muted)}
+.chart{display:flex;gap:4px;align-items:end;min-height:116px;margin:14px 0;padding:8px 0 0;border-bottom:1px solid #526176}
+.chart-col{flex:1;min-width:0;text-align:center}
+.bar{width:100%;max-width:25px;background:linear-gradient(#54d6c1,#21584d);border-radius:4px 4px 0 0;margin:auto}
+.chart-col small{font-size:9px;color:var(--muted)}
+.chart-col[title]{cursor:help}
+.stat-table{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.stat-cell{display:flex;justify-content:space-between;gap:9px;background:#152335;padding:8px 10px;border-radius:7px;font-size:11px}
+.stat-cell span{color:var(--muted);overflow-wrap:anywhere}
+.stat-cell b{white-space:nowrap}
+@media(max-width:850px){.wrap{padding:16px 12px 45px}.header{align-items:start}.statbar{grid-template-columns:repeat(2,1fr)}.toolbar{padding:12px}.group{gap:8px}.tier{padding:11px}.tier.pyramid{max-width:100%!important}}
+@media(max-width:520px){.home{font-size:11px;padding:7px 9px}.control{flex:1}.control select{width:100%}.segment-control{width:100%}.segmented button{flex:1;padding:8px 7px}.tierhead{align-items:start}.tier-count{font-size:10px}.cards{gap:6px}.player{width:calc(50% - 4px);min-height:183px;padding:8px 5px}.player-name{min-height:28px}.headshot{height:62px;width:66px}.stat-table{grid-template-columns:1fr}.modal-stats{grid-template-columns:repeat(3,1fr);gap:4px}.modal-stat{padding:8px}.modal-stat strong{font-size:17px}}
+@media(prefers-reduced-motion:reduce){.player{transition:none}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="header">
+    <div><div class="eyebrow">SPORTOMAX SPORTS · NFL FANTASY</div><h1>Fantasy <span>Tiers</span></h1><p class="subhead">A visual power ranking of actual fantasy production. Discover natural performance breaks or stack players into a strict rank pyramid.</p></div>
+    <a class="home" href="./index.html">← Sports Tools</a>
+  </header>
+  <section class="toolbar" aria-label="Fantasy tier controls">
+    <div class="group">
+      <div class="control"><label for="season">NFL season</label><select id="season"></select></div>
+      <div class="control"><label>Period</label><div class="segmented" id="period"><button type="button" data-v="season" class="on">Season</button><button type="button" data-v="week">Week</button></div></div>
+      <div class="control" id="weekCtl" hidden><label for="week">Week</label><select id="week"></select></div>
+      <div class="control"><label for="scoring">Scoring</label><select id="scoring"><option value="pts_ppr">Full PPR</option><option value="pts_half_ppr">Half PPR</option><option value="pts_std">Standard</option></select></div>
+      <div class="control"><label for="sort">Rank by</label><select id="sort"><option value="total">Fantasy points</option><option value="avg">Points / game</option></select></div>
+      <button type="button" class="action" id="refresh">↻ Refresh data</button>
+    </div>
+    <div class="group"><div class="control"><label>Position</label><div class="segmented" id="positions"><button data-v="QB" class="pos-on">QB</button><button data-v="RB">RB</button><button data-v="WR">WR</button><button data-v="TE">TE</button><button data-v="K">K</button><button data-v="DEF">D/ST</button></div></div></div>
+    <div class="group">
+      <div class="control"><label>Tier method</label><div class="segmented" id="method"><button data-v="smart" class="on">✦ Smart tiers</button><button data-v="pyramid">△ Pyramid 1–2–3…</button></div></div>
+      <div class="control"><label for="levels" id="levelsLabel">Smart tier count</label><select id="levels"><option>3</option><option>4</option><option>5</option><option selected>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select></div>
+      <div class="control"><label for="maxPlayers">Player pool</label><select id="maxPlayers"><option value="30">Top 30</option><option value="60" selected>Top 60</option><option value="100">Top 100</option><option value="150">Top 150</option></select></div>
+      <div class="control"><label for="minPoints">Min FPTS</label><input id="minPoints" type="number" step="0.5" value="1" style="width:82px"></div>
+      <div class="control"><label for="search">Search</label><input id="search" type="search" placeholder="Player or team" style="width:190px" autocomplete="off"></div>
+    </div>
+    <div class="helper" id="methodExplainer">Smart tiers use optimized one-dimensional natural breaks (Jenks) on ranked fantasy points. Tier sizes are earned by actual gaps in production, never predetermined.</div>
+  </section>
+  <div id="status" role="status" aria-live="polite" class="statusbar">Loading NFL data…</div>
+  <section class="statbar" aria-label="Fantasy summary">
+    <div class="metric"><strong id="nPlayers">—</strong><small>Qualified players</small></div>
+    <div class="metric"><strong id="topScore">—</strong><small>Leader FPTS</small></div>
+    <div class="metric"><strong id="avgScore">—</strong><small>Average FPTS</small></div>
+    <div class="metric"><strong id="nTiers">—</strong><small>Visible tiers</small></div>
+  </section>
+  <div class="tabline"><span id="summary" class="mini-label">2026 REGULAR SEASON · QB · FULL PPR</span><span class="badge" id="sourceBadge">ACTUAL STATS · SLEEPER</span></div>
+  <section class="results" id="results"><div class="empty">Loading player statistics…</div></section>
+  <footer class="note">Source: Sleeper public NFL player directory and actual weekly/season statistics. Rankings are descriptive, not future projections. PPR, half-PPR and standard totals follow Sleeper scoring; league-specific rules can differ. Past seasons exclude playoffs. Refresh bypasses the local data cache.</footer>
+</main>
+<dialog id="detail" aria-label="Player statistics"><div class="modal-head"><div id="detailTop"></div><button class="close" id="closeDetail" aria-label="Close player details">×</button></div><div id="detailBody"></div></dialog>
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id), POS=['QB','RB','WR','TE','K','DEF'], API='https://api.sleeper.com', API2='https://api.sleeper.app/v1', CACHENAME='fantasy-tier-payloads', YEARS=Array.from({length:12},(_,i)=>2026-i);
+const state={season:2026,period:'season',week:7,pos:'QB',scoring:'pts_ppr',sort:'total',method:'smart',levels:6,maxPlayers:60,minPoints:1,search:''};
+let directory=null,statData=null,players=[],loadId=0,dbPromise=null,lastUpdated=0;
+const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const numeric=x=>x===null||x===undefined||x===''?NaN:Number(x);
+const fmt=(n,d=1)=>Number.isFinite(n)?n.toFixed(d):'—';
+const number=x=>Number.isFinite(numeric(x))?Number(x):0;
+function status(message,error){$('status').textContent=message;$('status').classList.toggle('error',!!error)}
+function readSettings(){try{const s=JSON.parse(localStorage.getItem('fantasy-tiers-ui')||'{}');for(const k of Object.keys(state))if(k in s)state[k]=s[k];if(!YEARS.includes(+state.season))state.season=2026;if(!POS.includes(state.pos))state.pos='QB';if(!['pts_ppr','pts_half_ppr','pts_std'].includes(state.scoring))state.scoring='pts_ppr';}catch(e){}}
+function persist(){try{localStorage.setItem('fantasy-tiers-ui',JSON.stringify(state))}catch(e){}}
+function openDB(){if(!('indexedDB' in window))return Promise.resolve(null);if(!dbPromise)dbPromise=new Promise(resolve=>{try{const r=indexedDB.open('fantasy-tiers-cache',1);r.onupgradeneeded=()=>r.result.createObjectStore(CACHENAME);r.onsuccess=()=>resolve(r.result);r.onerror=()=>resolve(null)}catch(e){resolve(null)}});return dbPromise}
+async function cached(key,maxAge){const db=await openDB();if(!db)return null;return new Promise(resolve=>{try{const tx=db.transaction(CACHENAME,'readonly'),r=tx.objectStore(CACHENAME).get(key);r.onsuccess=()=>resolve(r.result&&Date.now()-r.result.at<maxAge?r.result.value:null);r.onerror=()=>resolve(null)}catch(e){resolve(null)}})}
+async function save(key,value){const db=await openDB();if(!db)return;try{db.transaction(CACHENAME,'readwrite').objectStore(CACHENAME).put({at:Date.now(),value},key)}catch(e){}}
+async function request(url){const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),22000);try{const r=await fetch(url,{signal:controller.signal,cache:'no-store',headers:{Accept:'application/json'}});if(!r.ok)throw Error('HTTP '+r.status);const data=await r.json();if(!data||typeof data!=='object')throw Error('Invalid JSON response');return data}finally{clearTimeout(timer)}}
+async function firstWorking(urls){let err;for(const url of urls){try{const v=await request(url);if((Array.isArray(v)&&v.length===0)||(typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).length===0))throw Error('No records returned');return v}catch(e){err=e}}throw err||Error('No data source available')}
+async function getDirectory(force){if(directory&&!force)return directory;const key='nfl-players';if(!force){const v=await cached(key,24*3600e3);if(v){directory=v;return v}}const data=await firstWorking([API2+'/players/nfl',API+'/players/nfl']);directory=data;save(key,data);return data}
+function statsUrl(season,week){const tail='/regular/'+season+(week?'/'+week:'');return [API+'/stats/nfl/'+season+(week?'/'+week:'')+'?season_type=regular',API2+'/stats/nfl'+tail]}
+async function getStats(force){const key='stats-'+state.season+'-'+(state.period==='week'?state.week:'season');const maxAge=state.season<2026?60*86400e3:4*3600e3;if(!force){const v=await cached(key,maxAge);if(v)return v}const data=await firstWorking(statsUrl(state.season,state.period==='week'?state.week:null));save(key,data);return data}
+function records(data){if(Array.isArray(data))return data.map(r=>[String(r.player_id||r.id||''),r]);if(data&&Array.isArray(data.players))return records(data.players);return Object.entries(data||{}).map(([id,r])=>[id,r])}
+function playerInfo(id,record){const p=directory&&directory[id]||record.player||record.athlete||{};let pos=String(p.position||p.fantasy_positions?.[0]||record.position||'').toUpperCase();if(['DST','D/ST'].includes(pos))pos='DEF';if(/^[A-Z]{2,3}$/.test(id)&&!p.full_name&&(!pos||pos==='DEF'))pos='DEF';const name=p.full_name||[p.first_name,p.last_name].filter(Boolean).join(' ')||record.player_name||(pos==='DEF'?teamName(id)+' D/ST':'Player '+id);const team=String(record.team||p.team|| (pos==='DEF'?id:'')||'').toUpperCase();return {id:String(id),pos,name,team,espnId:String(p.espn_id||''),record}}
+const teamAlias={JAC:'JAX',LA:'LAR',WSH:'WAS'};
+const teamNames={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAC:'Jaguars',JAX:'Jaguars',KC:'Chiefs',LA:'Rams',LAR:'Rams',LAC:'Chargers',LV:'Raiders',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SEA:'Seahawks',SF:'49ers',TB:'Buccaneers',TEN:'Titans',WAS:'Commanders',WSH:'Commanders'};
+function teamName(t){return teamNames[t]||t}
+function logo(team){return 'https://a.espncdn.com/i/teamlogos/nfl/500/'+encodeURIComponent(teamAlias[team]||team||'nfl').toLowerCase()+'.png'}
+function photo(p){return p.pos==='DEF'?logo(p.team):p.espnId?'https://a.espncdn.com/i/headshots/nfl/players/full/'+encodeURIComponent(p.espnId)+'.png':'https://sleepercdn.com/content/nfl/players/'+encodeURIComponent(p.id)+'.jpg'}
+function statObject(r){return r&&typeof r.stats==='object'&&r.stats?r.stats:r||{}}
+function fpts(r){const st=statObject(r),v=st[state.scoring]??r?.[state.scoring];return numeric(v)}
+function statNum(stats,...keys){for(const k of keys){const v=numeric(stats[k]);if(Number.isFinite(v))return v}return 0}
+function getGP(st,rec){const candidates=[rec.games_played,rec.gp,st.gp,st.gms_active,st.games_played];for(const v of candidates){const n=numeric(v);if(Number.isFinite(n)&&n>0)return n}return state.period==='week'?1:null}
+function playerList(data){const out=[];for(const [id,r] of records(data)){if(!id||!r||typeof r!=='object')continue;const p=playerInfo(id,r);if(!POS.includes(p.pos))continue;const fp=fpts(r);if(!Number.isFinite(fp))continue;const stats=statObject(r),gp=getGP(stats,r);out.push({...p,stats,points:fp,gp,average:gp?fp/gp:null})}return out}
+function sortValue(p){return state.sort==='avg'?p.average??-Infinity:p.points}
+function visible(){const s=state.search.trim().toLowerCase();const minimum=Number.isFinite(+state.minPoints)?+state.minPoints:1;return players.filter(p=>p.pos===state.pos&&p.points>=minimum&&(!s||p.name.toLowerCase().includes(s)||p.team.toLowerCase().includes(s)||teamName(p.team).toLowerCase().includes(s))).sort((a,b)=>sortValue(b)-sortValue(a)||b.points-a.points||a.name.localeCompare(b.name)).slice(0,state.maxPlayers)}
+function statLine(p){const s=p.stats;let chunks=[];
+if(p.pos==='QB')chunks=[['PASS',statNum(s,'pass_yd')+' YD'],['TD',statNum(s,'pass_td')],['INT',statNum(s,'pass_int','int')],['RUSH',statNum(s,'rush_yd')+' YD']];
+else if(p.pos==='RB')chunks=[['RUSH',statNum(s,'rush_yd')+' YD'],['TD',statNum(s,'rush_td')],['REC',statNum(s,'rec')],['REC YD',statNum(s,'rec_yd')]];
+else if(['WR','TE'].includes(p.pos))chunks=[['REC',statNum(s,'rec')],['YDS',statNum(s,'rec_yd')],['TD',statNum(s,'rec_td')],['TGT',statNum(s,'rec_tgt')]];
+else if(p.pos==='K')chunks=[['FG',statNum(s,'fgm')],['50+',statNum(s,'fgm_50p','fgm_50_59')],['XP',statNum(s,'xpm')]];
+else chunks=[['SACK',statNum(s,'def_sack')],['INT',statNum(s,'def_int')],['DEF TD',statNum(s,'def_td')]];
+return chunks.filter((v,i)=>i<3).map(x=>x[0]+' '+x[1]).join(' · ')}
+function varianceGroups(arr,desired){
+ const n=arr.length;if(!n)return [];if(n===1)return [arr];
+ // Jenks optimized natural breaks minimizes within-tier squared score error.
+ // A split cannot separate exactly equal ranking values.
+ const k=Math.min(Math.max(1,+desired),new Set(arr.map(sortValue)).size,n);
+ const prefix=[0],square=[0];for(const p of arr){const v=sortValue(p);prefix.push(prefix.at(-1)+v);square.push(square.at(-1)+v*v)}
+ const cost=(a,b)=>{const sum=prefix[b]-prefix[a],sz=b-a;return Math.max(0,square[b]-square[a]-sum*sum/sz)};
+ const dp=Array.from({length:k+1},()=>new Float64Array(n+1).fill(Infinity)),back=Array.from({length:k+1},()=>new Int16Array(n+1));dp[0][0]=0;
+ for(let t=1;t<=k;t++)for(let j=t;j<=n;j++)for(let i=t-1;i<j;i++){
+  if(i>0&&i<n&&Math.abs(sortValue(arr[i-1])-sortValue(arr[i]))<1e-7)continue;
+  const val=dp[t-1][i]+cost(i,j);if(val<dp[t][j]){dp[t][j]=val;back[t][j]=i}
+ }
+ let t=k;while(t>1&&!Number.isFinite(dp[t][n]))t--;
+ if(!Number.isFinite(dp[t][n]))return [arr];
+ let j=n;const out=[];while(t>0){const i=back[t][j];out.unshift(arr.slice(i,j));j=i;t--}return out
+}
+function makeTiers(arr){if(state.method==='smart')return {groups:varianceGroups(arr,state.levels),rest:[]};const n=Math.min(state.levels,arr.length),groups=[],used=new Set();let cursor=0;for(let tier=1;tier<=n;tier++){const group=arr.slice(cursor,cursor+tier);if(!group.length)break;groups.push(group);group.forEach(x=>used.add(x.id));cursor+=tier}return {groups,rest:arr.slice(cursor)}}
+function card(p,index){const val=sortValue(p);return '<button type="button" class="player" data-id="'+safe(p.id)+'" title="Open '+safe(p.name)+' statistics">'+
+ '<span class="rank">#'+(index+1)+'</span>'+
+ '<img class="headshot" loading="lazy" src="'+safe(photo(p))+'" alt="" onerror="this.onerror=null;this.src=\''+safe(logo(p.team))+'\'">'+
+ '<span class="player-name">'+safe(p.name)+'</span>'+
+ '<span class="teamline"><img class="logo" loading="lazy" src="'+safe(logo(p.team))+'" alt="">'+safe(p.team||'—')+' · '+safe(p.pos)+'</span>'+
+ '<span class="player-score">'+fmt(val)+' <small>'+(state.sort==='avg'?'PPG':'FPTS')+'</small></span>'+
+ '<span class="player-stats">'+safe(statLine(p))+'</span></button>'}
+function show(){if(!statData)return;const all=visible(),{groups,rest}=makeTiers(all);let n=0;const tiers=groups.map((g,i)=>{const first=n;n+=g.length;const hi=sortValue(g[0]),lo=sortValue(g.at(-1)),pyramid=state.method==='pyramid';return '<section class="tier'+(pyramid?' pyramid':'')+'" data-level="'+(i+1)+'"><div class="tierhead"><div class="tier-title"><div class="tier-num">T'+(i+1)+'</div><div><h2>'+(['Elite','Premium','Strong','Reliable','Solid','Depth'][i]||'Tier '+(i+1))+'</h2><p>Ranks '+(first+1)+'–'+n+' · '+fmt(hi)+'–'+fmt(lo)+' '+(state.sort==='avg'?'PPG':'FPTS')+'</p></div></div><span class="tier-count">'+g.length+' player'+(g.length===1?'':'s')+'</span></div><div class="cards">'+g.map((p,x)=>card(p,first+x)).join('')+'</div></section>'}).join('');
+$('results').innerHTML=tiers+(rest.length?'<details class="next"><summary>+ '+rest.length+' more players below the '+state.levels+'-tier pyramid · expand ↓</summary><div class="cards">'+rest.map((p,i)=>card(p,n+i)).join('')+'</div></details>':'')||'<div class="empty">No qualifying '+safe(state.pos)+' players in this selection. Try another week, a lower minimum, or a different season.</div>';
+$('nPlayers').textContent=all.length;$('topScore').textContent=all.length?fmt(sortValue(all[0])):'—';$('avgScore').textContent=all.length?fmt(all.reduce((sum,p)=>sum+sortValue(p),0)/all.length):'—';$('nTiers').textContent=groups.length;
+$('summary').textContent=state.season+' REGULAR SEASON · '+(state.period==='week'?'WEEK '+state.week:'SEASON TOTALS')+' · '+state.pos+' · '+({pts_ppr:'FULL PPR',pts_half_ppr:'HALF PPR',pts_std:'STANDARD'}[state.scoring])+' · '+(state.sort==='avg'?'PPG':'FPTS');
+$('sourceBadge').textContent=state.method==='smart'?'✦ OPTIMIZED NATURAL BREAKS':'△ STRICT 1–2–3 PYRAMID';
+$('methodExplainer').textContent=state.method==='smart'?'Smart tiers use optimized one-dimensional natural breaks (Jenks) on actual ranked '+(state.sort==='avg'?'fantasy points per game':'fantasy totals')+'. Size varies with performance, and players with tied values stay together.':'Pyramid tiers assign exactly 1 player to T1, 2 to T2, 3 to T3, and so on. Players outside the '+state.levels+' visible layers appear in the expandable group.';
+$('levelsLabel').textContent=state.method==='smart'?'Smart tier count':'Pyramid layers';
+}
+function initializeControls(){readSettings();$('season').innerHTML=YEARS.map(y=>'<option value="'+y+'">'+y+'</option>').join('');$('week').innerHTML=Array.from({length:18},(_,i)=>'<option value="'+(i+1)+'">Week '+(i+1)+'</option>').join('');
+ const stored=Number(state.week);if(!(stored>=1&&stored<=18))state.week=7;
+ $('season').value=state.season;$('week').value=state.week;$('scoring').value=state.scoring;$('sort').value=state.sort;$('levels').value=state.levels;$('maxPlayers').value=state.maxPlayers;$('minPoints').value=state.minPoints;$('search').value=state.search;
+ syncButtons();$('season').addEventListener('change',e=>{state.season=+e.target.value;persist();load(false)});
+ $('week').addEventListener('change',e=>{state.week=+e.target.value;persist();load(false)});
+ $('scoring').addEventListener('change',e=>{state.scoring=e.target.value;persist();show()});
+ $('sort').addEventListener('change',e=>{state.sort=e.target.value;persist();show()});
+ $('levels').addEventListener('change',e=>{state.levels=+e.target.value;persist();show()});
+ $('maxPlayers').addEventListener('change',e=>{state.maxPlayers=+e.target.value;persist();show()});
+ $('minPoints').addEventListener('input',e=>{state.minPoints=+e.target.value;persist();show()});
+ $('search').addEventListener('input',e=>{state.search=e.target.value;persist();show()});
+ for(const id of ['period','positions','method'])$(id).addEventListener('click',e=>{const b=e.target.closest('button[data-v]');if(!b)return;const k=id==='positions'?'pos':id;state[k]=b.dataset.v;persist();syncButtons();if(k==='period')load(false);else show()});
+ $('refresh').addEventListener('click',()=>load(true));
+ $('results').addEventListener('click',e=>{const b=e.target.closest('.player[data-id]');if(b)openPlayer(b.dataset.id)});
+ $('closeDetail').addEventListener('click',()=>$('detail').close());
+ $('detail').addEventListener('click',e=>{if(e.target===$('detail'))$('detail').close()});
+}
+function syncButtons(){for(const [id,k] of [['positions','pos'],['method','method'],['period','period']])$(id).querySelectorAll('button[data-v]').forEach(b=>{const yes=b.dataset.v===state[k];b.classList.toggle('on',yes&&id!=='positions');b.classList.toggle('pos-on',yes&&id==='positions');b.setAttribute('aria-pressed',String(yes))});$('weekCtl').hidden=state.period!=='week'}
+async function load(force){const ticket=++loadId;statData=null;players=[];$('results').innerHTML='<div class="empty">Loading fantasy player stats…</div>';status('Loading '+state.season+' NFL '+(state.period==='week'?'week '+state.week:'season')+' statistics…');
+ try{const [dir,stats]=await Promise.all([getDirectory(force),getStats(force)]);if(ticket!==loadId)return;directory=dir;statData=stats;players=playerList(stats);lastUpdated=Date.now();status(players.length+' fantasy players with recorded scoring · '+(force?'freshly requested':'cached or live')+' data · '+state.season+' regular season');show();
+ }catch(e){if(ticket!==loadId)return;status('Unable to load NFL stats: '+e.message+'. Check internet/API access, or choose another season and refresh.',true);$('results').innerHTML='<div class="empty">Stats source did not respond. No rankings are displayed rather than inventing player scores.<p><button type="button" class="action" id="retry">Retry</button></p></div>';$('retry').onclick=()=>load(true);$('nPlayers').textContent='—';$('topScore').textContent='—';$('avgScore').textContent='—';$('nTiers').textContent='—'}
+}
+function prettify(k){return k.replace(/^pts_/,'fantasy_').replace(/_/g,' ').replace(/\b\w/g,x=>x.toUpperCase())}
+async function history(p){try{const obj=await firstWorking([API+'/stats/nfl/player/'+encodeURIComponent(p.id)+'?season='+state.season+'&season_type=regular&grouping=week',API2+'/stats/nfl/player/'+encodeURIComponent(p.id)+'?season='+state.season+'&season_type=regular&grouping=week']);const rows=Array.isArray(obj)?obj.map((x,i)=>[Number(x.week)||i+1,x]):Object.entries(obj).map(([w,v])=>[+w,v]);return rows.filter(x=>Number.isFinite(x[0])&&x[0]>0&&x[0]<=18&&x[1]).sort((a,b)=>a[0]-b[0])}catch(e){return []}}
+async function openPlayer(id){const p=players.find(x=>x.id===id);if(!p)return;const dlg=$('detail');if(!dlg.open)dlg.showModal();$('detailTop').innerHTML='<div class="modal-person"><img src="'+safe(photo(p))+'" alt="" onerror="this.onerror=null;this.src=\''+safe(logo(p.team))+'\'"><div><h2>'+safe(p.name)+'</h2><p>'+safe(teamName(p.team))+' · '+safe(p.pos)+' · '+state.season+'</p></div></div>';
+$('detailBody').innerHTML='<div class="modal-stats"><div class="modal-stat"><strong>'+fmt(p.points)+'</strong><small>Fantasy points</small></div><div class="modal-stat"><strong>'+fmt(p.average)+'</strong><small>FPTS / game</small></div><div class="modal-stat"><strong>'+safe(p.gp??'—')+'</strong><small>Games played</small></div></div><h3>Recorded statistics</h3><div class="stat-table">'+Object.entries(p.stats).filter(([k,v])=>Number.isFinite(numeric(v))&& !k.startsWith('bonus') && !k.startsWith('rank')).sort((a,b)=>a[0].localeCompare(b[0])).map(([k,v])=>'<div class="stat-cell"><span>'+safe(prettify(k))+'</span><b>'+safe(v)+'</b></div>').join('')+'</div><div id="weeklyDetails"></div>';
+if(state.period==='season'){const div=$('weeklyDetails');div.innerHTML='<h3>Weekly FPTS trend</h3><p class="helper">Loading weekly breakdown…</p>';const y=state.season,scoreKey=state.scoring,rows=await history(p);if(!dlg.open||state.season!==y)return;
+ const vals=rows.map(([w,r])=>({w,p:numeric(statObject(r)[scoreKey]??r[scoreKey])})).filter(x=>Number.isFinite(x.p));const max=Math.max(1,...vals.map(x=>Math.max(0,x.p)));const byWeek=new Map(vals.map(x=>[x.w,x.p]));div.innerHTML='<h3>Weekly FPTS trend</h3>'+(vals.length?'<div class="chart">'+Array.from({length:18},(_,i)=>{const v=byWeek.get(i+1);return '<div class="chart-col" title="Week '+(i+1)+': '+(Number.isFinite(v)?fmt(v):'No recorded score')+' FPTS"><div class="bar" style="height:'+(Number.isFinite(v)?Math.max(2,Math.round(Math.max(0,v)/max*95)):0)+'px"></div><small>'+(i+1)+'</small></div>'}).join('')+'</div>':'<p class="helper">Weekly game history unavailable from the data source.</p>')}
+}
+initializeControls();load(false);
+})();
+</script>
+</body>
+</html>
