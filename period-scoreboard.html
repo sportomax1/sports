@@ -3,18 +3,24 @@
 <style>
 :root{color-scheme:dark;--bg:#070b12;--panel:#101824;--panel2:#151f2e;--line:#26354a;--text:#f7f9fc;--muted:#91a0b5;--accent:#f4b400;--live:#52d273}*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,sans-serif}body{background:radial-gradient(circle at 50% -10%,#183457 0,transparent 34%),var(--bg)}button,input{font:inherit}.app{max-width:980px;margin:auto;padding:0 12px 36px}.top{position:sticky;top:0;z-index:20;padding:10px 0 8px;background:linear-gradient(#070b12 82%,transparent)}.brand{display:flex;justify-content:space-between;align-items:center;gap:10px}.brand h1{font-size:22px;margin:0}.brand a{color:var(--muted);font-size:13px;text-decoration:none}.leagues{display:flex;gap:6px;overflow:auto;padding:10px 0 8px;scrollbar-width:none}.leagues::-webkit-scrollbar{display:none}.league{flex:0 0 auto;border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:999px;padding:7px 11px;font-weight:800;font-size:13px}.league.on{background:var(--accent);border-color:var(--accent);color:#111}.datebar{display:grid;grid-template-columns:44px 1fr 44px;gap:7px}.datebar button,.datebox{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:10px;min-height:42px}.datebar button{font-size:24px;font-weight:900}.datebox{display:flex;align-items:center;justify-content:center;gap:9px;padding:0 8px}.datebox input{width:128px;border:0;background:transparent;color:var(--text);font-weight:800}.today{border:0;background:transparent;color:var(--accent);font-size:12px;font-weight:900;padding:4px}.status{padding:10px 2px;color:var(--muted);font-size:13px}.games{display:grid;gap:10px}.game{overflow:hidden;border:1px solid var(--line);border-radius:13px;background:linear-gradient(180deg,var(--panel2),var(--panel));box-shadow:0 7px 20px #0004}.gamehead{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line);font-size:12px;color:var(--muted)}.live{color:var(--live);font-weight:900}.final{font-weight:800;color:#dce5f1}.tablewrap{overflow-x:auto;overscroll-behavior-x:contain}.scoregrid{display:grid;width:100%;min-width:0;grid-template-columns:minmax(88px,1.45fr) repeat(var(--cols),minmax(29px,.62fr)) minmax(38px,.72fr)}.cell{min-height:42px;display:flex;align-items:center;justify-content:center;border-right:1px solid #26354a88;border-bottom:1px solid #26354a88;font-size:14px}.hdr{min-height:30px;color:var(--muted);font-size:11px;font-weight:900;text-transform:uppercase;background:#0b121d}.team{position:sticky;left:0;z-index:4;justify-content:flex-start;gap:5px;padding:0 6px;background:#111a27;font-weight:850}.hdr.team{z-index:5;background:#0b121d}.team img{width:28px;height:28px;object-fit:contain}.team .rank{font-size:9px;color:var(--accent)}.teamname{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:78px;font-size:13px}.winner{background:#172333}.total{font-size:17px;font-weight:950;background:#0d1520}.winner.total{color:var(--accent)}.empty{padding:42px 18px;text-align:center;border:1px dashed var(--line);border-radius:13px;color:var(--muted)}.error{color:#ff8b8b}.views{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:7px 0}.view{border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:9px;padding:9px 7px;font-weight:900;font-size:12px}.view.on{background:#243248;color:var(--text)}.snapshotControls{display:none;gap:6px;overflow-x:auto;margin-bottom:8px;scrollbar-width:none}.snapshotControls.show{display:flex}.snapshotControls::-webkit-scrollbar{display:none}.segment{flex:0 0 auto;border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:999px;padding:8px 12px;font-size:12px;font-weight:900}.segment.on{background:var(--accent);border-color:var(--accent);color:#111}.seasonbar{display:none;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;padding:7px 9px;border:1px solid var(--line);background:var(--panel);border-radius:9px}.seasonbar.show{display:flex}.seasonbar label{font-size:12px;color:var(--muted);font-weight:900}.seasonbar select{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:5px 8px;font-weight:900}.analysisTabs{display:none;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:8px}.analysisTabs.show{display:grid}.analysisTabs button{border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:8px;padding:10px 4px;font-size:11px;font-weight:900}.analysisTabs button.on{background:#243248;color:var(--text)}.sorts{display:none;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:8px}.sorts.show{display:grid}.sorts button{border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:8px;padding:9px 4px;font-size:11px;font-weight:900}.sorts button.on{color:#111;background:var(--accent)}.snaprow{display:grid;grid-template-columns:minmax(88px,1.45fr) repeat(var(--metrics,3),minmax(42px,.65fr));align-items:center;border-bottom:1px solid #26354a88;min-height:43px}.snaprow.head{min-height:31px;background:#0b121d;color:var(--muted);font-size:10px;font-weight:900}.snapteam{display:flex;align-items:center;gap:7px;padding:0 7px;font-weight:850;min-width:0;font-size:13px}.snapteam img{width:29px;height:29px;object-fit:contain}.teamopen{cursor:pointer}.teamopen:hover{background:#1a2637}.teamopen:focus{outline:2px solid var(--accent);outline-offset:-2px}.modal{border:1px solid var(--line);border-radius:14px;background:#0c1420;color:var(--text);width:min(94vw,720px);max-height:82vh;padding:0;box-shadow:0 20px 60px #000b}.modal::backdrop{background:#000b}.modalhead{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px;background:#0c1420;border-bottom:1px solid var(--line)}.modalteam{display:flex;align-items:center;gap:10px;font-weight:900;font-size:17px}.modalteam img{width:42px;height:42px;object-fit:contain}.modalclose{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:8px;width:38px;height:38px;font-size:20px}.modalbody{padding:8px 10px 14px;overflow:auto}.logrow{display:grid;grid-template-columns:58px minmax(90px,1fr) 42px 76px 48px;align-items:center;gap:5px;min-height:42px;border-bottom:1px solid #26354a88;font-size:13px}.logrow.head{min-height:28px;color:var(--muted);font-size:10px;font-weight:900}.wl{font-weight:950}.wl.w{color:var(--live)}.wl.l{color:#ff8b8b}.metric{text-align:center;font-variant-numeric:tabular-nums;font-size:13px;font-weight:750}.opponent{display:flex;align-items:center;gap:6px;min-width:0}.opponent img{width:25px;height:25px;object-fit:contain;flex:0 0 auto}.diff.pos{color:var(--live)}.diff.neg{color:#ff8b8b}.hint{text-align:center;color:#627188;font-size:11px;margin-top:12px}@media(max-width:500px){.app{padding-left:6px;padding-right:6px}.top{padding-top:7px}.scoregrid{min-width:0;grid-template-columns:minmax(78px,1.35fr) repeat(var(--cols),minmax(25px,.55fr)) minmax(34px,.68fr)}.game{border-radius:11px}.cell{min-height:44px;font-size:13px}.hdr{min-height:28px;font-size:10px}.team{gap:5px;padding:0 6px}.team img{width:27px;height:27px}.teamname{max-width:70px;font-size:12px}.total{font-size:17px}.brand h1{font-size:20px}.logrow{grid-template-columns:52px minmax(108px,1fr) 30px 62px 42px;font-size:12px;gap:3px}.opponent img{width:23px;height:23px}.modalbody{padding-left:7px;padding-right:7px}}
 .leagueHint{font-size:11px;color:var(--muted);padding:0 2px 5px;line-height:1.3}.leagueGroup{display:grid;gap:8px}.leagueHead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 2px 1px;border-bottom:1px solid var(--line);color:var(--muted);font-size:12px}.leagueHead strong{font-size:13px;color:var(--text)}.leagueEmpty{padding:5px 2px 9px;color:var(--muted);font-size:12px}.leagueError{color:#ff8b8b}.league:focus-visible{outline:2px solid var(--text);outline-offset:2px}.leagueAll{border-style:dashed}
-</style></head><body><main class="app"><header class="top"><div class="brand"><h1>Period Scoreboard</h1><a href="./index.html">Sports Tools</a></div><div id="leagues" class="leagues" aria-label="League filters"></div><div id="leagueHint" class="leagueHint"></div><div class="views"><button class="view on" data-view="games">GAMES</button><button class="view" data-view="snapshot">SEASON ASSESSMENT</button></div><div class="datebar"><button id="prev" aria-label="Previous game day">‹</button><div class="datebox"><input id="date" type="date"><button class="today" id="today">TODAY</button></div><button id="next" aria-label="Next game day">›</button></div></header><div id="seasonbar" class="seasonbar"><label>SEASON ASSESSMENT</label><select id="season"></select></div><div id="analysisTabs" class="analysisTabs"><button class="on" data-analysis="period">PERIOD SCORING</button><button data-analysis="close">CLOSE GAMES</button><button data-analysis="leads">LEAD CHANGES</button></div><div id="snapshotControls" class="snapshotControls"></div><div id="sorts" class="sorts"><button data-sort="pf" class="on">PF AVG ↓</button><button data-sort="pa">PA AVG</button><button data-sort="diff">DIFF</button></div><div id="status" class="status"></div><section id="games" class="games"></section><div class="hint">Swipe a scoring grid sideways for every period / inning. Team names stay pinned.</div></main><dialog id="teamModal" class="modal"><div class="modalhead"><div id="modalTeam" class="modalteam"></div><button id="modalClose" class="modalclose" aria-label="Close">×</button></div><div id="modalBody" class="modalbody"></div></dialog>
+.league{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:41px;padding:6px 11px}.leagueLogo{height:25px;width:25px;object-fit:contain;display:block;flex:0 0 auto}.league.on .leagueLogo{filter:none}.league:not(.on) .leagueLogo{filter:grayscale(.25)}.leagueLabel{white-space:nowrap}.leagueAll{min-width:56px}
+.game.openable{cursor:pointer;transition:border-color .15s,box-shadow .15s}.game.openable:hover{border-color:#557aa4;box-shadow:0 10px 26px #0008}.game.openable:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.viewstats{color:#a9c9f8;font-size:11px;font-weight:850;white-space:nowrap;margin-left:auto}.gamehead{align-items:center;flex-wrap:wrap}.gamehead .gameState{margin-left:auto}.game.openable:hover .viewstats{color:var(--accent)}
+.gameModal{width:min(96vw,1030px);max-height:90dvh;max-height:90vh;overflow:hidden}.gameModal[open]{display:flex;flex-direction:column}.gameModal .modalbody{min-height:0;flex:1;overflow-y:auto;padding:0 12px 16px}.gameModal .modalhead{flex:0 0 auto}.gameTitle{font-size:17px;font-weight:900}.gameSubtitle{font-size:12px;color:var(--muted);margin-top:3px}.boxScoreline{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;padding:12px 8px 7px}.boxSide{display:flex;align-items:center;gap:6px;font-weight:900;font-size:17px;min-width:100px;justify-content:center}.boxSide img{width:38px;height:38px;object-fit:contain}.boxVersus{color:var(--muted);font-size:11px;font-weight:800}.boxTeamTabs{display:flex;gap:7px;overflow:auto;scrollbar-width:none;padding:10px 12px;background:#101a29;border-bottom:1px solid var(--line);flex:0 0 auto}.boxTeamTabs::-webkit-scrollbar{display:none}.boxTeam{flex:1 0 auto;display:flex;align-items:center;justify-content:center;gap:9px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:10px;padding:8px 12px;font-size:12px;font-weight:850;cursor:pointer}.boxTeam.on{border-color:#6586ad;background:#24344c;color:var(--text)}.boxTeam img{width:25px;height:25px;object-fit:contain}
+.boxCategory{padding:12px 0 4px}.boxCategory h3{font-size:13px;margin:2px 0 8px;display:flex;gap:8px;align-items:center}.boxCategory h3 small{color:var(--muted);font-size:11px;font-weight:500}.statScroll{overflow-x:auto;overscroll-behavior-inline:contain;border:1px solid var(--line);border-radius:9px;scrollbar-width:thin}.statTable{border-collapse:separate;border-spacing:0;font-size:12px;min-width:100%;white-space:nowrap;font-variant-numeric:tabular-nums}.statTable th,.statTable td{border-bottom:1px solid #26354a91;text-align:right;padding:7px 9px;height:42px}.statTable thead th{font-size:10px;font-weight:900;color:#a4b6ce;background:#111d2c;position:sticky;top:0;z-index:1}.statTable th:first-child,.statTable td:first-child{text-align:left;position:sticky;left:0;z-index:2;background:#111c2a;min-width:162px;max-width:210px;border-right:1px solid var(--line)}.statTable thead th:first-child{z-index:3;background:#18263a}.statTable tbody tr:nth-child(even) td{background:#101a28}.statTable tbody tr:nth-child(even) td:first-child{background:#172437}.statTable tbody tr:last-child td{border-bottom:0}.statPlayer{display:flex;align-items:center;gap:8px;min-width:0}.statPlayerNames{display:flex;flex-direction:column;gap:2px;min-width:0}.statPlayerNames strong{font-size:12px;max-width:150px;overflow:hidden;text-overflow:ellipsis}.statPlayerNames small{font-size:10px;color:var(--muted);font-weight:500}.playerFace{width:34px;height:34px;border-radius:50%;position:relative;overflow:hidden;flex:0 0 auto;background:#2b415d;display:flex;align-items:center;justify-content:center;color:#dce7f5;font-size:11px;font-weight:900}.playerFace img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.gameLoading{padding:28px 10px;text-align:center;color:var(--muted)}.gameNotice{font-size:12px;color:var(--muted);padding:7px 0 12px}.gameError{color:#ff9d9d}
+@media(max-width:500px){.league{gap:5px;padding:5px 9px;min-height:40px}.leagueLogo{height:23px;width:23px}.viewstats{font-size:10px}.gameModal{width:98vw;max-height:94dvh;max-height:94vh}.gameModal .modalbody{padding:0 7px 12px}.boxSide{font-size:14px;min-width:80px}.boxSide img{width:30px;height:30px}.statTable th:first-child,.statTable td:first-child{min-width:142px;max-width:170px}.statTable th,.statTable td{padding:5px 7px}}
+</style></head><body><main class="app"><header class="top"><div class="brand"><h1>Period Scoreboard</h1><a href="./index.html">Sports Tools</a></div><div id="leagues" class="leagues" aria-label="League filters"></div><div id="leagueHint" class="leagueHint"></div><div class="views"><button class="view on" data-view="games">GAMES</button><button class="view" data-view="snapshot">SEASON ASSESSMENT</button></div><div class="datebar"><button id="prev" aria-label="Previous game day">‹</button><div class="datebox"><input id="date" type="date"><button class="today" id="today">TODAY</button></div><button id="next" aria-label="Next game day">›</button></div></header><div id="seasonbar" class="seasonbar"><label>SEASON ASSESSMENT</label><select id="season"></select></div><div id="analysisTabs" class="analysisTabs"><button class="on" data-analysis="period">PERIOD SCORING</button><button data-analysis="close">CLOSE GAMES</button><button data-analysis="leads">LEAD CHANGES</button></div><div id="snapshotControls" class="snapshotControls"></div><div id="sorts" class="sorts"><button data-sort="pf" class="on">PF AVG ↓</button><button data-sort="pa">PA AVG</button><button data-sort="diff">DIFF</button></div><div id="status" class="status"></div><section id="games" class="games"></section><div class="hint">Swipe a scoring grid sideways for every period / inning. Team names stay pinned.</div></main><dialog id="teamModal" class="modal"><div class="modalhead"><div id="modalTeam" class="modalteam"></div><button id="modalClose" class="modalclose" aria-label="Close">×</button></div><div id="modalBody" class="modalbody"></div></dialog><dialog id="gameModal" class="modal gameModal" aria-labelledby="gameModalTitle"><div class="modalhead"><div><div id="gameModalTitle" class="gameTitle">Player Box Score</div><div id="gameModalSubtitle" class="gameSubtitle"></div></div><button id="gameModalClose" class="modalclose" aria-label="Close player statistics">×</button></div><div id="gameModalOverview"></div><nav id="gameModalTeams" class="boxTeamTabs" aria-label="Choose team"></nav><div id="gameModalBody" class="modalbody"></div></dialog>
 <script>
 (()=>{'use strict';
 const L=[
- {id:'nfl',label:'NFL',sport:'football',league:'nfl',kind:'quarter'},
- {id:'nba',label:'NBA',sport:'basketball',league:'nba',kind:'quarter'},
- {id:'mlb',label:'MLB',sport:'baseball',league:'mlb',kind:'inning'},
- {id:'nhl',label:'NHL',sport:'hockey',league:'nhl',kind:'period'},
- {id:'ncaaf',label:'NCAAF',sport:'football',league:'college-football',kind:'quarter',college:true,groups:'80'},
- {id:'ncaam',label:'NCAAM',sport:'basketball',league:'mens-college-basketball',kind:'half',college:true,groups:'50'}
+ {id:'nfl',label:'NFL',sport:'football',league:'nfl',kind:'quarter',logo:'https://a.espncdn.com/i/teamlogos/leagues/500/nfl.png'},
+ {id:'nba',label:'NBA',sport:'basketball',league:'nba',kind:'quarter',logo:'https://a.espncdn.com/i/teamlogos/leagues/500/nba.png'},
+ {id:'mlb',label:'MLB',sport:'baseball',league:'mlb',kind:'inning',logo:'https://a.espncdn.com/i/teamlogos/leagues/500/mlb.png'},
+ {id:'nhl',label:'NHL',sport:'hockey',league:'nhl',kind:'period',logo:'https://a.espncdn.com/i/teamlogos/leagues/500/nhl.png'},
+ {id:'ncaaf',label:'NCAAF',sport:'football',league:'college-football',kind:'quarter',college:true,groups:'80',logo:'https://a.espncdn.com/i/espn/misc_logos/500/ncaa.png'},
+ {id:'ncaam',label:'NCAAM',sport:'basketball',league:'mens-college-basketball',kind:'half',college:true,groups:'50',logo:'https://a.espncdn.com/i/espn/misc_logos/500/ncaa.png'}
 ],E=id=>document.getElementById(id),els={leagues:E('leagues'),date:E('date'),prev:E('prev'),next:E('next'),today:E('today'),status:E('status'),games:E('games')};
 let league=L[0],selectedLeagues=new Set(['nfl']),cache=new Map(),token=0,view='games',analysis='period',snapPeriod=1,snapSort='pf',snapDir=-1,seasonData=null;
+const summaryCache=new Map();let boxRequest=0,boxCurrent=null,boxTeamId='';
 try{let saved=JSON.parse(localStorage.getItem('period-scoreboard-leagues')||'null');if(Array.isArray(saved)){let valid=saved.filter(id=>L.some(l=>l.id===id));if(valid.length)selectedLeagues=new Set(valid)}}catch(_){}
 const localDate=()=>{let d=new Date(Date.now()-new Date().getTimezoneOffset()*60000);return d.toISOString().slice(0,10)},ymd=s=>s.replaceAll('-',''),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 els.date.value=localDate();
@@ -24,7 +30,7 @@ function saveLeagues(){try{localStorage.setItem('period-scoreboard-leagues',JSON
 function drawLeagueFilters(){
  let snapshot=view==='snapshot',allSelected=selectedLeagues.size===L.length;
  els.leagues.innerHTML=(snapshot?'':'<button type="button" class="league leagueAll'+(allSelected?' on':'')+'" data-id="all" aria-pressed="'+allSelected+'" title="Select all six leagues">ALL</button>')+
- L.map(l=>{let on=snapshot?league.id===l.id:selectedLeagues.has(l.id);return '<button type="button" class="league'+(on?' on':'')+'" data-id="'+l.id+'" aria-pressed="'+on+'" title="'+(snapshot?'View '+l.label+' season assessment':'Toggle '+l.label+' scores')+'">'+l.label+'</button>'}).join('');
+ L.map(l=>{let on=snapshot?league.id===l.id:selectedLeagues.has(l.id);return '<button type="button" class="league'+(on?' on':'')+'" data-id="'+l.id+'" aria-pressed="'+on+'" title="'+(snapshot?'View '+l.label+' season assessment':'Toggle '+l.label+' scores')+'"><img class="leagueLogo" src="'+esc(l.logo)+'" alt="" loading="lazy" onerror="this.remove()"><span class="leagueLabel">'+l.label+'</span></button>'}).join('');
  E('leagueHint').textContent=snapshot?'Season assessment uses one league at a time. Select a league above.':'Select multiple leagues to combine scores, or choose ALL for every league.';
 }
 drawLeagueFilters();
@@ -78,11 +84,126 @@ function rank(t,l=league){if(!l.college)return'';let r=+(t?.curatedRank?.current
 function gameCard(ev,l=league){
  let c=ev.competitions?.[0]||{},teams=(c.competitors||[]).slice().sort((a,b)=>(a.homeAway==='away'?0:1)-(b.homeAway==='away'?0:1)),mp=maxPeriod(c,teams),labs=labels(l.kind,mp),st=c.status||ev.status||{},state=st.type?.state||'',detail=st.type?.shortDetail||st.type?.detail||'',complete=!!st.type?.completed;
  let scores=teams.map(scoreVal),mx=Math.max(...scores),tie=scores.length>1&&scores.every(x=>x===scores[0]);
- let head='<div class="gamehead"><span>'+esc(ev.shortName||ev.name||l.label)+'</span><span class="'+(state==='in'?'live':complete?'final':'')+'">'+esc(detail)+'</span></div>';
+ let head='<div class="gamehead"><span>'+esc(ev.shortName||ev.name||l.label)+'</span><span class="gameState '+(state==='in'?'live':complete?'final':'')+'">'+esc(detail)+'</span><span class="viewstats">PLAYER STATS ›</span></div>';
  let h='<div class="tablewrap"><div class="scoregrid" style="--cols:'+labs.length+'"><div class="cell hdr team">TEAM</div>'+labs.map(x=>'<div class="cell hdr">'+x+'</div>').join('')+'<div class="cell hdr">FINAL</div>';
  for(let t of teams){let win=complete&&!tie&&scoreVal(t)===mx,tm=t.team||{},r=rank(t,l);h+='<div class="cell team'+(win?' winner':'')+'">'+(logo(t)?'<img src="'+esc(logo(t))+'" alt="">':'')+'<span class="teamname">'+(r?'<span class="rank">#'+r+' </span>':'')+esc(tm.abbreviation||tm.shortDisplayName||tm.displayName||'Team')+'</span></div>'+labs.map((_,i)=>'<div class="cell">'+valueAt(t,i+1)+'</div>').join('')+'<div class="cell total'+(win?' winner':'')+'">'+scoreVal(t)+'</div>'}
- return '<article class="game">'+head+h+'</div></div></article>'
+ return '<article class="game openable" role="button" tabindex="0" aria-label="View '+esc(l.label)+' player statistics for '+esc(ev.shortName||ev.name||'this game')+'" data-event="'+esc(ev.id)+'" data-league="'+esc(l.id)+'" data-live="'+(state==='in'?'1':'0')+'">'+head+h+'</div></div></article>'
 }
+
+function gameSummaryUrl(l,eventId){return 'https://site.api.espn.com/apis/site/v2/sports/'+l.sport+'/'+l.league+'/summary?event='+encodeURIComponent(eventId)}
+async function getGameSummary(l,eventId,live){
+ let u=gameSummaryUrl(l,eventId),entry=summaryCache.get(u),ttl=live?15000:600000;
+ if(entry&&Date.now()-entry.time<ttl)return entry.data;
+ let response=await fetch(u,{cache:'no-store'});if(!response.ok)throw Error('ESPN HTTP '+response.status);
+ let data=await response.json();summaryCache.set(u,{time:Date.now(),data});return data
+}
+function safePhoto(url){
+ try{let u=new URL(url);return u.protocol==='https:'?esc(u.href):''}catch(_){return''}
+}
+function athletePhoto(a,config){
+ let raw=a?.headshot?.href||a?.headshot?.url||a?.headshot||'';
+ if(typeof raw!=='string')raw='';
+ return safePhoto(raw)
+}
+function initials(name){let parts=String(name||'?').trim().split(/\s+/);return parts.length>1?(parts[0][0]+parts[parts.length-1][0]).toUpperCase():parts[0].slice(0,2).toUpperCase()}
+function playerFace(a){
+ let name=a?.displayName||a?.fullName||a?.shortName||a?.name||'Player',url=athletePhoto(a);
+ return '<div class="playerFace"><span>'+esc(initials(name))+'</span>'+(url?'<img src="'+url+'" alt="" loading="lazy" onerror="this.remove()">':'')+'</div>';
+}
+function summaryTeams(s){
+ let headerTeams=s?.header?.competitions?.[0]?.competitors||[];
+ let scoreTeams=s?.boxscore?.teams||[];
+ let playerGroups=s?.boxscore?.players||[];
+ let teamMap=new Map();
+ for(let c of headerTeams){
+  let t=c.team||{},id=String(t.id||c.id||'');
+  if(id)teamMap.set(id,{...t,id,logo:t.logo||t.logos?.[0]?.href||'',score:c.score,homeAway:c.homeAway});
+ }
+ for(let source of [...scoreTeams,...playerGroups]){
+  let t=source.team||{},id=String(t.id||'');if(!id)continue;
+  let prev=teamMap.get(id)||{};
+  teamMap.set(id,{...prev,...t,id,logo:t.logo||t.logos?.[0]?.href||prev.logo||'',score:prev.score??source.score});
+ }
+ return [...teamMap.values()].sort((a,b)=>(a.homeAway==='away'?0:a.homeAway==='home'?1:2)-(b.homeAway==='away'?0:b.homeAway==='home'?1:2))
+}
+function boxGroupsForTeam(s,id,teams){
+ let groups=s?.boxscore?.players||[],matched=groups.filter(g=>String(g.team?.id||'')===String(id));
+ if(!matched.length&&groups.length===teams.length){let i=teams.findIndex(t=>String(t.id)===String(id));if(i>=0)matched=[groups[i]]}
+ return matched
+}
+function statSections(groups){
+ let sections=[];
+ for(let group of groups){
+  let categories=Array.isArray(group.statistics)?group.statistics:[];
+  for(let cat of categories){
+   let athletes=Array.isArray(cat.athletes)?cat.athletes:[];
+   if(!athletes.length)continue;
+   let labels=Array.isArray(cat.labels)?cat.labels:Array.isArray(cat.names)?cat.names:[];
+   let rows=athletes.map(entry=>{
+    let a=entry.athlete||entry.player||{},stat=entry.stats||entry.statistics||[];
+    if(!Array.isArray(stat))stat=typeof stat==='object'?Object.values(stat):[];
+    return {athlete:a,values:stat.map(v=>v==null?'–':typeof v==='object'?(v.displayValue??v.value??'–'):v),note:entry.didNotPlay?'DNP':entry.starter?'Starter':''}
+   });
+   let widest=Math.max(labels.length,...rows.map(r=>r.values.length),0);
+   if(!widest&&rows.every(r=>!r.values.length))continue;
+   let headers=Array.from({length:widest},(_,i)=>labels[i]||('STAT '+(i+1)));
+   sections.push({name:cat.displayName||cat.name||cat.type||'Player statistics',headers,rows});
+  }
+ }
+ return sections
+}
+function renderBoxTable(section){
+ let maxColumns=Math.min(section.headers.length,30);
+ let header=section.headers.slice(0,maxColumns).map(h=>'<th scope="col">'+esc(h)+'</th>').join('');
+ let body=section.rows.map(({athlete,values,note})=>{
+  let n=athlete?.displayName||athlete?.fullName||athlete?.shortName||athlete?.name||'Player';
+  let pos=athlete?.position?.abbreviation||athlete?.position?.displayName||'';
+  let cells=Array.from({length:maxColumns},(_,i)=>'<td>'+esc(values[i]??'–')+'</td>').join('');
+  return '<tr><td><div class="statPlayer">'+playerFace(athlete)+'<div class="statPlayerNames"><strong title="'+esc(n)+'">'+esc(n)+'</strong><small>'+esc(pos||note)+'</small></div></div></td>'+cells+'</tr>';
+ }).join('');
+ return '<section class="boxCategory"><h3>'+esc(section.name)+' <small>'+section.rows.length+' players</small></h3><div class="statScroll" tabindex="0" aria-label="'+esc(section.name)+' statistics, horizontally scrollable"><table class="statTable"><thead><tr><th scope="col">PLAYER</th>'+header+'</tr></thead><tbody>'+body+'</tbody></table></div></section>';
+}
+function renderBox(){
+ if(!boxCurrent)return;
+ let {summary,config,eventId}=boxCurrent,teams=summaryTeams(summary),players=summary?.boxscore?.players||[];
+ let selected=teams.find(t=>String(t.id)===String(boxTeamId))||teams[0];
+ if(selected)boxTeamId=String(selected.id);
+ E('gameModalTeams').innerHTML=teams.map(t=>{
+  let on=String(t.id)===String(boxTeamId);
+  return '<button type="button" class="boxTeam'+(on?' on':'')+'" data-box-team="'+esc(t.id)+'" aria-pressed="'+on+'">'+(safePhoto(t.logo)?'<img src="'+safePhoto(t.logo)+'" alt="">':'')+'<span>'+esc(t.displayName||t.shortDisplayName||t.abbreviation||'Team')+'</span></button>';
+ }).join('');
+ let comp=summary?.header?.competitions?.[0]||{},status=comp.status?.type?.shortDetail||comp.status?.type?.detail||summary?.header?.competitions?.[0]?.status?.type?.name||'';
+ E('gameModalSubtitle').textContent=config.label+(status?' · '+status:'');
+ E('gameModalOverview').innerHTML=teams.length?'<div class="boxScoreline">'+teams.map((t,i)=>'<div class="boxSide">'+(safePhoto(t.logo)?'<img src="'+safePhoto(t.logo)+'" alt="">':'')+'<span>'+esc(t.abbreviation||t.shortDisplayName||t.displayName||'Team')+'</span><strong>'+esc(typeof t.score==='object'?(t.score?.displayValue??t.score?.value??'–'):(t.score??'–'))+'</strong></div>'+(i===0&&teams.length>1?'<span class="boxVersus">VS</span>':'')).join('')+'</div>':'';
+ let selectedGroups=selected?boxGroupsForTeam(summary,boxTeamId,teams):players;
+ let sections=statSections(selectedGroups);
+ let note=comp.status?.type?.state==='pre'?'<div class="gameNotice">This game has not started. Player box scores will appear when available.</div>':'';
+ E('gameModalBody').innerHTML=sections.length?note+sections.map(renderBoxTable).join(''):'<div class="gameLoading">'+(note||'Individual player box-score statistics are not available for this game from ESPN yet.')+'</div>';
+}
+async function openBoxStats(eventId,leagueId,live){
+ let config=L.find(l=>l.id===leagueId);
+ if(!config||!/^\d+$/.test(eventId))return;
+ let id=++boxRequest;boxCurrent=null;boxTeamId='';
+ E('gameModalTitle').textContent='Player Box Score';E('gameModalSubtitle').textContent=config.label;
+ E('gameModalOverview').innerHTML='';E('gameModalTeams').innerHTML='';
+ E('gameModalBody').innerHTML='<div class="gameLoading">Loading '+esc(config.label)+' player statistics…</div>';
+ if(!E('gameModal').open)E('gameModal').showModal();
+ try{
+  let summary=await getGameSummary(config,eventId,live);
+  if(id!==boxRequest||!E('gameModal').open)return;
+  boxCurrent={summary,config,eventId};renderBox()
+ }catch(err){
+  if(id!==boxRequest||!E('gameModal').open)return;
+  E('gameModalBody').innerHTML='<div class="gameLoading gameError">Could not retrieve ESPN player statistics: '+esc(err.message)+'</div>';
+ }
+}
+E('gameModalClose').onclick=()=>E('gameModal').close();
+E('gameModal').addEventListener('close',()=>{++boxRequest;boxCurrent=null});
+E('gameModal').onclick=e=>{if(e.target===E('gameModal'))E('gameModal').close()};
+E('gameModalTeams').onclick=e=>{let b=e.target.closest('[data-box-team]');if(!b||!boxCurrent)return;boxTeamId=b.dataset.boxTeam;renderBox()};
+els.games.addEventListener('click',e=>{let game=e.target.closest('.game[data-event][data-league]');if(game)openBoxStats(game.dataset.event,game.dataset.league,game.dataset.live==='1')});
+els.games.addEventListener('keydown',e=>{if(e.target.closest('[data-team]'))return;let game=e.target.closest('.game[data-event][data-league]');if(game&&(e.key==='Enter'||e.key===' ')){e.preventDefault();openBoxStats(game.dataset.event,game.dataset.league,game.dataset.live==='1')}});
+
 function periodName(){let a=labels(league.kind,snapPeriod);return a[snapPeriod-1]||('OT'+snapPeriod)}
 function snapshotEvents(j){let rows=new Map();for(let ev of j.events||[]){let comp=ev.competitions?.[0],ts=comp?.competitors||[];if(ts.length<2)continue;for(let t of ts){let opp=ts.find(x=>x!==t),ls=lines(t).find(x=>x.p===snapPeriod),os=lines(opp).find(x=>x.p===snapPeriod);if(!ls||!os)continue;let id=String(t.team?.id||t.id||''),r=rows.get(id)||{id,team:t.team||{},rank:rank(t),pf:0,pa:0,g:0};r.pf+=ls.v;r.pa+=os.v;r.g++;rows.set(id,r)}}return[...rows.values()].map(r=>({...r,pf:r.pf/r.g,pa:r.pa/r.g,diff:(r.pf-r.pa)/r.g})).sort((a,b)=>(a[snapSort]-b[snapSort])*snapDir)}
 
