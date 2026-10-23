@@ -231,7 +231,7 @@ function scanErrorsByKind(){
 }
 function scanCounters(){
  const completed=fastScanResults.size+fastScanErrors.size;
- const age=(performance.now()-fastStartAt)/1000;
+ const age=(Date.now()-fastStartAt)/1000;
  const rate=fastStartAt&&age>1?Math.max(0,(completed-fastProcessedAtStart)/age):0;
  return {completed,rate,remaining:Math.max(0,rows.length-completed),errors:scanErrorsByKind()}
 }
@@ -298,7 +298,7 @@ async function scanRestore(token,who,lg){
  }
  allScanned=new Map(fastScanResults);
  fastProcessedAtStart=fastScanResults.size+fastScanErrors.size;
- fastStartAt=performance.now();
+ fastStartAt=Date.now();
  scanCursor=fastProcessedAtStart;scanFailures=fastScanErrors.size;
  scanRender(true);return true
 }
@@ -430,7 +430,7 @@ async function startScanning(onlyErrors=false){
  const candidates=rows.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)))
   .filter(r=>!fastScanResults.has(String(r.id))&&!fastScanErrors.has(String(r.id)));
  fastProcessedAtStart=fastScanResults.size+fastScanErrors.size;
- fastStartAt=performance.now();
+ fastStartAt=Date.now();
  let cursor=0,finished=0,paintAt=0;
  if(!candidates.length){
   fastScanActive=false;autoActive=false;autoStop=true;
