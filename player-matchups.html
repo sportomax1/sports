@@ -205,7 +205,7 @@ let fastScanResults=new Map(),fastScanErrors=new Map(),fastScanActive=false,
  fastNetworkCount=0,fastLimit=12,fastThrottleUntil=0,fastRateHits=0,fastSuccessRun=0,
  fastLastPaint=0,fastLastWrite=0,fastStartAt=0,fastProcessedAtStart=0,
  fastHostDisabled=false,fastHostProblems=0,fastRequests=0,fastRetries=0,
- fastScanInFlight=new Set(),fastCacheKey='',fastWriteChain=Promise.resolve();
+ fastScanInFlight=new Set(),fastCacheKey='',fastWriteChain=Promise.resolve(),fastRosterPending=new Map(),fastRosterCacheHits=0;
 const sleepSafe=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 function scanDesiredLimit(){
  const setting=$('scanSpeed')?.value||'auto';
@@ -216,7 +216,7 @@ function scanReset(){
  fastLimit=($('scanSpeed')?.value||'auto')==='auto'?8:scanDesiredLimit();
  fastThrottleUntil=0;fastRateHits=0;fastSuccessRun=0;fastLastPaint=0;fastLastWrite=0;
  fastStartAt=0;fastProcessedAtStart=0;fastHostDisabled=false;fastHostProblems=0;
- fastRequests=0;fastRetries=0;fastScanInFlight=new Set();fastCacheKey='';fastWriteChain=Promise.resolve();
+ fastRequests=0;fastRetries=0;fastScanInFlight=new Set();fastCacheKey='';fastWriteChain=Promise.resolve();fastRosterPending=new Map();fastRosterCacheHits=0;
 }
 function scanCacheKey(){
  return 'career-links-v3:'+league+':'+focus?.id+':'+$('from').value+':'+$('through').value;
@@ -246,7 +246,7 @@ function scanUpdateStatus(force=false){
  const rate=c.rate>=1?c.rate.toFixed(1):c.rate.toFixed(2);
  const minutes=c.rate>0&&c.remaining?Math.ceil(c.remaining/c.rate/60):null;
  const eta=minutes===null?'':(minutes<1?' · under 1m estimated':' · ~'+minutes+'m remaining');
- $('scanMetrics').textContent=''+c.completed.toLocaleString()+'/'+total.toLocaleString()+' checked · '+allScanned.size+' verified · '+fastScanErrors.size+' unavailable · '+rate+'/s · '+fastLimit+' workers · '+fastRetries+' retries'+eta;
+ $('scanMetrics').textContent=''+c.completed.toLocaleString()+'/'+total.toLocaleString()+' checked · '+allScanned.size+' verified · '+fastScanErrors.size+' unavailable · '+rate+'/s · '+fastLimit+' workers · '+fastRosterCacheHits+' reused · '+fastRetries+' retries'+eta;
  const kinds=c.errors;
  $('coverage').textContent=(coverage.focus?.ok?.length||0)+' seasons with games · '+(coverage.focus?.missing?.length||0)+' season errors · '+kinds.missing+' missing box scores · '+(kinds.http+kinds.network+kinds.throttled)+' HTTP/network';
  const button=$('scanToggle');button.hidden=!total||c.completed>=total;
@@ -263,12 +263,24 @@ function scanRender(force=false){
  const now=Date.now();if(!force&&now-fastLastPaint<1100)return;
  scanUpdateStatus(true);render()
 }
+async function scanPutRosters(batch){
+ if(!batch.length)return;
+ try{
+  const d=await db();if(!d)return;
+  await new Promise((resolve,reject)=>{
+   const tx=d.transaction('cache','readwrite'),os=tx.objectStore('cache'),now=Date.now();
+   for(const [key,val] of batch)os.put({at:now,value:val},key);
+   tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)
+  })
+ }catch(e){console.warn('Roster cache unavailable:',e)}
+}
 async function scanSave(force=false){
  if(!focus||!fastCacheKey)return;
  const done=fastScanResults.size+fastScanErrors.size;
  if(!force&&done-fastLastWrite<30)return;
  fastLastWrite=done;
  const key=fastCacheKey,lg=league,id=focus.id;
+ const batch=[...fastRosterPending];fastRosterPending.clear();
  const payload={
   schema:3,
   scanned:[...fastScanResults.entries()],
@@ -276,7 +288,7 @@ async function scanSave(force=false){
   at:Date.now()
  };
  if(lg===league&&focus?.id===id){
-  const next=fastWriteChain.catch(()=>{}).then(()=>cachePut(key,payload));
+  const next=fastWriteChain.catch(()=>{}).then(async()=>{await scanPutRosters(batch);await cachePut(key,payload)});
   fastWriteChain=next;await next;
  }
 }
@@ -349,26 +361,53 @@ async function scanHTTP(url,timeout,ticket,token,who,lg){
   }finally{clearTimeout(t)}
  },ticket,token,who,lg)
 }
-function scanReadBox(doc,athleteId){
+function scanBoxGroups(doc){
  let j=doc?.gamepackageJSON||doc;
- if(typeof j==='string'){try{j=JSON.parse(j)}catch{}}
- let groups=(j?.boxscore?.players||[]).map(group=>{
-  let athletes=athletesInBox(group);
-  return {id:String(group.team?.id||''),name:group.team?.displayName||group.team?.name||'',list:athletes}
- });
- if(!groups.length)return {kind:'missing',reason:'no player box-score groups'};
- let mine=groups.find(g=>g.list.some(p=>p.id===String(athleteId)));
- if(!mine)return {kind:'missing',reason:'focus player not identified in box score'};
- let others=groups.filter(g=>g!==mine);
- const playerInfo=(p)=>({id:p.id,name:p.name,head:p.head});
+ if(typeof j==='string'){try{j=JSON.parse(j)}catch{return []}}
+ const list=j?.boxscore?.players||[];
+ return list.map(group=>({
+  id:String(group.team?.id||''),
+  name:group.team?.displayName||group.team?.name||'',
+  list:athletesInBox(group).map(p=>({id:String(p.id),name:p.name,head:p.head}))
+ })).filter(group=>group.id&&group.list.length)
+}
+function scanFromGroups(groups,athleteId){
+ if(!groups?.length)return {kind:'missing',reason:'no player box-score groups'};
+ const me=groups.find(group=>group.list.some(player=>String(player.id)===String(athleteId)));
+ if(!me)return {kind:'missing',reason:'focus player not identified in box score'};
+ const others=groups.filter(group=>group!==me);
  return {kind:'ok',data:{
-  team:{id:mine.id,name:mine.name},
+  team:{id:me.id,name:me.name},
   opponentTeam:others[0]?{id:others[0].id,name:others[0].name}:null,
-  with:mine.list.filter(p=>p.id!==String(athleteId)).map(playerInfo),
-  against:others.flatMap(g=>g.list.map(playerInfo))
+  with:me.list.filter(p=>String(p.id)!==String(athleteId)),
+  against:others.flatMap(group=>group.list)
  }}
 }
+function scanReadBox(doc,athleteId){
+ const groups=scanBoxGroups(doc),parsed=scanFromGroups(groups,athleteId);
+ if(parsed.kind==='ok')parsed.groups=groups;
+ return parsed
+}
 async function scanReadGame(game,ticket,token,who,lg){
+ const sharedKey='box-roster:v1:'+lg+':'+game.id;
+ // Per-game rosters are player-independent and reusable across different careers.
+ const shared=await cacheGet(sharedKey);
+ if(!scanCanContinue(ticket,token,who,lg))return {kind:'cancelled'};
+ if(shared?.value?.groups?.length){
+  const fromShared=scanFromGroups(shared.value.groups,who);
+  if(fromShared.kind==='ok'){fastRosterCacheHits++;return fromShared}
+ }
+ // Migrate previously saved full ESPN summaries from the old scanning implementation.
+ const old=await cacheGet('summary:'+lg+':'+game.id);
+ if(!scanCanContinue(ticket,token,who,lg))return {kind:'cancelled'};
+ if(old?.value){
+  const prior=scanReadBox(old.value,who);
+  if(prior.kind==='ok'){
+   fastRosterPending.set(sharedKey,{groups:prior.groups});
+   fastRosterCacheHits++;
+   return {kind:'ok',data:prior.data}
+  }
+ }
  const endpoint=siteRoot()+'/summary?event='+encodeURIComponent(game.id);
  const cdnUrl='https://cdn.espn.com/core/'+LG[lg].league+'/boxscore?xhr=1&gameId='+encodeURIComponent(game.id);
  let sites=fastHostDisabled?[[endpoint,'site']]:[[cdnUrl,'cdn'],[endpoint,'site']];
@@ -381,7 +420,11 @@ async function scanReadGame(game,ticket,token,who,lg){
    try{
     let j=await scanHTTP(url,host==='cdn'?5000:11000,ticket,token,who,lg);
     let parsed=scanReadBox(j,who);
-    if(parsed.kind==='ok'){if(host==='cdn')fastHostProblems=0;return parsed}
+    if(parsed.kind==='ok'){
+     if(host==='cdn')fastHostProblems=0;
+     fastRosterPending.set(sharedKey,{groups:parsed.groups});
+     return {kind:'ok',data:parsed.data}
+    }
     lastProblem=parsed;
     if(host==='cdn'){fastHostProblems++;if(fastHostProblems>=4)fastHostDisabled=true}
     break;
