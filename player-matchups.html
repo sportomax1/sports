@@ -246,7 +246,7 @@ function scanUpdateStatus(force=false){
  const rate=c.rate>=1?c.rate.toFixed(1):c.rate.toFixed(2);
  const minutes=c.rate>0&&c.remaining?Math.ceil(c.remaining/c.rate/60):null;
  const eta=minutes===null?'':(minutes<1?' · under 1m estimated':' · ~'+minutes+'m remaining');
- $('scanMetrics').textContent=''+c.completed.toLocaleString()+'/'+total.toLocaleString()+' checked · '+allScanned.size+' verified · '+fastScanErrors.size+' unavailable · '+rate+'/s · concurrency '+fastLimit+eta;
+ $('scanMetrics').textContent=''+c.completed.toLocaleString()+'/'+total.toLocaleString()+' checked · '+allScanned.size+' verified · '+fastScanErrors.size+' unavailable · '+rate+'/s · '+fastLimit+' workers · '+fastRetries+' retries'+eta;
  const kinds=c.errors;
  $('coverage').textContent=(coverage.focus?.ok?.length||0)+' seasons with games · '+(coverage.focus?.missing?.length||0)+' season errors · '+kinds.missing+' missing box scores · '+(kinds.http+kinds.network+kinds.throttled)+' HTTP/network';
  const button=$('scanToggle');button.hidden=!total||c.completed>=total;
@@ -379,7 +379,7 @@ async function scanReadGame(game,ticket,token,who,lg){
   for(let attempt=0;attempt<3;attempt++){
    if(!scanCanContinue(ticket,token,who,lg))return {kind:'cancelled'};
    try{
-    let j=await scanHTTP(url,host==='cdn'?7000:11000,ticket,token,who,lg);
+    let j=await scanHTTP(url,host==='cdn'?5000:11000,ticket,token,who,lg);
     let parsed=scanReadBox(j,who);
     if(parsed.kind==='ok'){if(host==='cdn')fastHostProblems=0;return parsed}
     lastProblem=parsed;
@@ -391,7 +391,7 @@ async function scanReadGame(game,ticket,token,who,lg){
     lastProblem={kind,reason:String(e.message||e),status};
     if(host==='cdn'&&(status===403||status===404||status===0||status===400)){
      fastHostProblems++;
-     if(fastHostProblems>=3)fastHostDisabled=true;
+     if(status===403||status===0||fastHostProblems>=3)fastHostDisabled=true;
      break;
     }
     if(status===404||status===410||status===400||status===401||status===403)break;
@@ -442,6 +442,7 @@ async function startScanning(onlyErrors=false){
    let row=candidates[cursor++];
    fastScanInFlight.add(String(row.id));
    try{await scanProcess(row,ticket,token,who,lg)}
+   catch(e){if(ticket===scanBatchToken&&token===requestToken&&focus?.id===who&&league===lg){fastScanErrors.set(String(row.id),{kind:'network',reason:String(e.message||e),status:0});scanFailures=fastScanErrors.size}}
    finally{
     fastScanInFlight.delete(String(row.id));
     finished++;
@@ -459,7 +460,7 @@ async function startScanning(onlyErrors=false){
   const warmup=Math.min(3,candidates.length);
   for(let z=0;z<warmup&&scanCanContinue(ticket,token,who,lg);z++){
    const row=candidates[cursor++];
-   await scanProcess(row,ticket,token,who,lg);
+   try{await scanProcess(row,ticket,token,who,lg)}catch(e){if(ticket===scanBatchToken&&token===requestToken&&focus?.id===who&&league===lg){fastScanErrors.set(String(row.id),{kind:'network',reason:String(e.message||e),status:0});scanFailures=fastScanErrors.size}}
    finished++;
   }
   if(scanCanContinue(ticket,token,who,lg)){
