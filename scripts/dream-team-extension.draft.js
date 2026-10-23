@@ -160,7 +160,7 @@ async function navigateGameDay(step){
  for(var n=0;n<40;n++){
   d=shift(d,step);if(d>today||d<'2010-01-01')break;
   try{var games=await getBoard(d,new AbortController().signal,false);
-   if(games.some(function(g){return g.completed&&(S.type==='all'||g.seasonType===Number(S.type)))){S.day=d;updateFilters();scan(false);return}
+   if(games.some(function(g){return g.completed&&(S.type==='all'||g.seasonType===Number(S.type))})){S.day=d;updateFilters();scan(false);return}
   }catch(e){issue=e.message;break}
  }
  setState(issue?'Navigation error: '+issue:'No completed games found within 40 days.',issue?'error':'')
