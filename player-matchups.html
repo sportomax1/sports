@@ -101,31 +101,79 @@ function extractAthletes(doc,q){
  let needle=q.trim().toLowerCase();
  return [...out.values()].filter(p=>p.name.toLowerCase().includes(needle)).sort((a,b)=>Number(b.name.toLowerCase()===needle)-Number(a.name.toLowerCase()===needle)||a.name.length-b.name.length).slice(0,40)
 }
+
+/* Verified ESPN athlete IDs for stars omitted by live search.
+   Directory entries locate the athlete; they do not guarantee game logs. */
+const HISTORIC_DIRECTORY={
+ NFL:[{id:'6470',name:'John Elway',debutYear:1983,lastYear:1998,pos:'QB',team:'Denver Broncos',aliases:['elway']}],
+ NBA:[
+  {id:'1966',name:'LeBron James',debutYear:2003,pos:'SF',aliases:['lebron']},
+  {id:'110',name:'Kobe Bryant',debutYear:1996,lastYear:2016,pos:'SG',team:'Los Angeles Lakers',aliases:['kobe']},
+  {id:'614',name:"Shaquille O'Neal",debutYear:1992,lastYear:2011,pos:'C',aliases:['shaq','shaquille oneal','shaquille o neal']}
+ ],
+ MLB:[{id:'3246',name:'Derek Jeter',debutYear:1995,lastYear:2014,pos:'SS',team:'New York Yankees',aliases:['jeter']}]
+};
+function normalizePlayerName(x){
+ return String(x||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ')
+}
+function historicMatches(term){
+ const q=normalizePlayerName(term);
+ if(!q)return [];
+ const result=[];
+ for(const p of HISTORIC_DIRECTORY[league]||[]){
+  const names=[p.name,...(p.aliases||[])].map(normalizePlayerName);
+  const rank=names.some(x=>x===q)?0:names.some(x=>x.startsWith(q))?1:names.some(x=>x.includes(q))?2:99;
+  if(rank!==99)result.push({...p,origin:'historic',rank})
+ }
+ return result.sort((a,b)=>a.rank-b.rank||a.name.localeCompare(b.name)).map(({rank,...p})=>p)
+}
 async function playerSearch(q){
- const term=encodeURIComponent(q.trim()),c=LG[league];
- if(league==='NBA'&&q.trim().toLowerCase()==='lebron james')return [{id:'1966',name:'LeBron James',head:'',debutYear:2003}];
+ const local=historicMatches(q);
+ if(local.length)return local; // Instant result; retired athletes may be missing from ESPN's search feed.
+ const c=LG[league],term=encodeURIComponent(q.trim());
  const urls=[
- 'https://site.api.espn.com/apis/search/v2?query='+term+'&limit=60',
- 'https://site.web.api.espn.com/apis/common/v3/search?region=us&lang=en&query='+term+'&limit=60&mode=prefix&type=player',
- 'https://site.web.api.espn.com/apis/search/v2?query='+term+'&limit=60&sport='+encodeURIComponent(c.sport)
+  'https://site.api.espn.com/apis/search/v2?query='+term+'&limit=60',
+  'https://site.web.api.espn.com/apis/common/v3/search?region=us&lang=en&query='+term+'&limit=60&mode=prefix&type=player',
+  'https://site.web.api.espn.com/apis/search/v2?query='+term+'&limit=60&sport='+encodeURIComponent(c.sport)
  ];
- const queries=urls.map(async url=>{let players=extractAthletes(await get(url),q);if(!players.length)throw Error('No matching athletes');return players});
- try{return await Promise.any(queries)}catch{
-  let results=await Promise.allSettled(queries),errors=results.filter(r=>r.status==='rejected').map(r=>String(r.reason?.message||r.reason));
-  if(errors.some(e=>!e.includes('No matching athletes')))throw Error('ESPN search unavailable: '+errors.find(e=>!e.includes('No matching athletes')));
+ const queries=urls.map(async url=>{
+  const found=extractAthletes(await get(url),q);
+  if(!found.length)throw Error('No matching athletes');
+  return found
+ });
+ try{return await Promise.any(queries)}
+ catch{
+  let responses=await Promise.allSettled(queries);
+  let errors=responses.filter(r=>r.status==='rejected').map(r=>String(r.reason?.message||r.reason));
+  if(errors.some(e=>!e.includes('No matching athletes')))
+   throw Error('ESPN athlete search unavailable: '+errors.find(e=>!e.includes('No matching athletes')));
   return []
  }
 }
 async function suggest(which){
- const q=$(which==='focus'?'focusSearch':'otherSearch').value.trim(),host=$(which==='focus'?'focusSuggest':'otherSuggest'),seq=++suggestTokens[which];
+ const input=$(which==='focus'?'focusSearch':'otherSearch'),
+ host=$(which==='focus'?'focusSuggest':'otherSuggest'),
+ q=input.value.trim(),seq=++suggestTokens[which];
  if(q.length<2){host.classList.remove('open');return}
- host.classList.add('open');host.innerHTML='<div class="empty" style="padding:13px">Searching ESPN athletes…</div>';
- try{
-  let players=await playerSearch(q);
+ host.classList.add('open');
+ function show(list,loading=false,error=''){
   if(seq!==suggestTokens[which])return;
-  host.innerHTML=players.length?players.map(p=>'<button type="button" data-id="'+E(p.id)+'"><img src="'+E(head(p))+'" alt="" onerror="this.style.opacity=.15"><span><b>'+E(p.name)+'</b><small>'+E([p.pos,p.team].filter(Boolean).join(' · ')||'ESPN athlete #'+p.id)+'</small></span></button>').join(''):'<div class="empty" style="padding:13px">No athlete found. Try a full name or a numeric ESPN athlete ID.</div>';
-  host.querySelectorAll('[data-id]').forEach(button=>button.onclick=()=>{host.classList.remove('open');choosePlayer(which,players.find(p=>p.id===button.dataset.id))})
- }catch(e){if(seq===suggestTokens[which])host.innerHTML='<div class="empty" style="padding:13px;color:var(--red)">Player search unavailable: '+E(e.message)+'<p>Try again or enter a numeric ESPN athlete ID.</p></div>'}
+  host.innerHTML=list.length?list.map(p=>
+   '<button type="button" data-id="'+E(p.id)+'"><img src="'+E(head(p))+'" alt="" onerror="this.style.opacity=.12"><span><b>'+E(p.name)+'</b><small>'+
+   E([p.pos,p.team,p.debutYear?(p.debutYear+'–'+(p.lastYear||'present')):'',p.origin==='historic'?'Historical player':''].filter(Boolean).join(' · '))+
+   '</small></span></button>'
+  ).join('')+(loading?'<div class="empty" style="padding:9px">Searching for more matches…</div>':''):
+  '<div class="empty" style="padding:13px">'+E(error|| (loading?'Searching ESPN players…':'No athlete match found. Try a full name or an ESPN athlete ID.'))+'</div>';
+  host.querySelectorAll('button[data-id]').forEach(b=>b.onclick=()=>{
+   const p=list.find(v=>v.id===b.dataset.id);
+   host.classList.remove('open');choosePlayer(which,p)
+  })
+ }
+ const local=historicMatches(q);
+ show(local,!local.length);
+ if(local.length)return;
+ try{show(await playerSearch(q))}
+ catch(e){show([],false,e.message)}
 }
 async function choosePlayer(which,p){if(!p)return;if(which==='focus'){focus=p;rows=[];otherRows=[];matches=[];allScanned=new Map();scanCursor=0;coverage={};careerTeams=[];loadCareerTeams();let y=current();$('from').value=Math.max(1950,Math.min(y,p.debutYear?(LG[league].winter?p.debutYear+1:p.debutYear):y-4));setStatus('Player selected. Load game history.')}else{other=p;otherRows=[];setStatus('Comparison selected. Load game history.')}renderSelected();render();enrichAthlete(which,p.id);const params=new URLSearchParams(location.search);params.set(which==='focus'?'player':'other',p.id);params.set('league',league);history.replaceState(null,'',location.pathname+'?'+params)}
 async function loadCareerTeams(){if(!focus)return;let id=focus.id,lg=league;try{let result=await cached('bio:'+lg+':'+id,apiRoot()+'/athletes/'+encodeURIComponent(id)+'/bio',false,24*30);if(lg!==league||focus?.id!==id)return;careerTeams=(result.teamHistory||[]).filter(t=>t.id).map(t=>({id:String(t.id),name:t.displayName||t.name||String(t.id),seasons:t.seasons||'',logo:t.logo||''}));renderTeamCareer()}catch{if(lg===league&&focus?.id===id)renderTeamCareer()}}
@@ -196,7 +244,7 @@ function filtered(){let a=rows.filter(r=>$('type').value==='all'||r.types.includ
 function renderLanes(){if(!focus||$('mainContent').hidden)return;const groups=resultsFor(),done=rows.length&&scanCursor>=rows.length;for(const kind of ['for','vsTeam','with','against']){let all=groups[kind],q=kind==='with'?filterWith:kind==='against'?filterAgainst:'';let shown=q?all.filter(x=>x.name.toLowerCase().includes(q.toLowerCase())):all;$('count-'+kind).textContent=String(all.length);$('info-'+kind).textContent=kind==='vsTeam'?'From loaded games':done?'Scan checked':rows.length?scanCursor+'/'+rows.length+' games checked':'Awaiting game history';$('lane-'+kind).innerHTML=shown.length?shown.map(x=>{let photo=kind==='with'||kind==='against',src=x.image||(photo?'https://a.espncdn.com/i/headshots/'+LG[league].league+'/players/full/'+x.id+'.png':'');return '<button type="button" class="swimcard '+(photo?'player ':'')+(lanePick.kind===kind&&lanePick.id===x.id?'active':'')+'" data-lane-kind="'+kind+'" data-lane-id="'+E(x.id)+'" title="'+E(x.name)+'"><img loading="lazy" src="'+E(src)+'" alt="" onerror="this.style.opacity=.18"><span class="label">'+E(x.name)+'</span><span class="big">'+x.games.size+'</span><span class="sub">'+x.wins+'–'+x.losses+' W–L</span></button>'}).join(''):'<div class="laneempty">'+(q?'No matching names.':rows.length?'Verified connections will appear as box scores are scanned.':'Loading game history…')+'</div>'}}
 function render(){renderNav();$('hero').hidden=!focus;if(!focus)return;let years=new Set(rows.map(r=>r.season)),w=rows.filter(r=>String(r.result).startsWith('W')).length,l=rows.filter(r=>String(r.result).startsWith('L')).length;$('hero').innerHTML='<div class="compact-person"><img src="'+E(head(focus))+'" alt="" onerror="this.style.opacity=.2"><div><div class="eyebrow">'+E(LG[league].label)+' · ALL-TIME</div><h2>'+E(focus.name)+'</h2><div class="muted smalltxt">'+years.size+' seasons with game data</div></div></div><div class="compact-stat"><div><b>'+rows.length+'</b><small>Loaded games</small></div><div><b>'+w+'–'+l+'</b><small>Recorded W–L</small></div><div><b>'+scanCursor+'/'+rows.length+'</b><small>Box scores checked</small></div></div>';renderLanes();let a=filtered(),g=resultsFor(),label=lanePick.kind==='all'?'All games':g[lanePick.kind].find(x=>x.id===lanePick.id)?.name||'Selected connection';$('listTitle').textContent=(lanePick.kind==='all'?'':'Games · ')+label;$('listSub').textContent=a.length+' games match · '+rows.length+' source games loaded';$('clearSelection').hidden=lanePick.kind==='all';$('export').disabled=!a.length;if(!a.length){$('gamesWrap').innerHTML='<div class="empty">'+(rows.length?'No verified matching games.':'Game history loading…')+'</div>';$('more').hidden=true;return}const slice=a.slice(0,pageSize);$('gamesWrap').innerHTML='<table class="games"><thead><tr><th>Date</th><th>Opponent</th><th>Season</th><th>Result</th>'+metrics(slice[0]).map(x=>'<th>'+E(x[0])+'</th>').join('')+'<th>Game</th></tr></thead><tbody>'+slice.map(r=>{let t=teamIndex.get(String(r.opponent?.id)),logo=t?.logo||r.opponent?.logo||'';return '<tr data-game="'+E(r.id)+'"><td>'+E(safeDate(r.date))+'</td><td><img class="tinylogo" src="'+E(logo)+'" alt="" onerror="this.style.display=\'none\'">'+E(t?.name||opponentName(r))+'</td><td>'+E(yearLbl(r.season))+'</td><td>'+E(r.result||'—')+' '+E(r.score||'')+'</td>'+metrics(r).map(m=>'<td class="num">'+E(m[1])+'</td>').join('')+'<td><button class="small" data-open="'+E(r.id)+'">Details ↗</button></td></tr>'}).join('')+'</tbody></table>';$('more').hidden=a.length<=pageSize;$('more').textContent='Show '+Math.min(100,a.length-pageSize)+' more'}
 function pickLane(kind,id){if(lanePick.kind===kind&&lanePick.id===id)lanePick={kind:'all',id:''};else lanePick={kind,id};pageSize=100;render();$('historyPanel').scrollIntoView({behavior:'smooth',block:'start'})}
-async function choosePlayer(which,p){if(!p?.id)return;requestToken++;autoStop=true;scanBatchToken++;focus={id:String(p.id),name:p.name||'Athlete #'+p.id,head:p.head||'',debutYear:p.debutYear||null};rows=[];other=null;coverage={};allScanned=new Map();scanCursor=0;scanFailures=0;autoActive=false;scanReset();resetLane();$('focusSuggest').classList.remove('open');$('mainContent').hidden=false;$('hero').hidden=false;$('scanToggle').hidden=true;renderSelected();initYears();setStatus('Resolving career years…');render();const id=focus.id,lg=league;let careerFirst=null;try{let jobs=[get('https://sports.core.api.espn.com/v3/sports/'+LG[lg].sport+'/'+LG[lg].league+'/athletes/'+id),get(apiRoot()+'/athletes/'+id+'/gamelog')];let results=await Promise.allSettled(jobs);if(focus?.id!==id||lg!==league)return;if(results[0].status==='fulfilled'){let a=results[0].value.athlete||results[0].value;if(a.id&&String(a.id)===id){focus.name=a.displayName||a.fullName||focus.name;focus.head=a.headshot?.href||focus.head;focus.debutYear=Number(a.debutYear)||Number(a.firstYear)||focus.debutYear}}if(results[1].status==='fulfilled'){let filters=results[1].value.filters||[];let seasons=filters.filter(x=>String(x.name||x.displayName||'').toLowerCase().includes('season')&&!String(x.name||'').toLowerCase().includes('type')).flatMap(x=>(x.options||[]).map(opt=>Number(opt.value||opt.year||opt.id))).filter(y=>y>=1950&&y<=current());if(seasons.length)careerFirst=Math.min(...seasons)}}catch{}if(focus?.id!==id||lg!==league)return;let y=current(),start=careerFirst||(focus.debutYear?focus.debutYear+(LG[lg].winter?1:0):1950);$('from').value=Math.max(1950,Math.min(start,y));$('through').value=y;renderSelected();loadHistory()}
+async function choosePlayer(which,p){if(!p?.id)return;requestToken++;autoStop=true;scanBatchToken++;focus={id:String(p.id),name:p.name||'Athlete #'+p.id,head:p.head||'',debutYear:p.debutYear||null,lastYear:p.lastYear||null,pos:p.pos||'',team:p.team||''};rows=[];other=null;coverage={};allScanned=new Map();scanCursor=0;scanFailures=0;autoActive=false;scanReset();resetLane();$('focusSuggest').classList.remove('open');$('mainContent').hidden=false;$('hero').hidden=false;$('scanToggle').hidden=true;renderSelected();initYears();setStatus('Resolving career years…');render();const id=focus.id,lg=league;let careerFirst=null;try{let jobs=[get('https://sports.core.api.espn.com/v3/sports/'+LG[lg].sport+'/'+LG[lg].league+'/athletes/'+id),get(apiRoot()+'/athletes/'+id+'/gamelog')];let results=await Promise.allSettled(jobs);if(focus?.id!==id||lg!==league)return;if(results[0].status==='fulfilled'){let a=results[0].value.athlete||results[0].value;if(a.id&&String(a.id)===id){focus.name=a.displayName||a.fullName||focus.name;focus.head=a.headshot?.href||focus.head;focus.debutYear=Number(a.debutYear)||Number(a.firstYear)||focus.debutYear}}if(results[1].status==='fulfilled'){let filters=results[1].value.filters||[];let seasons=filters.filter(x=>String(x.name||x.displayName||'').toLowerCase().includes('season')&&!String(x.name||'').toLowerCase().includes('type')).flatMap(x=>(x.options||[]).map(opt=>Number(opt.value||opt.year||opt.id))).filter(y=>y>=1950&&y<=current());if(seasons.length)careerFirst=Math.min(...seasons)}}catch{}if(focus?.id!==id||lg!==league)return;let y=current(),end=focus.lastYear?Math.min(y,focus.lastYear):y,start=careerFirst||(focus.debutYear?focus.debutYear+(LG[lg].winter?1:0):1950);$('from').value=Math.max(1950,Math.min(start,end));$('through').value=end;renderSelected();loadHistory()}
 async function loadHistory(){if(!focus)return;autoStop=true;scanBatchToken++;let token=++requestToken,who=focus.id,lg=league,from=Number($('from').value),to=Number($('through').value);if(from>to){setStatus('Invalid season range.',true);return}const years=Array.from({length:to-from+1},(_,i)=>to-i);rows=[];allScanned=new Map();coverage={};scanCursor=0;scanFailures=0;autoActive=false;scanReset();render();$('scanToggle').hidden=true;setProgress(0);$('load').disabled=true;try{let r=await historyFor(focus,years,refreshNext,token,'Loading game history');if(token!==requestToken||who!==focus?.id||lg!==league)return;rows=r.rows;coverage.focus=r.state;refreshNext=false;setProgress(null);$('coverage').textContent=r.state.ok.length+' seasons with games · '+r.state.missing.length+' unavailable';setStatus(rows.length+' games loaded. '+(r.state.missing.length?'Some seasons unavailable. ':'')+'Scanning connections…',Boolean(r.state.missing.length));render();let p=new URLSearchParams();p.set('league',league);p.set('player',focus.id);p.set('name',focus.name);history.replaceState(null,'',location.pathname+'?'+p);if(rows.length){autoStop=false;startScanning()}}catch(e){if(token===requestToken)setStatus('History failed: '+e.message,true)}finally{if(token===requestToken){$('load').disabled=false;setProgress(null)}}}
 
 /* 2026-10: resumable adaptive network pipeline. Network concurrency is globally
