@@ -1,0 +1,38 @@
+name: Refresh jersey rosters
+on:
+  schedule:
+    - cron: '23 10 * * *'
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/build-jersey-data.mjs'
+      - '.github/workflows/jersey-rosters.yml'
+permissions:
+  contents: write
+concurrency:
+  group: jersey-rosters
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Pull rosters and headshots
+        run: node scripts/build-jersey-data.mjs
+      - name: Commit updated data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/jersey
+          if ! git diff --cached --quiet; then
+            git commit -m "Update jersey roster snapshots"
+            git push
+          else
+            echo "No new snapshots"
+          fi
