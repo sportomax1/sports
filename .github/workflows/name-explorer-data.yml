@@ -1,6 +1,11 @@
 name: Sports Name Explorer Data
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/name-explorer-data.yml'
+      - 'scripts/build-name-rosters.py'
   schedule:
     - cron: '15 11 * * 1'
 permissions:
