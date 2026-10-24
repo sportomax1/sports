@@ -58,6 +58,127 @@ main{padding-bottom:90px}.intro{display:flex;align-items:end;justify-content:spa
 @media(max-width:770px){.view-bar{margin-top:22px;gap:9px}.view-description span{font-size:10px}.view-toggle button{padding:0 10px;gap:5px;font-size:10px}.view-toggle button svg{width:13px;height:13px}.lanes[data-layout="vertical"]{grid-template-columns:minmax(0,1fr);gap:20px}.lanes[data-layout="vertical"] .lane{padding:14px}.lanes[data-layout="vertical"] .lane-head{min-height:0;flex-wrap:nowrap}.lanes[data-layout="vertical"] .lane-scroll{max-height:600px;margin:0;padding-right:4px}.lanes[data-layout="vertical"] .game-card{min-height:190px;padding:11px 12px}.lanes[data-layout="vertical"] .logo-wrap{height:54px;width:56px}.lanes[data-layout="vertical"] .logo-img{height:53px;width:53px}.lanes[data-layout="vertical"] .card-game{grid-template-columns:minmax(0,1fr) 38px minmax(0,1fr)}.lanes[data-layout="vertical"] .team-abbr{font-size:17px}.lanes[data-layout="vertical"] .lane h2{font-size:23px}.lanes[data-layout="vertical"] .lane-head{align-items:center}}
 @media(max-width:440px){.view-bar{align-items:stretch;flex-direction:column;gap:10px}.view-toggle{align-self:flex-start}.lanes[data-layout="vertical"] .lane{padding:10px}.lanes[data-layout="vertical"] .game-card{padding:10px 10px}}
 
+
+/* Dense scoreboard: prioritize game cards above the fold without hiding controls. */
+.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+main.shell{padding-bottom:44px}
+.topbar-inner{min-height:52px;gap:14px}
+.brand{min-width:0;gap:8px}.brandmark{height:31px;width:31px;border-radius:8px}.brandmark svg{height:20px;width:20px}
+.brand .brand-title{font-size:21px;letter-spacing:.4px}.brand small{display:none}
+.sport-switch{padding:2px;border-radius:8px}.sport-switch button{padding:7px 12px;border-radius:6px;font-size:11px}
+.head-side{gap:9px}.source-label{font-size:10px}.live-label{font-size:10px}.refresh-btn{height:31px;min-width:31px;border-radius:7px}.refresh-btn svg{width:15px;height:15px}
+.date-toolbar{display:flex;align-items:stretch;gap:8px;margin-top:8px}
+.date-toolbar .calendar-rail{flex:1;min-width:0;grid-template-columns:31px repeat(7,minmax(0,1fr)) 31px;gap:5px}
+.date-toolbar .rail-day{min-height:42px;gap:2px;border-radius:7px}
+.date-toolbar .rail-day .wd{font-size:9px}.date-toolbar .rail-day .dn{font-size:21px}
+.date-toolbar .rail-nav{width:31px;min-width:31px;border-radius:7px}
+.date-toolbar .intro-right{flex-shrink:0;gap:6px}
+.date-toolbar .date-jump,.date-toolbar .today-btn{height:42px;border-radius:7px}
+.date-toolbar .date-jump{padding:0 9px;gap:6px}.date-toolbar .date-jump span{font-size:10px}
+.date-toolbar .date-jump input{width:117px;font-size:11px}.date-toolbar .today-btn{padding:0 11px;font-size:11px}
+.date-note{margin:5px 0 0;font-size:9px;gap:8px}.date-note .right{gap:9px}
+.metrics{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:8px 0 0}
+.metric{min-height:35px;padding:5px 10px;border-radius:8px;gap:4px}
+.metric>div:first-child{display:flex;align-items:center;justify-content:space-between;gap:7px;width:100%}
+.metric-label{font-size:10px;line-height:1.15}
+.metric-value{margin:0;font-size:22px;line-height:1;white-space:nowrap}
+.metric-icon{display:none}
+.filters{margin:8px 0 0;gap:6px;align-items:center}
+.filters .filter-label{display:none}
+.filters .pill{height:32px;padding:0 10px;border-radius:7px;gap:5px;font-size:10px;white-space:nowrap}
+.filters .search{min-width:165px;width:auto;flex:1 1 170px;height:32px;order:1;margin:0 0 0 auto;border-radius:7px}
+.filters .search input{min-width:0}
+.filters .view-toggle{order:2;gap:2px;padding:2px;border-radius:8px}
+.filters .view-toggle button{height:26px;padding:0 8px;border-radius:5px;font-size:10px;gap:4px}
+.filters .view-toggle button svg{height:13px;width:13px}
+.lanes{margin-top:13px;gap:14px}
+.lane-head{margin-bottom:8px;gap:5px}.lane-title-wrap{gap:7px}
+.lane h2{font-size:20px}.lane p{font-size:9px;margin-top:2px}
+.lane-line{height:26px}.lane-count{padding:2px 7px;font-size:15px}
+.lane-actions{gap:4px}.scroll-btn{height:25px;width:25px;border-radius:6px;font-size:15px}
+.lanes[data-layout="vertical"]{gap:9px}
+.lanes[data-layout="vertical"] .lane{padding:9px 8px 7px;border-radius:10px;min-height:0}
+.lanes[data-layout="vertical"] .lane-head{min-height:0;align-items:center;flex-wrap:wrap}
+.lanes[data-layout="vertical"] .lane-title-wrap{flex-wrap:wrap;gap:5px}
+.lanes[data-layout="vertical"] .lane h2{font-size:clamp(16px,1.45vw,20px)}
+.lanes[data-layout="vertical"] .lane p{font-size:9px;margin-top:2px}
+.lanes[data-layout="vertical"] .lane-line{height:26px}
+.lanes[data-layout="vertical"] .lane-count{font-size:13px;padding:2px 6px}
+.lanes[data-layout="vertical"] .scroll-btn{height:24px;width:24px;font-size:13px}
+.lanes[data-layout="vertical"] .lane-scroll{min-height:0;gap:6px;padding:0 3px 5px 0}
+.lanes[data-layout="vertical"] .game-card{min-height:160px;padding:8px 9px;border-radius:9px}
+.lanes[data-layout="vertical"] .card-top{min-height:14px;font-size:9px}
+.lanes[data-layout="vertical"] .card-game{margin-top:4px}
+.lanes[data-layout="vertical"] .card-team{gap:2px}
+.lanes[data-layout="vertical"] .logo-wrap{width:43px;height:39px}
+.lanes[data-layout="vertical"] .logo-img{width:39px;height:39px}
+.lanes[data-layout="vertical"] .team-abbr{font-size:15px}
+.lanes[data-layout="vertical"] .team-name{font-size:9px}
+.lanes[data-layout="vertical"] .card-score{font-size:25px;min-height:23px;margin-top:1px}
+.lanes[data-layout="vertical"] .card-score.missing{font-size:20px}
+.lanes[data-layout="vertical"] .badge-rank{padding:1px 4px}
+.lanes[data-layout="vertical"] .card-footer{margin-top:5px;padding-top:6px;font-size:9px}
+.lanes[data-layout="vertical"] .card-footer b,.lanes[data-layout="vertical"] .card-footer .open-hint{font-size:9px}
+.lanes[data-layout="vertical"] .empty-lane{min-height:96px;padding:12px}
+@media(max-width:1050px){
+ .topbar-inner{gap:8px}
+ .lanes[data-layout="vertical"] .lane-head{min-height:0}
+ .lanes[data-layout="vertical"] .game-card{padding:8px 6px}
+ .lanes[data-layout="vertical"] .logo-wrap{width:40px;height:38px}
+ .lanes[data-layout="vertical"] .logo-img{height:37px;width:37px}
+}
+@media(max-width:770px){
+ .topbar-inner{min-height:47px;gap:7px}
+ .brandmark{height:27px;width:27px}
+ .brand .brand-title{font-size:18px!important}
+ .sport-switch button{padding:6px 7px;font-size:10px}
+ .refresh-btn{height:28px;min-width:28px}
+ .date-toolbar{flex-wrap:wrap;gap:5px;margin-top:6px}
+ .date-toolbar .intro-right{order:0;justify-content:flex-end;width:100%}
+ .date-toolbar .date-jump,.date-toolbar .today-btn{height:30px}
+ .date-toolbar .calendar-rail{order:1;flex:1 1 100%;grid-template-columns:26px repeat(7,minmax(0,1fr)) 26px;gap:3px}
+ .date-toolbar .rail-day{min-height:37px;border-radius:5px;gap:1px}
+ .date-toolbar .rail-day .wd{font-size:8px}
+ .date-toolbar .rail-day .dn{font-size:19px}
+ .date-toolbar .rail-nav{min-width:26px;width:26px}
+ .date-note{flex-wrap:wrap}
+ .date-note .right>span:last-child{display:none}
+ .metrics{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:7px 0 0}
+ .metric{min-height:37px;padding:4px 6px}
+ .metric>div:first-child{gap:3px}
+ .metric-label{font-size:9px}
+ .metric-value{font-size:18px}
+ .filters{margin-top:7px;gap:4px}
+ .filters .pill{height:30px;padding:0 8px}
+ .filters .search{order:3;min-width:0;flex:1 1 100%;height:30px}
+ .filters .view-toggle{order:2;margin-left:auto}
+ .filters .view-toggle button{height:24px;padding:0 7px}
+ .filters .view-toggle button span{display:none}
+ .lanes{margin-top:10px;gap:10px}
+ .lanes[data-layout="vertical"]{gap:10px}
+ .lanes[data-layout="vertical"] .lane{padding:8px}
+ .lanes[data-layout="vertical"] .lane-head{margin-bottom:6px;min-height:0}
+ .lanes[data-layout="vertical"] .lane-scroll{max-height:650px}
+ .lanes[data-layout="vertical"] .game-card{min-height:156px;padding:8px 10px}
+ .lanes[data-layout="vertical"] .logo-wrap{height:42px;width:46px}
+ .lanes[data-layout="vertical"] .logo-img{width:42px;height:42px}
+ .lanes[data-layout="vertical"] .card-game{grid-template-columns:minmax(0,1fr) 32px minmax(0,1fr)}
+ .lanes[data-layout="vertical"] .team-abbr{font-size:16px}
+ .lanes[data-layout="vertical"] .lane h2{font-size:19px}
+}
+@media(max-width:430px){
+ .shell{padding-left:10px;padding-right:10px}
+ .topbar-inner{gap:5px}
+ .brand{gap:5px}.brand .brand-title{font-size:16px!important}
+ .sport-switch button{padding:5px 5px;font-size:9px}
+ .date-toolbar .date-jump input{width:111px}
+ .date-note{font-size:8px}
+ .metric{padding:4px}
+ .metric-label{font-size:8px}
+ .metric-value{font-size:17px}
+ .filters .pill{padding:0 6px;font-size:9px}
+}
+
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;scroll-behavior:auto!important;transition:none!important}}
 </style>
 </head>
@@ -68,17 +189,24 @@ main{padding-bottom:90px}.intro{display:flex;align-items:end;justify-content:spa
   <div class="spacer"></div><div class="head-side"><span class="source-label">DATA <b>ESPN</b></span><span class="live-label"><span class="pulse"></span>LIVE SCORES</span><button id="refreshBtn" class="refresh-btn" aria-label="Refresh scores" title="Refresh scores"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 11a8 8 0 1 0-2 6"/><path d="M20 4v7h-7"/></svg></button></div>
 </div></header>
 <main class="shell">
-  <div class="intro"><div><div class="eyebrow" id="introTag">NCAA • FBS football</div><h1 class="page-title" id="pageTitle">Game Day <span style="color:#91b7fd">Scoreboard</span></h1><p class="page-sub" id="pageSub">Every matchup sorted by ranked opponents. Choose a day, then open any game for its full story.</p></div><div class="intro-right"><label class="date-jump"><span>DATE</span><input type="date" id="dateInput" aria-label="Choose game date"></label><button class="today-btn" id="todayBtn">Today</button></div></div>
-  <div class="calendar-rail" id="calendarRail" aria-label="Game date navigation"></div>
+  <h1 class="sr-only" id="pageTitle">College Football Scoreboard</h1>
+  <div class="date-toolbar">
+    <div class="calendar-rail" id="calendarRail" aria-label="Game date navigation"></div>
+    <div class="intro-right"><label class="date-jump"><span>DATE</span><input type="date" id="dateInput" aria-label="Choose game date"></label><button class="today-btn" id="todayBtn">Today</button></div>
+  </div>
   <div class="date-note"><span id="dateNote">Game dates use Eastern Time; kickoff times use your local time.</span><div class="right"><span id="updatedNote">—</span><span><i class="small-dot"></i>ESPN scoreboard</span></div></div>
   <section class="metrics" id="metrics" aria-label="Game totals"></section>
-  <div class="filters"><div class="filter-label">Show</div><button class="pill active" data-filter="all">All <span class="count" data-count="all"></span></button><button class="pill" data-filter="live">Live <span class="count" data-count="live"></span></button><button class="pill" data-filter="final">Final <span class="count" data-count="final"></span></button><button class="pill" data-filter="pre">Upcoming <span class="count" data-count="pre"></span></button><label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><input id="searchInput" aria-label="Filter games by team" placeholder="Search team or school…" autocomplete="off"></label></div>
-  <div class="view-bar" aria-label="Choose swimlane orientation">
-    <div class="view-description"><strong>Matchup lanes</strong><span id="viewHint">Vertical columns · scroll down each ranking group</span></div>
+  <div class="filters" aria-label="Game filters and view options">
+    <button class="pill active" data-filter="all">All <span class="count" data-count="all"></span></button>
+    <button class="pill" data-filter="live">Live <span class="count" data-count="live"></span></button>
+    <button class="pill" data-filter="final">Final <span class="count" data-count="final"></span></button>
+    <button class="pill" data-filter="pre">Upcoming <span class="count" data-count="pre"></span></button>
+    <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><input id="searchInput" aria-label="Filter games by team" placeholder="Search team or school…" autocomplete="off"></label>
     <div class="view-toggle" role="group" aria-label="Lane layout">
       <button type="button" data-layout="horizontal" aria-pressed="false" title="Horizontal rows with side-scrolling games"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/></svg><span>Horizontal</span></button>
       <button type="button" data-layout="vertical" aria-pressed="true" title="Three vertical columns with independently scrolling games"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="6" height="18" rx="1.5"/><rect x="14" y="3" width="7" height="18" rx="1.5"/></svg><span>Vertical</span></button>
     </div>
+    <span class="sr-only" id="viewHint">Vertical columns · scroll down each ranking group</span>
   </div>
   <div id="notice" role="status" aria-live="polite"></div>
   <div class="lanes" id="lanes"></div>
@@ -114,7 +242,7 @@ function teamFrom(c){if(!c)return fallbackTeam('');const t=c.team||{};const logo
 function normalizeGame(e){const c=e.competitions?.[0]||{};const arr=c.competitors||[];const away=teamFrom(arr.find(x=>x.homeAway==='away')||arr[0]),home=teamFrom(arr.find(x=>x.homeAway==='home')||arr[1]);const s=c.status||e.status||{};const type=s.type||{};const kind=type.state==='in'||type.name==='STATUS_IN_PROGRESS'?'live':type.completed||type.state==='post'?'final':'pre';const ranked=Number(away.rank!==null)+Number(home.rank!==null);return {id:String(e.id),date:e.date||c.date||'',away,home,ranked,group:ranked===2?'both':ranked===1?'single':'none',kind,statusText:String(type.shortDetail||type.detail||type.description||(kind==='pre'?'Scheduled':kind==='final'?'Final':'Live')),clock:s.displayClock||'',period:s.period||null,venue:String(c.venue?.fullName||c.venue?.address?.city||''),broadcast:String(c.broadcasts?.[0]?.names?.[0]||c.broadcast||''),links:e.links||[],raw:e}}
 function filteredGames(){return state.games.filter(g=>(state.filter==='all'||g.kind===state.filter)&&(!state.search||[g.away.name,g.home.name,g.away.abbr,g.home.abbr,g.away.location,g.home.location].join(' ').toLowerCase().includes(state.search.toLowerCase())))}
 function sortedGames(gs){const weights={live:0,pre:1,final:2};return gs.sort((a,b)=>weights[a.kind]-weights[b.kind]||Math.min(a.away.rank||99,a.home.rank||99)-Math.min(b.away.rank||99,b.home.rank||99)||Date.parse(a.date)-Date.parse(b.date))}
-function renderHeader(){const conf=CONFIG[state.sport];document.querySelectorAll('[data-sport]').forEach(el=>{el.classList.toggle('active',el.dataset.sport===state.sport);el.setAttribute('aria-pressed',String(el.dataset.sport===state.sport))});$('introTag').textContent=conf.short;$('pageSub').textContent=`${conf.name} games organized by rank. Open a matchup for play-by-play, box scores, and team statistics.`;$('dateInput').value=state.date;$('dateNote').textContent='Dates grouped by Eastern Time • Game kickoffs shown in your local time';renderCalendar()}
+function renderHeader(){const conf=CONFIG[state.sport];document.querySelectorAll('[data-sport]').forEach(el=>{el.classList.toggle('active',el.dataset.sport===state.sport);el.setAttribute('aria-pressed',String(el.dataset.sport===state.sport))});$('pageTitle').textContent=`${conf.name} scoreboard`;document.title=`Campus Score | ${conf.name}`;$('dateInput').value=state.date;$('dateNote').textContent='Eastern Time dates · Local kickoff times';renderCalendar()}
 function renderCalendar(){const days=Array.from({length:7},(_,i)=>shiftDay(state.date,i-3));$('calendarRail').innerHTML=`<button class="navarrow rail-nav" data-daymove="-1" aria-label="Previous day">${iconSvg('left')}</button>`+days.map(iso=>{const d=dayObj(iso);const wd=new Intl.DateTimeFormat('en-US',{weekday:'short',timeZone:'UTC'}).format(d),dn=d.getUTCDate();return `<button class="rail-day ${iso===state.date?'selected':''} ${iso===todayET()?'is-today':''}" data-day="${iso}" aria-current="${iso===state.date?'date':'false'}"><span class="wd">${wd}</span><span class="dn">${dn}</span></button>`}).join('')+`<button class="navarrow rail-nav" data-daymove="1" aria-label="Next day">${iconSvg('right')}</button>`}
 function metric(label,value,kind,sign){return `<div class="metric" data-kind="${kind}"><div><div class="metric-label">${esc(label)}</div><div class="metric-value">${value}</div></div><div class="metric-icon">${sign}</div></div>`}
 function renderMetrics(){const games=state.games;const vals={all:games.length,live:games.filter(g=>g.kind==='live').length,final:games.filter(g=>g.kind==='final').length,pre:games.filter(g=>g.kind==='pre').length};$('metrics').innerHTML=metric('Games today',games.length,'all','▦')+metric('Ranked matchups',games.filter(g=>g.group==='both').length,'clash','★')+metric('In progress',vals.live,'live','●')+metric('Completed',vals.final,'final','✓');document.querySelectorAll('[data-count]').forEach(el=>{el.textContent=vals[el.dataset.count]});document.querySelectorAll('[data-filter]').forEach(el=>el.classList.toggle('active',el.dataset.filter===state.filter));$('updatedNote').textContent=state.updated?`Updated ${new Intl.DateTimeFormat('en-US',{hour:'numeric',minute:'2-digit'}).format(state.updated)}`:'Not loaded'}
