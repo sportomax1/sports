@@ -22,8 +22,8 @@ def collect(item):
     def roster(t):
         data=get(f"{BASE}/{sport}/{slug}/teams/{t['id']}/roster")
         out=[]
-        for group in data.get('athletes',[]):
-            for raw in group.get('items',[group]):
+        for group in (data.get('athletes') or data.get('items') or []):
+            for raw in (group.get('items') if isinstance(group,dict) and isinstance(group.get('items'),list) else [group]):
                 p=raw.get('athlete',raw)
                 name=p.get('fullName') or p.get('displayName') or p.get('name') or ''
                 if not name or not p.get('id'):continue
@@ -42,8 +42,13 @@ def collect(item):
     path.parent.mkdir(parents=True,exist_ok=True)
     path.write_text(json.dumps({'league':league,'year':YEAR,'collectedAt':datetime.now(timezone.utc).isoformat(),'teams':len(teams),'failedTeams':failed,'players':players},separators=(',',':')),encoding='utf-8')
     print(league,len(players),'players',failed,'failed teams')
+failures=[]
 with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
-    futures=[pool.submit(collect,item) for item in LEAGUES.items()]
+    futures={pool.submit(collect,item):item[0] for item in LEAGUES.items()}
     for future in concurrent.futures.as_completed(futures):
         try:future.result()
-        except Exception as e:print('FAILED:',e)
+        except Exception as e:
+            failures.append(futures[future]);print('FAILED:',futures[future],e)
+if len(failures)==len(LEAGUES):
+    raise SystemExit('All league downloads failed; refusing to report a successful workflow')
+if failures:print('Partial data coverage:',','.join(failures))
