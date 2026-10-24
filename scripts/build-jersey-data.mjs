@@ -25,6 +25,8 @@ const validUrl = x => /^https:\/\//i.test(str(x)) ? x : '';
 const endpoint = (sport, slug) => 'https://site.api.espn.com/apis/site/v2/sports/' + sport + '/' + slug;
 const outputDir = join('data', 'jersey');
 await mkdir(outputDir, { recursive: true });
+const chunkDir=join(outputDir,'chunks');
+await mkdir(chunkDir,{recursive:true});
 
 async function getJSON(url) {
   let error;
@@ -115,6 +117,8 @@ for (const league of selected) {
   let prior={teams:[]};
   try { prior=JSON.parse(await readFile(dest,'utf8')); } catch {}
   const previous=new Map((prior.teams||[]).map(t=>[str(t.id),t]));
+  const previousChunks=[...new Set((prior.teams||[]).map(t=>t.chunk).filter(x=>x!=null))];
+  for(const ch of previousChunks){try{const old=JSON.parse(await readFile(join(chunkDir,league.toLowerCase()+'-'+ch+'.json'),'utf8'));for(const t of old.teams||[])previous.set(str(t.id),t)}catch{}}
   console.log('['+league+'] Fetching team directory');
   let rawTeams;
   try {
@@ -152,11 +156,21 @@ for (const league of selected) {
     continue;
   }
   hydrated.sort((a,b)=>a.name.localeCompare(b.name));
+  const generatedAt=new Date().toISOString();
+  let catalog=hydrated;
+  if(league.startsWith('NCAA')){
+    const shardSize=16;
+    catalog=hydrated.map((t,i)=>({...t,players:[],chunk:Math.floor(i/shardSize)}));
+    for(let start=0;start<hydrated.length;start+=shardSize){
+      const ch=Math.floor(start/shardSize);
+      const chunk={generatedAt,league,teams:hydrated.slice(start,start+shardSize)};
+      await writeFile(join(chunkDir,league.toLowerCase()+'-'+ch+'.json'),JSON.stringify(chunk));
+    }
+  }
   const payload={
-    generatedAt:new Date().toISOString(),league,
-    source:'ESPN public site API snapshot',
-    successfulTeams:succeeded,failedTeams:failed,teams:hydrated
+    generatedAt,league,source:'ESPN public site API snapshot',
+    successfulTeams:succeeded,failedTeams:failed,teams:catalog
   };
   await writeFile(dest,JSON.stringify(payload));
-  console.log('['+league+'] Wrote '+hydrated.length+' teams; '+succeeded+' fresh, '+failed+' fallback/empty');
+  console.log('['+league+'] Wrote '+hydrated.length+' teams; '+succeeded+' fresh, '+failed+' fallback/empty; '+(catalog===hydrated?'full bundle':'chunked catalog'));
 }
