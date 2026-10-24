@@ -61,7 +61,7 @@ dialog::backdrop{background:#000a;backdrop-filter:blur(3px)}
 /* All-team virtual columns, league marks, grouped player containers */
 .league-mark{width:21px;height:21px;object-fit:contain;flex:none;vertical-align:middle}
 .leagues button{display:inline-flex;align-items:center;gap:6px;min-height:32px}
-.league-text{display:inline-block}
+.league-text{display:inline-block}.league-stack{display:inline-flex;align-items:center;padding-left:3px}.league-stack .stack-mark{width:18px;height:18px;margin-left:-3px;filter:drop-shadow(0 0 2px #0b1017)}
 .league-mark-small{width:16px;height:16px;object-fit:contain;vertical-align:middle}
 .th-team .logo-stack{display:grid;place-items:center;gap:1px;flex:none}
 .th-team .logo-stack .team-logo{width:36px;height:36px;object-fit:contain}
@@ -154,7 +154,7 @@ function setStatus(message,bad=false){$('status').className=bad?'error':'';$('st
 function leaguesForMode(){return LEAGUES[state.mode]?[state.mode]:MODES[state.mode]||MODES.ALL}
 function markupLeagues(){$('leagues').innerHTML=['ALL','PRO',...Object.keys(LEAGUES)].map(k=>{
  const label=k==='ALL'?'ALL SPORTS':k==='PRO'?'PRO LEAGUES':k;
- const logos=k==='ALL'||k==='PRO'?'<span class="league-text">◉</span>':'<img class="league-mark" src="'+logoFor(k)+'" loading="lazy" alt="" onerror="this.hidden=true">';
+ const logos=k==='ALL'||k==='PRO'?'<span class="league-stack">'+['NFL','NBA','MLB','NHL'].map(league=>'<img class="league-mark stack-mark" src="'+logoFor(league)+'" loading="lazy" alt="" onerror="this.hidden=true">').join('')+'</span>':'<img class="league-mark" src="'+logoFor(k)+'" loading="lazy" alt="" onerror="this.hidden=true">';
  return '<button type="button" data-league="'+k+'" class="'+(state.mode===k?'active':'')+'">'+logos+'<span class="league-text">'+label+'</span></button>';
  }).join('')}
 function viewButtons(){$('views').querySelectorAll('[data-view]').forEach(b=>{b.classList.toggle('active',b.dataset.view===state.view);b.setAttribute('aria-pressed',String(b.dataset.view===state.view))});$('frame').hidden=state.view!=='matrix';$('groupSection').hidden=state.view==='matrix';$('used').hidden=state.view!=='matrix';$('reverse').hidden=state.view!=='matrix'}
