@@ -174,69 +174,213 @@ async function chunk(k,index,refresh=false){
  const p=(async()=>{const j=await fetchJSON('./data/jersey/chunks/'+k.toLowerCase()+'-'+index+'.json',{refresh,timeout:18000});if(!Array.isArray(j.teams))throw Error('Missing chunk '+id);const d=new Map(j.teams.map(t=>[str(t.id),Array.isArray(t.players)?t.players.map(normalizePlayer).filter(Boolean):[]]));chunks.set(id,d);return d})();
  pendingChunks.set(id,p);try{return await p}finally{pendingChunks.delete(id)}
 }
+
 async function roster(t){
- if(t.chunk==null)return {team:t,players:t.players,error:t.players.length?'':'No roster returned in snapshot'};
- try{const d=await chunk(t.league,t.chunk);const players=d.get(t.id)||[];return {team:t,players,error:players.length?'':'No roster returned by ESPN'}}catch(e){return {team:t,players:[],error:'Unable to load snapshot: '+e.message}}
+ if(rosterCache.has(t.key))return rosterCache.get(t.key);
+ let result;
+ if(t.chunk==null)result={team:t,players:t.players,error:t.players.length?'':'No roster supplied by ESPN'};
+ else{
+   try{const d=await chunk(t.league,t.chunk);const players=d.get(t.id)||[];result={team:t,players,error:players.length?'':'No roster supplied by ESPN'}}
+   catch(e){result={team:t,players:[],error:'Roster file unavailable: '+e.message}}
+ }
+ rosterCache.set(t.key,result);
+ return result;
 }
 async function loadMode(refresh=false){
- const run=++state.run;
- state.visible=[];state.teams=[];state.errors=[];
- $('matrixArea').innerHTML='<div class="empty">Loading '+(state.mode==='ALL'?'all sports':state.mode==='PRO'?'professional leagues':state.mode)+' team catalogs…</div>';
- setStatus('Reading league-wide team directories…');$('totals').textContent='';markupLeagues();updateNav();
- const ks=leaguesForMode();
- const reports=await Promise.allSettled(ks.map(k=>catalog(k,refresh)));
+ const run=++state.run;++state.groupRun;
+ state.teams=[];state.errors=[];state.windowKey='';state.groupReady=false;
+ $('matrixArea').innerHTML='<div class="empty">Loading '+state.mode+' league directory…</div>';
+ $('groupTiles').innerHTML='<div class="loading-progress">Loading team directory…</div>';
+ setStatus('Loading roster catalogs…');$('totals').textContent='';
+ markupLeagues();viewButtons();
+ const ks=leaguesForMode(),results=await Promise.allSettled(ks.map(k=>catalog(k,refresh)));
  if(run!==state.run)return;
- reports.forEach((v,i)=>{if(v.status==='fulfilled')state.teams.push(...v.value.teams);else state.errors.push(ks[i]+': '+(v.reason?.message||'unavailable'))});
+ results.forEach((r,i)=>{if(r.status==='fulfilled'){state.teams.push(...r.value.teams)}else{state.errors.push(ks[i]+': '+(r.reason?.message||'unavailable'))}});
  state.teams.sort((a,b)=>ks.indexOf(a.league)-ks.indexOf(b.league)||a.name.localeCompare(b.name));
- state.updated=reports.filter(x=>x.status==='fulfilled').map(x=>x.value.updated).filter(Boolean).sort().at(-1)||'';
- if(!state.teams.length){$('matrixArea').innerHTML='<div class="empty">No team directory could be loaded. Check the repository snapshot files and use Refresh.</div>';setStatus(state.errors.join(' · ')||'No team data',true);updateNav();return}
- await loadPage();
+ state.updated=results.filter(r=>r.status==='fulfilled').map(r=>r.value.updated).filter(Boolean).sort().at(-1)||'';
+ for(const t of state.teams)if(t.chunk==null&&!rosterCache.has(t.key))rosterCache.set(t.key,{team:t,players:t.players,error:t.players.length?'':'No roster in snapshot'});
+ if(!state.teams.length){$('matrixArea').innerHTML='<div class="empty">No league data available. Check snapshot files and use Refresh.</div>';setStatus(state.errors.join(' · ')||'No teams loaded',true);return}
+ if(state.view==='matrix'){renderMatrix(true);$('frame').scrollLeft=0}
+ else startGroupView();
 }
-function filteredTeams(){const q=$('teamSearch').value.trim().toLowerCase();return q?state.teams.filter(t=>(t.name+' '+t.abbr+' '+t.league).toLowerCase().includes(q)):state.teams}
-function updateNav(){const all=filteredTeams(),pages=Math.max(1,Math.ceil(all.length/state.pageSize));state.page=Math.max(0,Math.min(state.page,pages-1));$('page').textContent=(all.length?state.page+1:0)+' / '+(all.length?pages:0);$('prev').disabled=state.page<=0;$('next').disabled=state.page>=pages-1;$('headline').textContent=state.mode==='ALL'?'All 8 leagues':state.mode==='PRO'?'5 pro leagues':state.mode+' teams'}
-async function loadPage(){
- const run=++state.run,all=filteredTeams();updateNav();
- const from=state.page*state.pageSize,shown=all.slice(from,from+state.pageSize);
- state.visible=[];
- if(!shown.length){$('matrixArea').innerHTML='<div class="empty">No teams match that search. Try another school or team name.</div>';$('totals').textContent='0 teams';setStatus('No matching teams');return}
- $('matrixArea').innerHTML='<div class="empty">Loading '+shown.length+' team rosters…</div>';
- setStatus('Loading rosters for teams '+(from+1)+'–'+(from+shown.length)+' of '+all.length+'…');
- const data=await Promise.all(shown.map(t=>roster(t)));
- if(run!==state.run)return;
- state.visible=data;
- renderMatrix();
+function filteredTeams(){
+ const q=$('teamSearch').value.trim().toLowerCase();
+ return q?state.teams.filter(t=>(t.name+' '+t.abbr+' '+t.league).toLowerCase().includes(q)):state.teams
 }
-function rowSort(a,b){function order(v){if(v==='00')return -2;if(v==='0')return -1;if(/^\d+$/.test(v))return Number(v);return 1000}return order(a)-order(b)||a.localeCompare(b)}
-function htmlPlayer(t,p){let head=p.head||CDN+LEAGUES[t.league][1]+'/players/full/'+encodeURIComponent(p.id)+'.png';return '<button type="button" class="mini-player" data-team="'+esc(t.key)+'" data-athlete="'+esc(p.id)+'" title="'+esc(p.name+' · '+t.name+' · #'+p.jersey)+'"><span class="avatar"><img src="'+esc(url(head))+'" alt="" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="fallback" hidden>◉</span></span><span class="mini-info"><strong>'+esc(p.name)+'</strong><small>'+esc(p.position)+'</small></span></button>'}
-function renderMatrix(){
- const teams=state.visible;
- if(!teams.length){$('matrixArea').innerHTML='<div class="empty">No roster data available</div>';return}
+function rowSort(a,b){
+ const val=n=>n==='00'?-2:n==='0'?-1:/^\d+$/.test(n)?Number(n):1000;
+ return val(a)-val(b)||a.localeCompare(b)
+}
+function htmlPlayer(t,p){
+ const face=p.head||CDN+LEAGUES[t.league][1]+'/players/full/'+encodeURIComponent(p.id)+'.png';
+ return '<button type="button" class="mini-player" data-team="'+esc(t.key)+'" data-athlete="'+esc(p.id)+'" title="'+esc(p.name+' · '+t.name+' · #'+p.jersey)+'"><span class="avatar"><img src="'+esc(url(face))+'" alt="" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="fallback" hidden>◉</span></span><span class="mini-info"><strong>'+esc(p.name)+'</strong><small>'+esc(p.position)+'</small></span></button>';
+}
+let drawPending=false;
+function queueDraw(){
+ if(drawPending)return;drawPending=true;
+ requestAnimationFrame(()=>{drawPending=false;if(state.view==='matrix')renderMatrix(false)})
+}
+async function fetchWindow(teamList){
+ for(const t of teamList){
+   if(rosterCache.has(t.key)||inflightTeams.has(t.key))continue;
+   inflightTeams.add(t.key);
+   roster(t).finally(()=>{inflightTeams.delete(t.key);if(state.view==='matrix')queueDraw()});
+ }
+}
+function matrixDims(){return {col:innerWidth<=720?156:183,left:innerWidth<=720?55:72}}
+function renderMatrix(force=false){
+ if(state.view!=='matrix')return;
+ const frame=$('frame'),all=filteredTeams(),{col,left}=matrixDims();
+ if(!all.length){$('matrixArea').innerHTML='<div class="empty">No matching teams. Clear the team filter to show all columns.</div>';$('totals').textContent='0 teams';setStatus('No teams match this filter');return}
+ const x=frame.scrollLeft||0,visibleWidth=frame.clientWidth||innerWidth||1100,overscan=3;
+ const start=Math.max(0,Math.floor(x/col)-overscan);
+ const end=Math.min(all.length,Math.max(start+1,Math.ceil((x+visibleWidth-left)/col)+overscan));
+ const shown=all.slice(start,end);
  const q=$('playerSearch').value.trim().toLowerCase();
- const per=teams.map(({team,players})=>{
-   const map=new Map();
-   for(const p of players){if(!p.jersey)continue;if(q&&!(p.name+' '+p.position+' '+p.jersey).toLowerCase().includes(q))continue;if(!map.has(p.jersey))map.set(p.jersey,[]);map.get(p.jersey).push(p)}
-   return {team,players:map,raw:players.length};
+ const cacheKey=[state.mode,start,end,all.length,all[0]?.key,all.at(-1)?.key,q,state.showUsed,state.reverse,
+   shown.map(t=>rosterCache.has(t.key)?'1':'0').join(''),rosterCache.size].join('|');
+ if(!force&&cacheKey===state.windowKey)return;
+ state.windowKey=cacheKey;
+ const per=shown.map(team=>{const record=rosterCache.get(team.key);const map=new Map();
+   for(const p of record?.players||[]){if(!p.jersey)continue;
+     if(q&&!(p.name+' '+p.position+' '+p.jersey+' '+team.name).toLowerCase().includes(q))continue;
+     if(!map.has(p.jersey))map.set(p.jersey,[]);map.get(p.jersey).push(p);
+   }
+   return {team,players:map,raw:record?.players.length||0,ready:!!record,error:record?.error||''};
  });
- const rows=Array.from(new Set(per.flatMap(x=>[...x.players.keys()]))).sort(rowSort);
- if(!state.showUsed){for(let i=0;i<=99;i++){const n=String(i);if(!rows.includes(n))rows.push(n)}if(!rows.includes('00'))rows.push('00');rows.sort(rowSort)}
- if(state.reverse)rows.reverse();
- const playerCount=per.reduce((n,x)=>n+x.raw,0);
- const missing=teams.filter(x=>x.error).length;
- $('totals').textContent=state.teams.length+' teams · '+teams.length+' columns · '+playerCount.toLocaleString()+' listed players · '+rows.length+' jersey rows';
- if(!rows.length){$('matrixArea').innerHTML='<div class="empty">No jersey numbers match the selected team columns and player search.<div style="padding-top:12px">Try clearing the player filter or selecting another team page.</div></div>';setStatus('No matching players'+(missing?' · '+missing+' rosters unavailable':''),!!missing);return}
- let table='<table class="matrix" aria-label="Jersey number by team matrix"><thead><tr><th scope="col">#<br><span style="font-size:10px;color:#b4c1ce">JERSEY</span></th>';
- for(const x of per){const t=x.team;table+='<th scope="col" class="team-col" title="'+esc(t.name+' · '+t.league)+'"><div class="th-team"><img src="'+esc(url(t.logo))+'" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'"><div><span class="th-name">'+esc(t.name)+'</span><span class="th-meta">'+esc(t.league)+' · '+x.raw+' players</span></div></div></th>'}
+ // Keep the row set stable across horizontal scrolling: use all loaded teams, not merely the visible window.
+ const labels=new Set();
+ for(const team of all){for(const p of rosterCache.get(team.key)?.players||[]){
+   if(p.jersey&&(!q||(p.name+' '+p.position+' '+p.jersey+' '+team.name).toLowerCase().includes(q)))labels.add(p.jersey);
+ }}
+ if(!state.showUsed||!labels.size){labels.add('00');for(let i=0;i<=99;i++)labels.add(String(i))}
+ const rows=[...labels].sort(rowSort);if(state.reverse)rows.reverse();
+ const leftPx=start*col,rightPx=(all.length-end)*col,totalWidth=left+all.length*col;
+ let table='<table class="matrix" style="width:'+totalWidth+'px;min-width:'+totalWidth+'px" aria-label="All teams jersey matrix"><colgroup><col style="width:'+left+'px">';
+ if(leftPx)table+='<col style="width:'+leftPx+'px">';
+ for(let i=start;i<end;i++)table+='<col style="width:'+col+'px">';
+ if(rightPx)table+='<col style="width:'+rightPx+'px">';
+ table+='</colgroup><thead><tr><th scope="col">#<br><span style="font-size:10px;color:#b4c1ce">JERSEY</span></th>';
+ if(leftPx)table+='<th class="matrix-spacer" style="width:'+leftPx+'px"></th>';
+ for(const x of per){const t=x.team;
+   table+='<th scope="col" class="team-col"><button type="button" class="header-open" data-open-team="'+esc(t.key)+'" title="See all '+esc(t.name)+' players"><span class="th-team"><span class="logo-stack"><img class="team-logo" src="'+esc(url(t.logo))+'" alt="" loading="lazy" onerror="this.hidden=true"><img class="league-mark-small" src="'+logoFor(t.league)+'" alt="" loading="lazy" onerror="this.hidden=true"></span><span><span class="th-name">'+esc(t.name)+'</span><span class="th-meta">'+esc(t.league)+' · '+(x.ready?x.raw+' players':'Loading…')+'</span></span></span></button></th>';
+ }
+ if(rightPx)table+='<th class="matrix-spacer" style="width:'+rightPx+'px"></th>';
  table+='</tr></thead><tbody>';
  for(const number of rows){
    let total=0;for(const x of per)total+=(x.players.get(number)||[]).length;
-   table+='<tr><td><span class="numlabel">'+esc(number)+'<small>'+total+' player'+(total===1?'':'s')+'</small></span></td>';
-   for(const x of per){let people=x.players.get(number)||[];table+='<td>'+(people.length?'<div class="player-cell">'+people.map(p=>htmlPlayer(x.team,p)).join('')+'</div>':'<span class="blank"></span>')+'</td>'}
+   table+='<tr><td><button type="button" class="number-open numlabel" data-open-number="'+esc(number)+'" title="View every #'+esc(number)+' player across the selected '+state.mode+' teams">'+esc(number)+'<small>'+total+' on screen</small></button></td>';
+   if(leftPx)table+='<td class="matrix-spacer" style="width:'+leftPx+'px"></td>';
+   for(const x of per){const people=x.players.get(number)||[];
+     table+='<td>'+(people.length?'<div class="player-cell">'+people.map(p=>htmlPlayer(x.team,p)).join('')+'</div>':'<span class="blank"></span>')+'</td>';
+   }
+   if(rightPx)table+='<td class="matrix-spacer" style="width:'+rightPx+'px"></td>';
    table+='</tr>';
  }
- table+='</tbody></table>';$('matrixArea').innerHTML=table;
- const scopes=state.mode==='ALL'?'all sports':state.mode==='PRO'?'pro leagues':state.mode;
- setStatus('Showing '+teams.length+' '+scopes+' teams · '+playerCount.toLocaleString()+' players · updated '+humanDate(state.updated)+(missing?' · '+missing+' unavailable rosters':''),missing>0);
+ table+='</tbody></table>';
+ const oldScrollX=frame.scrollLeft,oldScrollY=frame.scrollTop;
+ $('matrixArea').innerHTML=table;
+ frame.scrollLeft=oldScrollX;frame.scrollTop=oldScrollY;
+ const loaded=all.filter(t=>rosterCache.has(t.key)).length;
+ const missing=all.filter(t=>rosterCache.get(t.key)?.error).length;
+ $('totals').textContent=all.length+' total columns · '+loaded+'/'+all.length+' team rosters loaded · '+rows.length+' jersey rows';
+ setStatus('All '+all.length+' teams available · scroll left/right · '+shown.length+' columns rendered · '+humanDate(state.updated)+(missing?' · '+missing+' unavailable roster(s)':''),false);
+ fetchWindow(shown);
 }
+async function ensureAll(teams,cancelled,progress){
+ const pending=new Map();
+ for(const t of teams)if(!rosterCache.has(t.key)){
+   if(t.chunk==null){rosterCache.set(t.key,{team:t,players:t.players,error:t.players.length?'':'No roster from ESPN'});continue}
+   const key=t.league+':'+t.chunk;if(!pending.has(key))pending.set(key,[]);
+   pending.get(key).push(t)
+ }
+ const jobs=[...pending.entries()];let next=0,done=0;
+ if(progress)progress(0,jobs.length);
+ await Promise.all(Array.from({length:Math.min(6,jobs.length)},async()=>{
+   while(next<jobs.length&&!cancelled()){
+     const [key,group]=jobs[next++];
+     try{const [league,idx]=key.split(':'),data=await chunk(league,Number(idx));
+       for(const team of group){const players=data.get(team.id)||[];rosterCache.set(team.key,{team,players,error:players.length?'':'No roster supplied by ESPN'})}
+     }catch(e){for(const team of group)rosterCache.set(team.key,{team,players:[],error:'Unavailable: '+e.message})}
+     done++;if(progress&&(!cancelled()))progress(done,jobs.length)
+   }
+ }));
+}
+function allRecords(teams){
+ const q=$('playerSearch').value.trim().toLowerCase(),out=[];
+ for(const t of teams){for(const p of rosterCache.get(t.key)?.players||[]){
+   if(q&&!(p.name+' '+p.position+' '+p.jersey+' '+t.name+' '+t.league).toLowerCase().includes(q))continue;
+   out.push({team:t,player:p});
+ }}
+ return out;
+}
+function groupMap(type,teams){
+ const groups=new Map();
+ for(const item of allRecords(teams)){const p=item.player,key=type==='number'?p.jersey:(p.position||'—');
+   if(!key)continue;if(!groups.has(key))groups.set(key,[]);groups.get(key).push(item)
+ }
+ return groups;
+}
+function groupPhotos(items){
+ return items.slice(0,3).map(({team,player})=>{
+   const face=player.head||CDN+LEAGUES[team.league][1]+'/players/full/'+encodeURIComponent(player.id)+'.png';
+   return '<img src="'+esc(url(face))+'" loading="lazy" alt="" onerror="this.hidden=true">';
+ }).join('');
+}
+function renderGroups(){
+ if(state.view==='matrix')return;
+ const teams=filteredTeams(),groups=groupMap(state.view,teams);
+ const keys=[...groups.keys()].sort(state.view==='number'?rowSort:(a,b)=>a.localeCompare(b));
+ const n=[...groups.values()].reduce((a,x)=>a+x.length,0);
+ $('groupSummary').innerHTML='<span>'+keys.length+' '+(state.view==='number'?'jersey number':'position')+' containers · '+n.toLocaleString()+' matching players across '+teams.length+' teams</span><span>Click a container to view all matching players</span>';
+ $('groupTiles').innerHTML=keys.length?keys.map(k=>{
+   const items=groups.get(k);
+   return '<button type="button" class="group-tile" data-group-kind="'+state.view+'" data-group-value="'+esc(k)+'"><span><span class="group-symbol">'+(state.view==='number'?'#':'')+esc(k)+'</span><small>'+items.length.toLocaleString()+' players · '+new Set(items.map(x=>x.team.key)).size+' teams</small></span><span class="group-faces">'+groupPhotos(items)+'</span></button>';
+ }).join(''):'<div class="empty">No players found for these filters.</div>';
+ $('totals').textContent=teams.length+' teams · '+n.toLocaleString()+' players · '+keys.length+' containers';
+ setStatus('All '+teams.length+' teams searched · '+humanDate(state.updated));
+}
+async function startGroupView(){
+ const token=++state.groupRun;
+ const teams=filteredTeams();
+ $('groupTiles').innerHTML='<div class="loading-progress">Collecting '+teams.length+' team rosters…</div>';
+ $('groupSummary').textContent='Preparing '+(state.view==='number'?'jersey-number':'position')+' containers…';
+ await ensureAll(teams,()=>token!==state.groupRun,(done,total)=>{
+   if(token!==state.groupRun)return;
+   setStatus('Loading all '+teams.length+' teams · roster files '+done+'/'+total);
+   $('groupTiles').innerHTML='<div class="loading-progress">Loading '+done+' / '+total+' college roster chunks…</div>';
+ });
+ if(token!==state.groupRun)return;
+ state.groupReady=true;renderGroups();
+}
+function groupPlayerHtml(item){
+ const {team,player:p}=item;
+ const face=p.head||CDN+LEAGUES[team.league][1]+'/players/full/'+encodeURIComponent(p.id)+'.png';
+ return '<button type="button" class="group-player" data-team="'+esc(team.key)+'" data-athlete="'+esc(p.id)+'" title="View '+esc(p.name)+' stats"><img class="face" src="'+esc(url(face))+'" loading="lazy" alt="" onerror="this.style.opacity=\'.12\'"><span class="gp-main"><strong>'+esc(p.name)+'</strong><small>#'+esc(p.jersey||'—')+' · '+esc(p.position)+' · '+esc(team.name)+'</small></span><img class="gp-logo" src="'+esc(url(team.logo))+'" alt="" loading="lazy" onerror="this.hidden=true"></button>';
+}
+function renderGroupDialogList(){
+ const q=$('groupSearch')?.value?.trim().toLowerCase()||'';
+ const records=state.groupRecords.filter(x=>!q||(x.player.name+' '+x.team.name+' '+x.player.position+' '+x.player.jersey+' '+x.team.league).toLowerCase().includes(q));
+ $('groupCount').textContent=records.length.toLocaleString()+' of '+state.groupRecords.length.toLocaleString()+' players';
+ $('groupList').innerHTML=records.length?records.map(groupPlayerHtml).join(''):'<div class="empty">No matching players.</div>';
+}
+async function openGroup(type,value){
+ const dialog=$('groupDialog'),token=++state.dialogRun;
+ const current=filteredTeams(),one=type==='team'?current.filter(t=>t.key===value):current;
+ if(!one.length)return;
+ const found=type==='team'?one[0]:null,title=type==='number'?'Jersey #'+value:type==='position'?'Position '+value:found.name;
+ const lg=found?found.logo:null;
+ dialog.showModal();
+ $('groupDialogContent').innerHTML='<div class="group-dialog-head">'+(lg?'<img src="'+esc(lg)+'" alt="">':'')+'<div><h2>'+esc(title)+'</h2><p>Complete '+(type==='team'?'team roster':'league-wide player list')+'</p></div><button class="close-group" id="closeGroup" aria-label="Close">×</button></div><div class="loading-progress" id="groupProgress">Loading all matching team rosters…</div><div class="group-dialog-tools" id="groupTools" hidden><input type="search" id="groupSearch" placeholder="Filter players / teams / positions…" aria-label="Filter these players"><span id="groupCount"></span></div><div id="groupList" class="group-dialog-list"></div>';
+ $('closeGroup').onclick=()=>dialog.close();
+ await ensureAll(one,()=>token!==state.dialogRun||!dialog.open,(done,total)=>{if(token===state.dialogRun&&dialog.open)$('groupProgress').textContent=total?'Loading roster files '+done+' / '+total+'…':'Preparing players…'});
+ if(token!==state.dialogRun||!dialog.open)return;
+ state.groupRecords=allRecords(one).filter(x=>type==='number'?x.player.jersey===value:type==='position'?x.player.position===value:true);
+ state.groupRecords.sort((a,b)=>a.team.league.localeCompare(b.team.league)||a.team.name.localeCompare(b.team.name)||rowSort(a.player.jersey,b.player.jersey)||a.player.name.localeCompare(b.player.name));
+ $('groupProgress').hidden=true;$('groupTools').hidden=false;renderGroupDialogList();
+ $('groupSearch').addEventListener('input',renderGroupDialogList);
+}
+
 const bio=(k,v)=>v?'<span>'+esc(k)+': <b>'+esc(v)+'</b></span>':'';
 function modalPlayer(team,p){
  const head=p.head||CDN+LEAGUES[team.league][1]+'/players/full/'+encodeURIComponent(p.id)+'.png';
