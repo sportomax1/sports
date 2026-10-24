@@ -32,6 +32,8 @@ jobs:
           git add data/jersey
           if ! git diff --cached --quiet; then
             git commit -m "Update jersey roster snapshots"
+            git fetch origin main
+            git rebase origin/main
             git push
           else
             echo "No new snapshots"
