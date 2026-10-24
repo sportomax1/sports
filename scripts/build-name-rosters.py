@@ -29,7 +29,7 @@ def collect(item):
                 if not name or not p.get('id'):continue
                 words=name.split()
                 image=p.get('headshot') or {}
-                out.append({'id':str(p['id']),'league':league,'year':YEAR,'team':t.get('displayName') or t.get('name') or '', 'name':name,'first':p.get('firstName') or words[0], 'last':p.get('lastName') or ' '.join(words[1:]),'position':(p.get('position') or {}).get('abbreviation','').upper(),'image':image.get('href','') if isinstance(image,dict) else ''})
+                out.append({'id':str(p['id']),'league':league,'year':YEAR,'team':t.get('displayName') or t.get('name') or '', 'teamLogo':(t.get('logos') or [{}])[0].get('href',''), 'name':name,'first':p.get('firstName') or words[0], 'last':p.get('lastName') or ' '.join(words[1:]),'position':(p.get('position') or {}).get('abbreviation','').upper(),'image':image.get('href','') if isinstance(image,dict) else ''})
         return out
     players=[];failed=0
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
