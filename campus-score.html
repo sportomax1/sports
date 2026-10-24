@@ -179,6 +179,86 @@ main.shell{padding-bottom:44px}
  .filters .pill{padding:0 6px;font-size:9px}
 }
 
+
+/* Scoreboard-focused density: unique information first, no redundant summary tiles. */
+.metrics{display:none}
+.last-updated{color:#95acc8;font-size:10px;font-weight:700;white-space:nowrap}
+.date-toolbar{margin-top:6px;gap:6px}
+.date-toolbar .calendar-rail{gap:4px;grid-template-columns:28px repeat(7,minmax(0,1fr)) 28px}
+.date-toolbar .rail-nav{width:28px;min-width:28px}
+.date-toolbar .rail-day{min-height:35px;gap:0;border-radius:6px}
+.date-toolbar .rail-day .wd{font-size:8px;line-height:1}
+.date-toolbar .rail-day .dn{font-size:19px;line-height:1}
+.date-toolbar .date-jump,.date-toolbar .today-btn{height:35px}
+.filters{margin-top:6px;gap:5px}
+.filters .pill{height:30px}
+.filters .search{height:30px}
+.lanes{margin-top:9px}
+.lanes[data-layout="vertical"]{align-items:start;gap:9px}
+.lanes[data-layout="vertical"] .lane{width:100%;min-height:0;padding:7px 7px 5px;border-radius:9px}
+.lanes[data-layout="vertical"] .lane-head{min-height:0;margin-bottom:5px;gap:5px;align-items:center}
+.lanes[data-layout="vertical"] .lane-head p{display:none}
+.lanes[data-layout="vertical"] .lane-title-wrap{gap:5px;flex-wrap:nowrap}
+.lanes[data-layout="vertical"] .lane-line{height:21px;width:3px}
+.lanes[data-layout="vertical"] .lane h2{font-size:clamp(15px,1.3vw,19px);line-height:1.1;white-space:normal}
+.lanes[data-layout="vertical"] .lane-count{font-size:13px;padding:1px 6px}
+.lanes[data-layout="vertical"] .lane-actions{margin-left:auto}
+.lanes[data-layout="vertical"] .scroll-btn{width:23px;height:23px}
+.lanes[data-layout="vertical"] .lane-scroll{min-height:0;max-height:min(79vh,970px);gap:5px;padding:0 3px 3px 0}
+.lanes[data-layout="vertical"] .game-card{min-height:105px;padding:7px 9px 6px;border-radius:8px}
+.lanes[data-layout="vertical"] .card-top{min-height:12px;font-size:9px;line-height:1.2}
+.lanes[data-layout="vertical"] .card-game{grid-template-columns:minmax(0,1fr) 10px minmax(0,1fr);gap:6px;align-items:center;margin-top:5px;flex:1}
+.lanes[data-layout="vertical"] .card-team{display:grid;grid-template-columns:32px minmax(0,1fr) auto;grid-template-rows:15px 12px 14px;column-gap:7px;row-gap:0;align-items:center;justify-items:start;text-align:left;justify-content:unset;min-width:0}
+.lanes[data-layout="vertical"] .card-team>.logo-wrap{grid-column:1;grid-row:1/4;width:32px;height:32px;place-self:center;min-width:0}
+.lanes[data-layout="vertical"] .card-team .logo-img{height:32px;width:32px}
+.lanes[data-layout="vertical"] .card-team .logo-initials{font-size:13px;inset:2px}
+.lanes[data-layout="vertical"] .card-team .team-abbr{grid-column:2;grid-row:1;font-size:15px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lanes[data-layout="vertical"] .card-team .team-name{grid-column:2;grid-row:2;font-size:9px;max-width:100%;width:100%;line-height:1.15}
+.lanes[data-layout="vertical"] .card-team .badge-rank{grid-column:2;grid-row:3;font-size:9px;min-width:0;padding:1px 5px;line-height:1.1;justify-self:start}
+.lanes[data-layout="vertical"] .card-team .card-score{grid-column:3;grid-row:1/4;font-size:25px;line-height:1;min-height:0;margin:0;text-align:right;justify-self:end;padding-right:2px}
+.lanes[data-layout="vertical"] .card-team .card-score.missing{font-size:20px}
+.lanes[data-layout="vertical"] .vs-col{font-size:13px;gap:0;align-self:center}
+.lanes[data-layout="vertical"] .vs-col .at,.lanes[data-layout="vertical"] .vs-col .center-pip{display:none}
+.lanes[data-layout="vertical"] .card-footer{margin-top:5px;padding-top:5px;min-height:14px;font-size:9px}
+.lanes[data-layout="vertical"] .card-footer .open-hint{font-size:9px}
+.lanes[data-layout="vertical"] .empty-lane{min-height:75px;padding:10px}
+@media(max-width:1100px){
+ .lanes[data-layout="vertical"] .card-game{gap:4px;grid-template-columns:minmax(0,1fr) 9px minmax(0,1fr)}
+ .lanes[data-layout="vertical"] .card-team{grid-template-columns:27px minmax(0,1fr) auto;column-gap:4px}
+ .lanes[data-layout="vertical"] .card-team>.logo-wrap,.lanes[data-layout="vertical"] .card-team .logo-img{height:27px;width:27px}
+ .lanes[data-layout="vertical"] .card-team .team-abbr{font-size:13px}
+ .lanes[data-layout="vertical"] .card-team .card-score{font-size:22px}
+ .lanes[data-layout="vertical"] .lane-head{flex-wrap:wrap;min-height:0}
+}
+@media(max-width:770px){
+ .topbar-inner{min-height:43px}
+ .last-updated,.head-side .source-label{display:none}
+ .date-toolbar{margin-top:5px}
+ .date-toolbar .calendar-rail{grid-template-columns:25px repeat(7,minmax(0,1fr)) 25px}
+ .date-toolbar .rail-day{min-height:32px}
+ .date-toolbar .rail-day .dn{font-size:17px}
+ .date-toolbar .date-jump,.date-toolbar .today-btn{height:29px}
+ .filters{margin-top:5px}
+ .lanes{margin-top:7px}
+ .lanes[data-layout="vertical"]{gap:8px}
+ .lanes[data-layout="vertical"] .lane{padding:7px 7px 5px}
+ .lanes[data-layout="vertical"] .lane-head{margin-bottom:5px;flex-wrap:nowrap}
+ .lanes[data-layout="vertical"] .lane h2{font-size:17px}
+ .lanes[data-layout="vertical"] .game-card{min-height:105px;padding:7px 8px}
+ .lanes[data-layout="vertical"] .card-team{grid-template-columns:32px minmax(0,1fr) auto;column-gap:7px}
+ .lanes[data-layout="vertical"] .card-team>.logo-wrap,.lanes[data-layout="vertical"] .card-team .logo-img{height:32px;width:32px}
+ .lanes[data-layout="vertical"] .card-team .team-abbr{font-size:15px}
+ .lanes[data-layout="vertical"] .card-team .card-score{font-size:24px}
+ .lanes[data-layout="vertical"] .card-game{grid-template-columns:minmax(0,1fr) 10px minmax(0,1fr)}
+}
+@media(max-width:390px){
+ .lanes[data-layout="vertical"] .card-team{grid-template-columns:26px minmax(0,1fr) auto;column-gap:3px}
+ .lanes[data-layout="vertical"] .card-team>.logo-wrap,.lanes[data-layout="vertical"] .card-team .logo-img{height:26px;width:26px}
+ .lanes[data-layout="vertical"] .card-team .team-abbr{font-size:13px}
+ .lanes[data-layout="vertical"] .card-team .card-score{font-size:21px}
+ .lanes[data-layout="vertical"] .card-game{gap:3px}
+}
+
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;scroll-behavior:auto!important;transition:none!important}}
 </style>
 </head>
@@ -186,7 +266,7 @@ main.shell{padding-bottom:44px}
 <header class="topbar"><div class="shell topbar-inner">
   <div class="brand" aria-label="Campus Score"><div class="brandmark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 9 10-5 10 5-10 5L2 9Z"/><path d="M6 11v6c3 2.7 9 2.7 12 0v-6"/><path d="M22 9v7"/></svg></div><div><div class="brand-title">CAMPUS<span>SCORE</span></div><small>College game center</small></div></div>
   <div class="sport-switch" role="group" aria-label="Choose sport"><button data-sport="cfb" class="active" aria-pressed="true">🏈 FOOTBALL</button><button data-sport="cbb" aria-pressed="false">🏀 BASKETBALL</button></div>
-  <div class="spacer"></div><div class="head-side"><span class="source-label">DATA <b>ESPN</b></span><span class="live-label"><span class="pulse"></span>LIVE SCORES</span><button id="refreshBtn" class="refresh-btn" aria-label="Refresh scores" title="Refresh scores"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 11a8 8 0 1 0-2 6"/><path d="M20 4v7h-7"/></svg></button></div>
+  <div class="spacer"></div><div class="head-side"><span class="source-label">DATA <b>ESPN</b></span><span class="last-updated" id="updatedNote" aria-live="polite">Not loaded</span><button id="refreshBtn" class="refresh-btn" aria-label="Refresh scores" title="Refresh scores"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 11a8 8 0 1 0-2 6"/><path d="M20 4v7h-7"/></svg></button></div>
 </div></header>
 <main class="shell">
   <h1 class="sr-only" id="pageTitle">College Football Scoreboard</h1>
@@ -194,7 +274,7 @@ main.shell{padding-bottom:44px}
     <div class="calendar-rail" id="calendarRail" aria-label="Game date navigation"></div>
     <div class="intro-right"><label class="date-jump"><span>DATE</span><input type="date" id="dateInput" aria-label="Choose game date"></label><button class="today-btn" id="todayBtn">Today</button></div>
   </div>
-  <div class="date-note"><span id="dateNote">Game dates use Eastern Time; kickoff times use your local time.</span><div class="right"><span id="updatedNote">—</span><span><i class="small-dot"></i>ESPN scoreboard</span></div></div>
+  <span class="sr-only" id="dateNote">Game dates use Eastern Time; kickoff times use your local time.</span>
   <section class="metrics" id="metrics" aria-label="Game totals"></section>
   <div class="filters" aria-label="Game filters and view options">
     <button class="pill active" data-filter="all">All <span class="count" data-count="all"></span></button>
