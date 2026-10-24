@@ -207,22 +207,31 @@ function statGroups(j){
 }
 function groupMarkup(g){return '<div class="modal-label"><h3>'+esc(g.name)+'</h3></div><div class="statgrid">'+g.items.map(s=>'<div class="stat"><b>'+esc(s.value)+'</b><span>'+esc(s.label)+'</span></div>').join('')+'</div>'}
 async function loadStats(team,p,seq){
- const [sport,slug]=LEAGUES[team.league];
+ const [sport,slug]=LEAGUES[team.league], now=new Date(),year=now.getFullYear(),month=now.getMonth()+1;
+ const season=(['NBA','NHL','NCAAM','NCAAW'].includes(team.league)&&month>=7)?year+1:year;
  const id=team.league+':'+p.id;
  const profile=(p.links||[]).find(x=>url(x.href)&&/espn\.com/i.test(x.href));
  if(profile){$('profile').href=profile.href;$('profile').hidden=false}
- let j=statsCache.get(id);
+ let saved=statsCache.get(id),j=saved?.data||null,yearShown=saved?.season||'';
  if(!j){
-   const endpoints=[
-    'https://site.web.api.espn.com/apis/common/v3/sports/'+sport+'/'+slug+'/athletes/'+encodeURIComponent(p.id)+'/stats',
-    'https://site.api.espn.com/apis/site/v2/sports/'+sport+'/'+slug+'/athletes/'+encodeURIComponent(p.id)+'/stats'
+   const core=y=>'https://sports.core.api.espn.com/v2/sports/'+sport+'/leagues/'+slug+'/seasons/'+y+'/types/2/athletes/'+encodeURIComponent(p.id)+'/statistics?lang=en&region=us';
+   const sources=[
+     {uri:core(season),label:String(season)},
+     {uri:'https://site.web.api.espn.com/apis/common/v3/sports/'+sport+'/'+slug+'/athletes/'+encodeURIComponent(p.id)+'/stats',label:'Available ESPN totals'},
+     {uri:'https://site.api.espn.com/apis/site/v2/sports/'+sport+'/'+slug+'/athletes/'+encodeURIComponent(p.id)+'/stats',label:'Available ESPN totals'},
+     {uri:core(season-1),label:String(season-1)+' (previous season)'}
    ];
-   for(const ep of endpoints){try{const x=await fetchJSON(ep,{timeout:7000});if(statGroups(x).length){j=x;statsCache.set(id,x);break}}catch(e){}}
+   for(const source of sources){
+     if(seq!==state.modalRun||!$('playerDialog').open)return;
+     try{const response=await fetchJSON(source.uri,{timeout:5500});if(statGroups(response).length){
+       j=response;yearShown=source.label;statsCache.set(id,{data:j,season:yearShown});break;
+     }}catch(e){}
+   }
  }
  if(seq!==state.modalRun||!$('playerDialog').open)return;
  const groups=statGroups(j||{});
- if(!groups.length){$('statCaption').textContent='Not available';$('statArea').className='empty';$('statArea').textContent='This player has no available statistical totals from the ESPN endpoints. Roster and jersey data above are from the published roster snapshot.';return}
- $('statCaption').textContent=str(j?.season?.displayName)||'Available ESPN totals';
+ if(!groups.length){$('statCaption').textContent='Not available';$('statArea').className='empty';$('statArea').textContent='This player has no available statistical totals from ESPN. Roster and jersey data above are from the published roster snapshot.';return}
+ $('statCaption').textContent=str(j?.season?.displayName)||yearShown||'Available ESPN totals';
  $('statArea').className='';$('statArea').innerHTML=groups.map(groupMarkup).join('');
 }
 function openPlayer(key,id){
