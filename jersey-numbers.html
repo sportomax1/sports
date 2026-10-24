@@ -147,7 +147,7 @@ const CDN='https://a.espncdn.com/i/headshots/';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
 const str=v=>String(v??'').trim();
 const url=v=>/^https:\/\//i.test(str(v))?str(v):'';
-const state={mode:'NFL',view:'matrix',teams:[],showUsed:true,reverse:false,run:0,modalRun:0,groupRun:0,errors:[],updated:'',windowKey:'',groupRecords:[],groupReady:false};
+const state={mode:'NFL',view:'matrix',teams:[],showUsed:true,reverse:false,run:0,modalRun:0,groupRun:0,dialogRun:0,errors:[],updated:'',windowKey:'',groupRecords:[],groupReady:false};
 const catalogs=new Map(),pendingCatalogs=new Map(),chunks=new Map(),pendingChunks=new Map(),statsCache=new Map();
 function humanDate(iso){const d=new Date(iso||'');return isNaN(+d)?'unknown date':d.toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric'})}
 function setStatus(message,bad=false){$('status').className=bad?'error':'';$('status').textContent=message}
@@ -429,26 +429,59 @@ async function loadStats(team,p,seq){
  $('statArea').className='';$('statArea').innerHTML=groups.map(groupMarkup).join('');
 }
 function openPlayer(key,id){
- const found=state.visible.find(x=>x.team.key===key);if(!found)return;
+ const found=rosterCache.get(key);if(!found)return;
  const p=found.players.find(x=>x.id===id);if(!p)return;
  const seq=++state.modalRun;
  const modal=$('playerDialog');$('dialogBody').innerHTML=modalPlayer(found.team,p);modal.showModal();$('modalClose').onclick=()=>modal.close();
  loadStats(found.team,p,seq).catch(e=>{if(seq===state.modalRun){$('statCaption').textContent='Unavailable';$('statArea').textContent='Could not load player statistics: '+e.message}});
 }
-function selectMode(k){if(state.mode===k)return;state.mode=k;state.page=0;$('teamSearch').value='';$('playerSearch').value='';loadMode(false).catch(e=>setStatus('Could not open '+k+': '+e.message,true))}
+
+function selectMode(k){
+ if(state.mode===k)return;
+ state.mode=k;state.windowKey='';state.groupReady=false;state.dialogRun++;++state.groupRun;
+ $('teamSearch').value='';$('playerSearch').value='';$('frame').scrollLeft=0;$('frame').scrollTop=0;
+ loadMode(false).catch(e=>setStatus('Could not load '+k+': '+e.message,true));
+}
 $('leagues').addEventListener('click',e=>{const b=e.target.closest('[data-league]');if(b)selectMode(b.dataset.league)});
-$('teamSearch').addEventListener('input',()=>{state.page=0;loadPage().catch(e=>setStatus(e.message,true))});
-$('playerSearch').addEventListener('input',()=>renderMatrix());
-$('count').addEventListener('change',()=>{state.pageSize=Number($('count').value)||6;state.page=0;loadPage().catch(e=>setStatus(e.message,true))});
-$('used').addEventListener('click',()=>{state.showUsed=!state.showUsed;$('used').classList.toggle('active',state.showUsed);$('used').setAttribute('aria-pressed',String(state.showUsed));$('used').textContent=state.showUsed?'Used # only':'All # 0–99';renderMatrix()});
-$('reverse').addEventListener('click',()=>{state.reverse=!state.reverse;$('reverse').classList.toggle('active',state.reverse);$('reverse').setAttribute('aria-pressed',String(state.reverse));$('reverse').textContent=state.reverse?'# ↓':'# ↑';renderMatrix()});
-$('prev').addEventListener('click',()=>{if(state.page>0){state.page--;loadPage().catch(e=>setStatus(e.message,true));$('frame').scrollTop=0}});
-$('next').addEventListener('click',()=>{if(state.page+1<Math.ceil(filteredTeams().length/state.pageSize)){state.page++;loadPage().catch(e=>setStatus(e.message,true));$('frame').scrollTop=0}});
-$('reload').addEventListener('click',()=>{catalogs.clear();pendingCatalogs.clear();chunks.clear();pendingChunks.clear();loadMode(true).catch(e=>setStatus(e.message,true))});
-$('matrixArea').addEventListener('click',e=>{const b=e.target.closest('[data-athlete]');if(b)openPlayer(b.dataset.team,b.dataset.athlete)});
+$('views').addEventListener('click',e=>{
+ const b=e.target.closest('[data-view]');if(!b||state.view===b.dataset.view)return;
+ state.view=b.dataset.view;++state.groupRun;state.windowKey='';viewButtons();
+ if(state.view==='matrix')renderMatrix(true);else startGroupView().catch(e=>setStatus('Unable to load player groups: '+e.message,true));
+});
+$('teamSearch').addEventListener('input',()=>{
+ ++state.groupRun;state.groupReady=false;state.windowKey='';$('frame').scrollLeft=0;
+ if(state.view==='matrix')renderMatrix(true);
+ else startGroupView().catch(e=>setStatus(e.message,true));
+});
+$('playerSearch').addEventListener('input',()=>{
+ state.windowKey='';
+ if(state.view==='matrix')renderMatrix(true);
+ else if(state.groupReady)renderGroups();
+});
+$('used').addEventListener('click',()=>{state.showUsed=!state.showUsed;$('used').classList.toggle('active',state.showUsed);$('used').setAttribute('aria-pressed',String(state.showUsed));$('used').textContent=state.showUsed?'Used # only':'All # 0–99';state.windowKey='';renderMatrix(true)});
+$('reverse').addEventListener('click',()=>{state.reverse=!state.reverse;$('reverse').classList.toggle('active',state.reverse);$('reverse').setAttribute('aria-pressed',String(state.reverse));$('reverse').textContent=state.reverse?'# ↓':'# ↑';state.windowKey='';renderMatrix(true)});
+$('reload').addEventListener('click',()=>{catalogs.clear();pendingCatalogs.clear();chunks.clear();pendingChunks.clear();rosterCache.clear();inflightTeams.clear();state.windowKey='';loadMode(true).catch(e=>setStatus(e.message,true))});
+$('frame').addEventListener('scroll',()=>{
+ if(state.view==='matrix')queueDraw();
+},{passive:true});
+$('matrixArea').addEventListener('click',e=>{
+ const p=e.target.closest('[data-athlete]');if(p){openPlayer(p.dataset.team,p.dataset.athlete);return}
+ const t=e.target.closest('[data-open-team]');if(t){openGroup('team',t.dataset.openTeam).catch(e=>setStatus(e.message,true));return}
+ const n=e.target.closest('[data-open-number]');if(n){openGroup('number',n.dataset.openNumber).catch(e=>setStatus(e.message,true))}
+});
+$('groupTiles').addEventListener('click',e=>{
+ const b=e.target.closest('[data-group-kind]');if(b)openGroup(b.dataset.groupKind,b.dataset.groupValue).catch(err=>setStatus(err.message,true))
+});
+$('groupDialog').addEventListener('click',e=>{
+ const b=e.target.closest('[data-athlete]');if(b){$('groupDialog').close();openPlayer(b.dataset.team,b.dataset.athlete);return}
+ if(e.target===$('groupDialog'))$('groupDialog').close()
+});
+$('groupDialog').addEventListener('close',()=>{state.dialogRun++});
 $('playerDialog').addEventListener('close',()=>{state.modalRun++});
 $('playerDialog').addEventListener('click',e=>{if(e.target===$('playerDialog'))$('playerDialog').close()});
-markupLeagues();loadMode().catch(e=>{$('matrixArea').innerHTML='<div class="empty">Failed to start: '+esc(e.message)+'</div>';setStatus(e.message,true)});
+markupLeagues();viewButtons();
+loadMode().catch(e=>{$('matrixArea').innerHTML='<div class="empty">Failed to start: '+esc(e.message)+'</div>';setStatus(e.message,true)});
+
 })();
 </script>
 </body>
