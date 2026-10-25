@@ -424,6 +424,24 @@ async function scheduleSummary(y,team,league,signal){
  if(payload?.season?.year&&Number(payload.season.year)!==y)throw Error('Historical schedule season mismatch');
  return scheduleSummaryData(payload,team,y);
 }
+
+function conferenceStanding(json,team,year){
+ if(json?.season?.year&&Number(json.season.year)!==year)return null;
+ function visit(node){
+  const list=node?.standings?.entries;
+  if(Array.isArray(list)&&list.length){
+   const idx=list.findIndex(x=>String(x.team?.id||'')===String(team));
+   if(idx>=0)return {conference:node.name||null,position:idx+1,count:list.length};
+  }
+  for(const c of node.children||[]){const result=visit(c);if(result)return result}
+  return null;
+ }
+ return visit(json);
+}
+async function getConferenceStanding(y,team,league,signal){
+ const url='https://site.web.api.espn.com/apis/v2/sports/basketball/'+LEAGUES[league]+'/standings?region=us&lang=en&contentorigin=espn&type=0&level=3&group=50&season='+y+'&sort=leaguewinpercent:desc,vsconf_winpercent:desc,wins:desc,alpha:asc';
+ return conferenceStanding(await get(url,{year:y,signal}),team,y);
+}
 async function loadTeamSummary(y,token,team,league,signal){
  const info={record:null,recordLabel:null,ppg:null,coach:null,conference:null,conferenceFinish:null,tournament:null};
  try{
@@ -447,7 +465,14 @@ async function loadTeamSummary(y,token,team,league,signal){
    }catch{}
   }));
  }catch{}
- // Team schedule can fill W/L from confirmed finals, but only as coverage-limited games.
+ // ESPN's season standings are scoped to conference; order is reported only, never inferred for a missing team.
+ try{
+  const standing=await getConferenceStanding(y,team,league,signal);
+  if(standing){
+   info.conference=standing.conference||info.conference;
+   info.conferenceFinish=(y===CURRENT?'Current table ':'Final table ')+standing.position+'/'+standing.count;
+  }
+ }catch{}
  if(!info.record||info.ppg==null||!info.tournament){
   try{
    const derived=await scheduleSummary(y,team,league,signal);
@@ -460,7 +485,7 @@ async function loadTeamSummary(y,token,team,league,signal){
  state.teamSummaries.set(y,info);scheduleDraw();persistYearSnapshot(y,token);
 }
 
-function derivedKey(lg,team,y){return 'compiled-v2:'+lg+':'+team+':'+y}
+function derivedKey(lg,team,y){return 'compiled-v3:'+lg+':'+team+':'+y}
 async function persistYearSnapshot(y,token){
  if(token!==state.loadId)return;
  const row=state.records.get(y);if(!row?.ok)return;
