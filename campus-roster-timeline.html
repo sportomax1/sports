@@ -55,6 +55,7 @@ dialog{width:min(560px,calc(100% - 24px));border:1px solid #49617b;border-radius
 .game-item{padding:9px 4px;border-bottom:1px solid #2c4055;font-size:11px;display:flex;justify-content:space-between;gap:8px}
 .game-item .value{font-weight:800;color:#e4eef9;text-align:right}
 .stats-note{font-size:10px;color:#9eb4cc;margin:10px 0}
+.modal-top .avatar{width:74px;height:74px;flex-basis:74px;font-size:22px}
 </style></head>
 <body><main class="shell">
 <header class="top"><a href="./index.html" class="home">← Sports tools</a><div><div class="sub">NCAA • Season-by-season</div><h1>Campus Roster Timeline</h1></div><div class="spacer"></div><div id="teamTitle" class="pill">Choose a team</div><div id="loadIndicator" class="pill">Ready</div></header>
@@ -196,6 +197,7 @@ async function loadTeams(force=false){
   if(!state.directoryComplete)setWarning('Division I school coverage is not fully verified. '+state.teams.length+' schools found. '+problems.join('; '));
  }catch(e){
   if(league!==state.league)return;
+  if(state.teams.length>=300){state.directoryComplete=true;setWarning('Live directory refresh failed; retained the validated saved school list. '+e.message);return}
   state.teams=picks();state.directoryComplete=false;
   if(!state.teams.some(t=>t.id===state.team))state.team=state.teams[0].id;
   $('teamFilter').value=state.teams.find(t=>t.id===state.team)?.name||'';
@@ -676,7 +678,7 @@ $('older').addEventListener('click',extendTimeline);
 $('sort').addEventListener('change',()=>{state.sort=$('sort').value;scheduleDraw()});
 $('playerFilter').addEventListener('input',()=>{state.filter=$('playerFilter').value.trim().toLowerCase();scheduleDraw()});
 $('onlyNew').addEventListener('change',()=>{state.onlyNew=$('onlyNew').checked;scheduleDraw()});
-$('refresh').addEventListener('click',async()=>{const db=await openDb();if(db)await new Promise(resolve=>{try{const tx=db.transaction('responses','readwrite');tx.objectStore('responses').clear();tx.oncomplete=resolve;tx.onerror=resolve}catch{resolve()}});loadTeams(true);loadTimeline(true)});
+$('refresh').addEventListener('click',async()=>{const db=await openDb();if(db)await new Promise(resolve=>{try{const tx=db.transaction('responses','readwrite');tx.objectStore('responses').clear();tx.oncomplete=resolve;tx.onerror=resolve}catch{resolve()}});const before=state.team;loadTeams(true).then(()=>{if(state.team!==before)loadTimeline()});loadTimeline(true)});
 $('board').addEventListener('click',e=>{const retry=e.target.closest('[data-retry]');if(retry){retryYear(Number(retry.dataset.retry));return}const btn=e.target.closest('[data-player]');if(btn){state.selectedPlayer=btn.dataset.player;updateLinkedCards();updateSpotlight();showDetail(btn.dataset.player,Number(btn.dataset.year))}});
 $('board').addEventListener('pointerover',e=>{const b=e.target.closest('[data-player]');if(b&&state.hoverPlayer!==b.dataset.player){state.hoverPlayer=b.dataset.player;updateLinkedCards()}});
 $('board').addEventListener('pointerleave',()=>{state.hoverPlayer=null;updateLinkedCards()});
