@@ -73,7 +73,7 @@ function normalizedPlayer(id,item,year){
  var punts=pick(s,['punt','punts','punt_att','pt_att']),puntYards=val(s,['punt_yds','punt_yd','punting_yds','pt_yards','punting_yards']);
  var krCount=pick(s,['kr','kick_ret','kick_returns','kickoff_returns']),prCount=pick(s,['pr','punt_ret','punt_returns']);
  var krYards=val(s,['kr_yd','kick_ret_yd','kick_ret_yds','kick_return_yards','kickoff_return_yards']),prYards=val(s,['pr_yd','punt_ret_yd','punt_ret_yds','punt_return_yards']);
- return {id:String(id),name:name,team:info.team||item&&item.team||'',position:info.position||'',espnId:info.espn_id||info.espnId||'',gsisId:info.gsis_id||'',headshot:info.headshot||'',year:year,
+ return {id:String(id),name:name,team:item&&item.team||info.team||'',position:info.position||'',espnId:info.espn_id||info.espnId||'',gsisId:info.gsis_id||'',headshot:info.headshot||'',year:year,
  fgYards:val(s,['fgm_yds','field_goals_made_yards']),fgm:fgm,fga:fga,fgPct:fga?100*fgm/fga:null,xpm:xpm,points:3*fgm+xpm,fgLong:pick(s,['fgm_lng','fg_lng','fg_long']),
  punts:punts,puntYards:puntYards,puntAvg:punts&&puntYards!=null?puntYards/punts:null,puntLong:pick(s,['punt_lng','punt_long','pt_lng']),
  krYards:krYards,krCount:krCount,krAvg:krCount&&krYards!=null?krYards/krCount:null,krTD:pick(s,['kr_td','kick_ret_td','kick_return_tds']),
@@ -139,7 +139,7 @@ function paint(reset){
  var previousScroll=reset?0:el.table.scrollTop;
  if(reset)visibleCount=PAGE_SIZE;
  sorted=filtered();
- var first=sorted[0],key=el.metric.value;
+ var key=el.metric.value,first=sorted.reduce(function(a,b){return !a||Number(b[key])>Number(a[key])?b:a},null);
  el.result.textContent=(Math.min(visibleCount,sorted.length)).toLocaleString()+' of '+sorted.length.toLocaleString()+' shown'+(isLoading?' · updating…':'');
  var boxes=[[sorted.length.toLocaleString(),'Matched players / seasons'],[first?fmt(key,first[key]):'—',metricName(key)+' leader'],[first?first.name:'—','Top performer'],[loadedYears.length,'Seasons loaded']];
  el.cards.innerHTML=boxes.map(function(x){return '<div class="card"><b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span></div>'}).join('');
@@ -154,7 +154,7 @@ function appendRows(){
  if(visibleCount>=sorted.length)return;
  var end=Math.min(sorted.length,visibleCount+PAGE_SIZE),tbody=$('rankingRows');
  if(!tbody)return;
- tbody.insertAdjacentHTML('beforeend',sorted.slice(visibleCount,end).map(function(r,j){return rowHtml(r,visibleCount+j,sorted[0][el.metric.value])}).join(''));
+ tbody.insertAdjacentHTML('beforeend',sorted.slice(visibleCount,end).map(function(r,j){return rowHtml(r,visibleCount+j,sorted.reduce(function(x,y){return Math.max(x,Number(y[el.metric.value])||0)},0))}).join(''));
  visibleCount=end;tail();
  el.result.textContent=visibleCount.toLocaleString()+' of '+sorted.length.toLocaleString()+' shown'+(isLoading?' · updating…':'')
 }
