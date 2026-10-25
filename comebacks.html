@@ -1,11 +1,388 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Basketball Comebacks & Blown Leads</title><style>:root{font-family:system-ui,sans-serif;color-scheme:dark;background:#0b1220;color:#edf3ff}*{box-sizing:border-box}body{margin:0}main{max-width:1100px;margin:auto;padding:16px}h1{font-size:clamp(23px,5vw,34px);margin:10px 0}p,small{color:#9eb0cb}header,.filters,.stats,.teams,.foot{display:flex;gap:10px;flex-wrap:wrap;align-items:center}header{justify-content:space-between}.filters{margin:18px 0}button,select,input{background:#1d2b43;border:1px solid #405270;border-radius:9px;color:white;padding:11px;font:inherit}button{cursor:pointer}button.active{background:#2563eb;border-color:#7caaff}.stats>div{flex:1;min-width:130px;background:#16243a;border-radius:12px;padding:15px}.stats b{font-size:26px;display:block}.list{display:grid;gap:8px;margin-top:12px}.game{background:#16243a;border:1px solid #2b3e5c;border-radius:11px;padding:10px 12px}.teams{justify-content:space-between}.team{display:flex;align-items:center;gap:6px;min-width:0}.team img{width:25px;height:25px;object-fit:contain}.team span{font-weight:650}.score{font-size:21px;font-weight:800}.pill{border-radius:30px;padding:5px 10px;background:#263b58;color:#c5dcff;font-size:12px}.foot{justify-content:space-between;margin-top:6px;color:#a6b8d0;font-size:11px}.bar{height:4px;background:#31425c;border-radius:8px;margin-top:6px;overflow:hidden}.bar i{display:block;background:#4f96ff;height:100%}#status{margin:14px 0}a{color:#93c5fd} .muted{color:#9eb0cb}@media(max-width:500px){.team{flex:1}.team span{font-size:13px}.score{font-size:18px}.filters>*{flex:1}main{padding:12px}}</style></head><body><main><header><div><h1>🏀 Comebacks & Blown Leads</h1><small>Largest deficits overcome to WIN • ESPN play-by-play</small></div><button id="reload">Refresh</button></header><div class="filters"><select id="league"><option value="nba">NBA</option><option value="mens-college-basketball">NCAA Men's</option><option value="womens-college-basketball">NCAA Women's</option></select><select id="period"><option value="day">Day</option><option value="week">Week</option><option value="month">Month</option><option value="season">Season</option></select><input id="date" type="date"><select id="sort"><option value="desc">Biggest first</option><option value="asc">Smallest first</option></select></div><div class="stats"><div><small>Games analyzed</small><b id="count">—</b></div><div><small>Completed comebacks</small><b id="total">—</b></div><div><small>Biggest comeback</small><b id="big">—</b></div></div><div id="status" role="status">Ready</div><div class="list" id="games"></div><p><small>Definition: the winner's largest in-game deficit, computed from ESPN's recorded scoring plays. A comeback is shown only if the trailing team wins. Ties and ordinary wins with no deficit are excluded. Season scans may be slow or rate-limited. Preseason and postseason are not mixed with regular season. Missing or incomplete play-by-play is excluded rather than estimated.</small></p></main><script>
-const $=x=>document.getElementById(x),base='https://site.api.espn.com/apis/site/v2/sports/basketball/';
-const today=new Date();$('date').value=[today.getFullYear(),String(today.getMonth()+1).padStart(2,'0'),String(today.getDate()).padStart(2,'0')].join('-');
-const fmt=d=>d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
-const sleep=t=>new Promise(r=>setTimeout(r,t));
-async function json(url){const r=await fetch(url);if(!r.ok)throw Error('ESPN HTTP '+r.status);return r.json()}
-function dates(){let d=new Date($('date').value+'T12:00:00'),p=$('period').value,arr=[];if(p==='day')return[fmt(d)];if(p==='week'){d.setDate(d.getDate()-6);for(let i=0;i<7;i++){arr.push(fmt(d));d.setDate(d.getDate()+1)}return arr}if(p==='month'){let start=new Date(d.getFullYear(),d.getMonth(),1),end=new Date(d.getFullYear(),d.getMonth()+1,0);for(let x=new Date(start);x<=end;x.setDate(x.getDate()+1))arr.push(fmt(x));return arr}let start=new Date(d.getFullYear()-(d.getMonth()<6?1:0),6,1),end=new Date(d.getFullYear()+(d.getMonth()>=6?1:0),5,30);for(let x=new Date(start);x<=end;x.setDate(x.getDate()+1))arr.push(fmt(x));return arr}
-let run=0;async function load(){const id=++run,league=$('league').value,ds=dates(),results=[],events=new Map(),errors=[];$('games').innerHTML='';$('status').textContent='Finding games…';$('reload').disabled=true;try{for(let i=0;i<ds.length;i+=7){if(id!==run)return;const batch=ds.slice(i,i+7);await Promise.all(batch.map(async d=>{try{let data=await json(base+league+'/scoreboard?dates='+d+'&limit=500');for(const e of data.events||[])if(e.status?.type?.completed)events.set(e.id,e)}catch(e){errors.push(e.message)}}));$('status').textContent='Finding games: '+Math.min(i+7,ds.length)+'/'+ds.length+' days • '+events.size+' finals';if(i&&i%35===0)await sleep(100)}let all=[...events.values()];for(let i=0;i<all.length;i+=5){if(id!==run)return;await Promise.all(all.slice(i,i+5).map(async ev=>{try{let d=await json(base+league+'/summary?event='+ev.id),c=ev.competitions?.[0]?.competitors||[];if(c.length!==2)return;let winner=c.find(x=>x.winner),loser=c.find(x=>!x.winner);if(!winner||!loser)return;let plays=d.plays||d.scoringPlays||[];if(!plays.length)return;let deficit=0,seen=0,peak=null;for(const p of plays){if(p.homeScore==null||p.awayScore==null)continue;let h=Number(p.homeScore),a=Number(p.awayScore);if(!Number.isFinite(h)||!Number.isFinite(a))continue;seen++;let w=winner.homeAway==='home'?h:a,l=winner.homeAway==='home'?a:h;if(l-w>deficit){deficit=l-w;peak={w,l,clock:p.clock?.displayValue||'',period:p.period?.number||p.period||''}}}if(!seen||!deficit)return;let finalW=Number(winner.score),finalL=Number(loser.score);if(!(finalW>finalL))return;results.push({ev,winner,loser,deficit,finalW,finalL,peak});}catch(e){errors.push(e.message)}}));$('status').textContent='Analyzing play-by-play: '+Math.min(i+5,all.length)+'/'+all.length+' games';render(results);await sleep(60)}render(results);$('status').textContent='Analyzed '+all.length+' completed games. '+(errors.length?'Some ESPN requests failed ('+errors.length+'); results may be incomplete.':'');}finally{if(id===run)$('reload').disabled=false}}
-function render(rows){let a=[...rows].sort((x,y)=>$('sort').value==='desc'?y.deficit-x.deficit:x.deficit-y.deficit);$('count').textContent=String(a.length);$('total').textContent=String(a.length);$('big').textContent=a.length?Math.max(...a.map(x=>x.deficit))+' pts':'—';$('games').innerHTML=a.length?a.map(x=>{let w=x.winner,l=x.loser,e=x.ev,logo=t=>t.team?.logo||'',name=t=>t.team?.displayName||'Unknown';return '<article class="game"><div class="teams"><div class="team"><img loading="lazy" src="'+logo(w)+'" alt=""><span>'+name(w)+'</span></div><span class="pill">COMEBACK +'+x.deficit+'</span></div><div class="teams" style="margin-top:12px"><div class="team"><img loading="lazy" src="'+logo(l)+'" alt=""><span>'+name(l)+'</span></div><div class="score">'+x.finalW+'–'+x.finalL+'</div></div><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:7px;padding:7px 9px;background:#0c182b;border-radius:12px"><div><small>AT BIGGEST DEFICIT</small><div style="font-size:18px;font-weight:800">'+x.peak.w+'–'+x.peak.l+'</div><small>'+name(w)+' down '+x.deficit+' pts • '+(x.peak.period?'P'+x.peak.period+' ':'')+(x.peak.clock||'time unavailable')+'</small></div><strong style="color:#93c5fd;font-size:24px">→</strong><div style="text-align:right"><small>FINAL</small><div style="font-size:18px;font-weight:800">'+x.finalW+'–'+x.finalL+'</div><small>'+name(w)+' wins</small></div></div><div class="bar"><i style="width:'+Math.min(100,x.deficit/40*100)+'%"></i></div><div class="foot"><span>'+new Date(e.date).toLocaleDateString()+' • '+name(l)+' blew a '+x.deficit+'-point lead</span><a target="_blank" rel="noopener" href="https://www.espn.com/'+($('league').value==='nba'?'nba':'mens-college-basketball')+'/game/_/gameId/'+e.id+'">ESPN ↗</a></div></article>'}).join(''):'<p>No verified winning comebacks found in the selected window.</p>'}
-$('reload').onclick=load;$('league').onchange=load;$('period').onchange=load;$('date').onchange=load;$('sort').onchange=load;load();
-</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b111a">
+<title>Sports Comebacks &amp; Blown Leads</title>
+<style>
+:root{color-scheme:dark;--bg:#0b111a;--panel:#151e2b;--panel2:#1c2838;--line:#304054;--ink:#f0f3f7;--muted:#a2b0c2;--gold:#e5b45c;--subtle:#111a26}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1080px;margin:auto;padding:14px 14px 46px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+h1{margin:0;font-size:clamp(20px,3vw,27px);line-height:1.2;letter-spacing:-.02em}
+.subtitle{margin:4px 0 0;color:var(--muted);font-size:12px}
+a{color:#e9c689}a:hover{text-decoration:underline}
+.home{color:var(--muted);text-decoration:none;font-weight:650;font-size:12px;white-space:nowrap}
+.league-row{display:flex;align-items:center;gap:10px;margin:8px 0}
+.group-name{flex:0 0 47px;color:var(--muted);font-weight:850;font-size:10px;letter-spacing:.09em}
+.leagues{display:flex;flex-wrap:wrap;gap:6px}
+.league{display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--panel);color:var(--muted);padding:7px 10px;border-radius:9px;cursor:pointer;font-weight:750;font-size:12px;min-height:35px}
+.league img{width:18px;height:18px;object-fit:contain}.league[aria-pressed=true]{background:#3c3329;color:#fff1d2;border-color:#c39a5b}
+.league:hover{border-color:#b58d53}
+.controls{display:flex;align-items:end;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:13px;margin-top:12px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:125px}.field.date{min-width:147px}.field.sort{min-width:154px}
+label{font-size:10px;text-transform:uppercase;letter-spacing:.07em;font-weight:800;color:var(--muted)}
+input,select,button{font:inherit}input,select{height:38px;min-width:0;width:100%;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:0 9px}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.action{height:38px;border:1px solid #bb965d;border-radius:8px;background:#d1a762;color:#16120b;padding:0 14px;font-weight:850;cursor:pointer}
+.action:hover{background:#e5bd7f}.action:disabled{opacity:.45;cursor:not-allowed}
+.stop{height:38px;background:var(--panel);border:1px solid var(--line);color:var(--ink);padding:0 12px;border-radius:8px;cursor:pointer}
+.stop:disabled{opacity:.4;cursor:not-allowed}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:13px 0 7px}
+.stat{border:1px solid var(--line);border-radius:11px;background:var(--panel);padding:11px}
+.stat small{display:block;color:var(--muted);font-weight:750;font-size:10px;text-transform:uppercase;letter-spacing:.045em}
+.stat strong{display:block;font-size:clamp(19px,2.5vw,26px);font-variant-numeric:tabular-nums;margin-top:2px}
+.status{min-height:35px;color:var(--muted);font-size:12px;padding:8px 2px}
+.status.error{color:#ffb2a0}
+progress{width:100%;height:5px;display:block;accent-color:var(--gold);margin:0 0 12px}progress[hidden]{display:none}
+.list{display:grid;gap:9px}
+.game{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 13px}
+.card-head{display:flex;gap:8px;align-items:center;justify-content:space-between;color:var(--muted);font-size:11px;margin-bottom:8px}
+.card-head .tag{font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:var(--gold)}
+.matchup{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:10px}
+.team{min-width:0;display:flex;align-items:center;gap:8px}
+.team img{width:34px;height:34px;object-fit:contain;flex:0 0 34px}
+.team-name{min-width:0;font-weight:800;line-height:1.22}
+.team-name small{display:block;color:var(--muted);font-size:10px;font-weight:600;margin-top:2px}
+.matchup .right{justify-content:flex-end;text-align:right}
+.matchup .right .team-name{order:0}.matchup .right img{order:1}
+.final-score{text-align:center;font-size:21px;font-weight:900;font-variant-numeric:tabular-nums;white-space:nowrap}
+.final-score small{display:block;color:var(--muted);font-size:9px;font-weight:750;letter-spacing:.12em}
+.diff{margin-top:10px;padding:8px 10px;background:var(--subtle);border-radius:8px;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.diff .big{font-weight:900;color:#f4cb86;font-size:20px;white-space:nowrap}
+.diff .detail{color:var(--muted);font-size:11px;flex:1;min-width:145px}
+.diff .method{font-size:10px;white-space:nowrap;border:1px solid var(--line);border-radius:5px;padding:3px 5px;color:#bcc9d9}
+.foot{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap;margin-top:8px;color:var(--muted);font-size:11px}
+.empty{padding:40px 16px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px}
+.note{margin-top:18px;color:var(--muted);font-size:11px;line-height:1.55}
+.note strong{color:var(--ink)}
+@media(max-width:650px){main{padding:10px 9px 34px}.group-name{flex-basis:37px}.leagues{gap:5px}.league{padding:6px 8px;font-size:11px}.controls{gap:6px}.field{flex:1 1 120px;min-width:0}.field.sort{flex:1 1 135px;min-width:0}.field.date{flex:1 1 140px;min-width:0}.stats{gap:5px}.stat{padding:8px 6px}.stat small{font-size:9px}.game{padding:10px}.team img{width:27px;height:27px;flex-basis:27px}.team-name{font-size:12px}.matchup{gap:5px}.final-score{font-size:16px}.diff{gap:6px}}
+</style>
+</head>
+<body>
+<main>
+<header><div><h1>Comebacks &amp; Blown Leads</h1><p class="subtitle">Largest recorded deficits overcome to win · Pro &amp; college sports</p></div><a class="home" href="./index.html">Sports home</a></header>
+<nav aria-label="Select sport">
+<div class="league-row"><span class="group-name">PRO</span><div class="leagues" id="proLeagues"></div></div>
+<div class="league-row"><span class="group-name">NCAA</span><div class="leagues" id="collegeLeagues"></div></div>
+</nav>
+<div class="controls">
+<div class="field"><label for="period">Date range</label><select id="period"><option value="day">Day</option><option value="week">Last 7 days</option><option value="month">Calendar month</option><option value="season">Season</option></select></div>
+<div class="field date"><label for="date">Through / in date</label><input id="date" type="date"></div>
+<div class="field sort"><label for="sort">Sort</label><select id="sort"><option value="desc">Biggest comeback</option><option value="asc">Smallest comeback</option><option value="recent">Most recent game</option></select></div>
+<button class="action" id="reload" type="button">Analyze</button>
+<button class="stop" id="stop" type="button" disabled>Stop</button>
+</div>
+<div class="stats" aria-label="Analysis totals">
+<div class="stat"><small>Final games found</small><strong id="found">0</strong></div>
+<div class="stat"><small>Games inspected</small><strong id="inspected">0</strong></div>
+<div class="stat"><small>Winning comebacks</small><strong id="total">0</strong></div>
+<div class="stat"><small>Largest deficit</small><strong id="big">—</strong></div>
+</div>
+<div class="status" id="status" role="status" aria-live="polite">Choose a league and range to analyze completed games.</div>
+<progress id="progress" max="100" value="0" hidden></progress>
+<section class="list" id="games" aria-label="Winning comebacks"></section>
+<p class="note"><strong>How it works:</strong> A comeback is a completed win by a team that trailed earlier. Play-by-play records supply the largest observed in-game deficit; when those records are unavailable, complete inning/quarter/period/half-end scores provide a conservative lower bound, clearly labeled on each card. Games without a verifiable score timeline are excluded rather than guessed. Hockey shootout outcomes and incomplete ESPN feeds may be omitted. Totals describe the games successfully inspected, not an official league-wide record. Season scans can require many ESPN requests; use Stop to cancel.</p>
+</main>
+<script>
+(() => {
+"use strict";
+const API = "https://site.api.espn.com/apis/site/v2/sports/";
+const NCAA_LOGO = "https://a.espncdn.com/i/espn/misc_logos/500/ncaa.png";
+const LEAGUES = [
+{id:"nba",label:"NBA",sport:"basketball",slug:"nba",web:"nba",unit:"pts",seasonStart:9,seasonEnd:6,logo:"https://a.espncdn.com/i/teamlogos/leagues/500/nba.png"},
+{id:"nfl",label:"NFL",sport:"football",slug:"nfl",web:"nfl",unit:"pts",seasonStart:8,seasonEnd:2,logo:"https://a.espncdn.com/i/teamlogos/leagues/500/nfl.png"},
+{id:"mlb",label:"MLB",sport:"baseball",slug:"mlb",web:"mlb",unit:"runs",seasonStart:3,seasonEnd:11,logo:"https://a.espncdn.com/i/teamlogos/leagues/500/mlb.png"},
+{id:"nhl",label:"NHL",sport:"hockey",slug:"nhl",web:"nhl",unit:"goals",seasonStart:9,seasonEnd:6,logo:"https://a.espncdn.com/i/teamlogos/leagues/500/nhl.png"},
+{id:"ncaaf",label:"Football",sport:"football",slug:"college-football",web:"college-football",group:"80",unit:"pts",seasonStart:8,seasonEnd:1,logo:NCAA_LOGO,college:true},
+{id:"ncaam",label:"Men's BB",sport:"basketball",slug:"mens-college-basketball",web:"mens-college-basketball",group:"50",unit:"pts",seasonStart:10,seasonEnd:4,logo:NCAA_LOGO,college:true},
+{id:"ncaaw",label:"Women's BB",sport:"basketball",slug:"womens-college-basketball",web:"womens-college-basketball",group:"50",unit:"pts",seasonStart:10,seasonEnd:4,logo:NCAA_LOGO,college:true},
+{id:"ncaabase",label:"Baseball",sport:"baseball",slug:"college-baseball",web:"college-baseball",unit:"runs",seasonStart:1,seasonEnd:7,logo:NCAA_LOGO,college:true},
+{id:"ncaasoft",label:"Softball",sport:"baseball",slug:"college-softball",web:"college-softball",unit:"runs",seasonStart:1,seasonEnd:7,logo:NCAA_LOGO,college:true},
+{id:"ncaah",label:"Men's Hockey",sport:"hockey",slug:"mens-college-hockey",web:"college-sports/hockey",unit:"goals",seasonStart:10,seasonEnd:4,logo:NCAA_LOGO,college:true}
+];
+const $ = id => document.getElementById(id);
+const e = {pro:$("proLeagues"),college:$("collegeLeagues"),date:$("date"),period:$("period"),sort:$("sort"),reload:$("reload"),stop:$("stop"),status:$("status"),progress:$("progress"),games:$("games"),found:$("found"),inspected:$("inspected"),total:$("total"),big:$("big")};
+const cache = new Map();
+let currentLeague = LEAGUES[0], active = null, serial = 0, rows = [], found = 0, inspected = 0, missing = 0, failures = 0;
+const esc = x => String(x == null ? "" : x).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+const iso = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const compact = d => iso(d).replace(/-/g,"");
+const numeric = x => { const v = typeof x === "object" && x !== null ? (x.value ?? x.displayValue) : x; return v !== "" && v != null && Number.isFinite(Number(v)) ? Number(v) : null; };
+const day = s => new Date(s+"T12:00:00");
+const safeLogo = x => /^https:\/\/[a-z0-9.-]*espn(?:cdn)?\.com\//i.test(String(x||"")) ? x : "";
+const teamLogo = t => safeLogo(t?.team?.logo || t?.team?.logos?.[0]?.href || "");
+const name = t => t?.team?.displayName || t?.team?.name || "Unknown";
+const sleep = ms => new Promise(resolve => setTimeout(resolve,ms));
+const isAborted = err => err?.name === "AbortError";
+e.date.value = iso(new Date());
+function activeTabs(){
+  for(const [node,items] of [[e.pro,LEAGUES.filter(l=>!l.college)],[e.college,LEAGUES.filter(l=>l.college)]]){
+    node.innerHTML = items.map(l=>'<button class="league" data-league="'+l.id+'" aria-pressed="'+(l.id===currentLeague.id)+'" type="button"><img src="'+esc(l.logo)+'" alt="">'+esc(l.label)+'</button>').join("");
+  }
+}
+function selectedDates(l){
+  const d = day(e.date.value),p = e.period.value;
+  if(Number.isNaN(+d)) return [];
+  let from = day(e.date.value),to = day(e.date.value);
+  if(p==="week") from.setDate(from.getDate()-6);
+  else if(p==="month"){from = new Date(d.getFullYear(),d.getMonth(),1,12);to = new Date(d.getFullYear(),d.getMonth()+1,0,12);}
+  else if(p==="season"){
+    let y = d.getFullYear();
+    if(l.seasonEnd < l.seasonStart && d.getMonth()+1 < l.seasonStart) y--;
+    from = new Date(y,l.seasonStart-1,1,12);
+    to = new Date(y+(l.seasonEnd<l.seasonStart?1:0),l.seasonEnd,0,12);
+  }
+  const today = day(iso(new Date()));
+  if(to > today) to = today;
+  const dates = [];
+  for(let it=new Date(from);it<=to;it.setDate(it.getDate()+1))dates.push(compact(it));
+  return dates;
+}
+async function json(url,signal){
+  if(cache.has(url)){
+    const c=cache.get(url);
+    if(Date.now()-c.time<c.ttl) return c.data;
+    cache.delete(url);
+  }
+  let error;
+  for(let i=0;i<3;i++){
+    if(signal.aborted) throw new DOMException("Cancelled","AbortError");
+    try{
+      const response = await fetch(url,{signal});
+      if(!response.ok){
+        if([429,500,502,503,504].includes(response.status) && i<2){
+          await sleep(350*(i+1));continue;
+        }
+        throw Error("ESPN HTTP "+response.status);
+      }
+      const data=await response.json();
+      const isToday=/dates=\d{8}(?:&|$)/.test(url) && url.includes("dates="+compact(new Date()));
+      cache.set(url,{time:Date.now(),ttl:isToday?120000:3600000,data});
+      if(cache.size>3500)cache.delete(cache.keys().next().value);
+      return data;
+    }catch(err){
+      if(isAborted(err)||signal.aborted)throw err;
+      error=err;if(i<2 && err instanceof TypeError) await sleep(350*(i+1));else break;
+    }
+  }
+  throw error||Error("ESPN request failed");
+}
+async function pool(input,max,worker,signal,onItem){
+  let index=0;
+  await Promise.all(Array.from({length:Math.min(max,input.length)},async()=>{
+    while(index<input.length&&!signal.aborted){
+      const item=input[index++];
+      await worker(item);
+      if(onItem)onItem();
+    }
+  }));
+}
+function scoreboardURL(l,d){
+  return API+l.sport+"/"+l.slug+"/scoreboard?dates="+d+"&limit=500"+(l.group?"&groups="+l.group:"");
+}
+function summaryURL(l,id){return API+l.sport+"/"+l.slug+"/summary?event="+encodeURIComponent(id);}
+function competitors(ev){
+  const c=ev?.competitions?.[0]?.competitors||[];
+  return {home:c.find(t=>t.homeAway==="home"),away:c.find(t=>t.homeAway==="away")};
+}
+function getScores(p){
+  if(!p||typeof p!=="object")return null;
+  const h=numeric(p.homeScore ?? p.homeTeamScore),a=numeric(p.awayScore ?? p.awayTeamScore);
+  return h===null||a===null||h<0||a<0?null:{home:h,away:a,period:p.period?.number??p.period??null,clock:p.clock?.displayValue||""};
+}
+function traces(data,homeFinal,awayFinal){
+  const arrays=[data?.plays,data?.scoringPlays,data?.header?.competitions?.[0]?.plays,data?.header?.competitions?.[0]?.scoringPlays];
+  let best=null;
+  for(const raw of arrays){
+    if(!Array.isArray(raw)||!raw.length)continue;
+    const scores=raw.map(getScores).filter(Boolean);
+    if(!scores.length)continue;
+    const last=scores[scores.length-1];
+    if(last.home!==homeFinal||last.away!==awayFinal)continue;
+    if(!best||scores.length>best.length)best=scores;
+  }
+  return best;
+}
+function linescoreTrace(home,away,homeFinal,awayFinal){
+  const h=home?.linescores,a=away?.linescores;
+  if(!Array.isArray(h)||!Array.isArray(a)||!h.length||!a.length)return null;
+  const map=new Map();
+  function ingest(arr,k){
+    for(let i=0;i<arr.length;i++){
+      const item=arr[i];
+      const num=numeric(item?.value ?? item?.displayValue ?? item);
+      const period=numeric(item?.period)??i+1;
+      if(num===null||num<0||!Number.isInteger(period)||period<1)return false;
+      if(!map.has(period))map.set(period,{home:0,away:0,period,clock:""});
+      map.get(period)[k]=num;
+    }
+    return true;
+  }
+  if(!ingest(h,"home")||!ingest(a,"away"))return null;
+  let hs=0,as=0,trace=[];
+  for(const p of [...map.values()].sort((x,y)=>x.period-y.period)){
+    hs+=p.home;as+=p.away;trace.push({home:hs,away:as,period:p.period,clock:""});
+  }
+  if(hs!==homeFinal||as!==awayFinal)return null;
+  return trace;
+}
+function evaluate(ev,summary,l){
+  const teams=competitors(ev),home=teams.home,away=teams.away;
+  if(!home||!away)return {kind:"missing"};
+  const hf=numeric(home.score),af=numeric(away.score);
+  if(hf===null||af===null||hf===af)return {kind:"missing"};
+  const winHome=hf>af,winner=winHome?home:away,loser=winHome?away:home;
+  const hc=summary?.header?.competitions?.[0]?.competitors||[];
+  const sh=hc.find(t=>t.homeAway==="home");
+  const sa=hc.find(t=>t.homeAway==="away");
+  let trace=traces(summary,hf,af),method="play";
+  if(!trace){
+    trace=linescoreTrace(home,away,hf,af)||linescoreTrace(sh,sa,hf,af);
+    method="period";
+  }
+  if(!trace)return {kind:"missing"};
+  let deficit=0,peak=null;
+  for(const s of trace){
+    const w=winHome?s.home:s.away,los=winHome?s.away:s.home;
+    if(los-w>deficit){deficit=los-w;peak={winnerScore:w,loserScore:los,period:s.period,clock:s.clock};}
+  }
+  if(!deficit)return {kind:"no-comeback"};
+  return {kind:"comeback",ev,l,winner,loser,finalWinner:winHome?hf:af,finalLoser:winHome?af:hf,deficit,peak,method};
+}
+function periodName(l,p){
+  if(p==null||p==="")return "Time unavailable";
+  const n=numeric(p);
+  if(n===null)return String(p);
+  if(l.sport==="baseball")return "After inning "+n;
+  if(l.sport==="hockey")return n>3?"Overtime":"Period "+n;
+  if(l.sport==="football")return n>4?"OT":"Q"+n;
+  if(l.college)return n>2?"OT "+(n-2):"Half "+n;
+  return n>4?"OT":"Q"+n;
+}
+function safeLink(item){
+  const options=[...(item.ev?.links||[]).map(x=>x.href)];
+  options.push("https://www.espn.com/"+item.l.web+"/game/_/gameId/"+encodeURIComponent(item.ev.id));
+  return options.find(x=>/^https:\/\/(?:www\.)?espn\.com\//i.test(String(x||"")))||"#";
+}
+function formatDate(x){
+  const d=new Date(x);return Number.isNaN(+d)?"Date unavailable":d.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
+}
+function render(){
+  const data=[...rows];
+  if(e.sort.value==="asc")data.sort((a,b)=>a.deficit-b.deficit||Date.parse(b.ev.date)-Date.parse(a.ev.date));
+  else if(e.sort.value==="recent")data.sort((a,b)=>Date.parse(b.ev.date)-Date.parse(a.ev.date)||b.deficit-a.deficit);
+  else data.sort((a,b)=>b.deficit-a.deficit||Date.parse(b.ev.date)-Date.parse(a.ev.date));
+  e.found.textContent=found.toLocaleString();
+  e.inspected.textContent=inspected.toLocaleString();
+  e.total.textContent=data.length.toLocaleString();
+  e.big.textContent=data.length?Math.max(...data.map(x=>x.deficit))+" "+currentLeague.unit:"—";
+  if(!data.length){
+    e.games.innerHTML='<div class="empty">'+(active?"Analyzing games…":"No verified winning comebacks found in the selected range. Some games may lack scoring timelines.")+'</div>';
+    return;
+  }
+  e.games.innerHTML=data.map(x=>{
+    const win=esc(name(x.winner)),lose=esc(name(x.loser)),logoW=teamLogo(x.winner),logoL=teamLogo(x.loser);
+    const detail=periodName(x.l,x.peak.period)+(x.peak.clock?" · "+x.peak.clock:"");
+    const rankW=numeric(x.winner.curatedRank?.current),rankL=numeric(x.loser.curatedRank?.current);
+    const team=(t,n,logo,rank,right)=>'<div class="team'+(right?' right':'')+'">'+(logo?'<img loading="lazy" src="'+esc(logo)+'" alt="">':'')+'<div class="team-name">'+n+(rank&&rank<=25?'<small>#'+rank+' ranked</small>':'')+'</div></div>';
+    return '<article class="game"><div class="card-head"><span class="tag">'+esc(x.l.college?"NCAA "+x.l.label:x.l.label)+'</span><span>'+esc(formatDate(x.ev.date))+'</span></div>'+
+    '<div class="matchup">'+team(x.winner,win,logoW,rankW,false)+'<div class="final-score"><small>FINAL</small>'+x.finalWinner+' – '+x.finalLoser+'</div>'+team(x.loser,lose,logoL,rankL,true)+'</div>'+
+    '<div class="diff"><div class="big">Down '+x.deficit+' '+esc(x.l.unit)+'</div><div class="detail">'+win+' trailed '+x.peak.winnerScore+'–'+x.peak.loserScore+' · '+esc(detail)+'</div><span class="method">'+(x.method==="play"?"Play-by-play":"Period-end minimum")+'</span></div>'+
+    '<div class="foot"><span>'+lose+' blew a lead of at least '+x.deficit+' '+esc(x.l.unit)+'</span><a href="'+esc(safeLink(x))+'" target="_blank" rel="noopener noreferrer">ESPN game ↗</a></div></article>';
+  }).join("");
+}
+function setProgress(value,total,label){
+  e.progress.hidden=false;e.progress.value=total?Math.round(value/total*100):0;
+  e.status.textContent=label;
+}
+function reset(){
+  rows=[];found=0;inspected=0;missing=0;failures=0;
+  e.progress.hidden=true;e.status.classList.remove("error");
+  render();
+}
+async function load(){
+  const l=currentLeague;
+  const dates=selectedDates(l);
+  if(!dates.length){e.status.textContent="Select a date within a supported season or date range.";return;}
+  if(active)active.abort();
+  const controller=new AbortController(),signal=controller.signal,id=++serial;
+  active=controller;e.reload.disabled=true;e.stop.disabled=false;
+  reset();
+  const events=new Map();
+  try{
+    let completedDays=0;
+    await pool(dates,8,async d=>{
+      try{
+        const response=await json(scoreboardURL(l,d),signal);
+        if(signal.aborted)return;
+        const games=response?.events||[];
+        if(games.length>=500)failures++;
+        for(const ev of games){
+          const gameStatus=ev?.status?.type||ev?.competitions?.[0]?.status?.type;
+          if(gameStatus?.completed===true)events.set(String(ev.id),ev);
+        }
+      }catch(err){if(!isAborted(err)&&!signal.aborted)failures++;}
+      completedDays++;
+    },signal,()=>{
+      if(id===serial)setProgress(completedDays,dates.length,"Finding "+l.label+" finals: "+completedDays+"/"+dates.length+" days · "+events.size+" games");
+    });
+    if(signal.aborted)return;
+    const matches=[...events.values()].sort((a,b)=>Date.parse(b.date)-Date.parse(a.date));
+    found=matches.length;
+    render();
+    let lastRender=0;
+    await pool(matches,6,async ev=>{
+      let summary=null,requestFailed=false;
+      try{summary=await json(summaryURL(l,ev.id),signal);}
+      catch(err){if(isAborted(err)||signal.aborted)return;requestFailed=true;failures++;}
+      if(signal.aborted)return;
+      const result=evaluate(ev,summary,l);
+      inspected++;
+      if(result.kind==="comeback")rows.push(result);
+      if(result.kind==="missing")missing++;
+      if(requestFailed&&result.kind!=="missing")failures=Math.max(0,failures-1);
+    },signal,()=>{
+      if(id!==serial)return;
+      const now=Date.now();
+      setProgress(inspected,found,"Analyzing "+l.label+": "+inspected+"/"+found+" finals · "+rows.length+" comebacks found");
+      if(now-lastRender>175){lastRender=now;render();}
+    });
+    if(signal.aborted)return;
+    render();e.progress.hidden=true;
+    const warnings=[];
+    if(missing)warnings.push(missing+" games lacked a complete scoring timeline");
+    if(failures)warnings.push(failures+" ESPN requests were unsuccessful or truncated");
+    e.status.textContent="Completed: "+inspected+" of "+found+" final games inspected · "+rows.length+" verified comebacks"+(warnings.length?". Partial coverage: "+warnings.join("; ")+".":".");
+    if(failures)e.status.classList.add("error");
+  }catch(err){
+    if(!isAborted(err)&&!signal.aborted){e.status.textContent="Analysis failed: "+err.message;e.status.classList.add("error");}
+  }finally{
+    if(id===serial){active=null;e.reload.disabled=false;e.stop.disabled=true;render();}
+  }
+}
+function selectLeague(id){
+  const next=LEAGUES.find(l=>l.id===id);
+  if(!next||next.id===currentLeague.id)return;
+  currentLeague=next;
+  activeTabs();load();
+}
+e.pro.addEventListener("click",event=>{const b=event.target.closest("[data-league]");if(b)selectLeague(b.dataset.league);});
+e.college.addEventListener("click",event=>{const b=event.target.closest("[data-league]");if(b)selectLeague(b.dataset.league);});
+e.date.addEventListener("change",load);
+e.period.addEventListener("change",load);
+e.sort.addEventListener("change",render);
+e.reload.addEventListener("click",load);
+e.stop.addEventListener("click",()=>{
+  if(!active)return;
+  active.abort();active=null;++serial;
+  e.reload.disabled=false;e.stop.disabled=true;e.progress.hidden=true;
+  e.status.textContent="Stopped. Partial results retained: "+inspected+" of "+found+" final games inspected.";
+  render();
+});
+activeTabs();load();
+})();
+</script>
+</body>
+</html>
