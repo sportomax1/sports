@@ -70,8 +70,8 @@ function picks(){return PICKS.map(([id,name])=>({id:String(id),name,logo:'https:
 function parseTeams(json){const arr=Array.isArray(json?.sports?.[0]?.leagues?.[0]?.teams)?json.sports[0].leagues[0].teams:Array.isArray(json?.teams)?json.teams:[];return arr.map(x=>x.team||x).filter(x=>x.id&&x.displayName||x.id&&x.name).map(x=>({id:String(x.id),name:x.displayName||x.name,logo:x.logos?.[0]?.href||'https://a.espncdn.com/i/teamlogos/ncaa/500/'+x.id+'.png'}))}
 function fillTeams(){const term=$('teamFilter').value.trim().toLowerCase(),current=state.team;let filtered=state.teams.filter(t=>t.name.toLowerCase().includes(term)||t.id===current);
 const sel=$('teamSelect');sel.innerHTML=filtered.sort((a,b)=>a.name.localeCompare(b.name)).map(t=>'<option value="'+safe(t.id)+'">'+safe(t.name)+'</option>').join('');if(!filtered.some(t=>t.id===current)&&filtered.length){state.team=filtered[0].id}sel.value=state.team;const match=state.teams.find(t=>t.id===state.team);$('teamTitle').innerHTML=match?'<img src="'+safe(match.logo)+'" alt="" style="width:20px;height:20px;object-fit:contain;vertical-align:middle;margin-right:6px" onerror="this.remove()">'+safe(match.name):'Team #'+safe(state.team)}
-async function loadTeams(){state.teams=picks();fillTeams();let endpoint=ESPN+LEAGUES[state.league]+'/teams?limit=500';
-try{let raw=await get(endpoint,{year:CURRENT});const result=parseTeams(raw);if(result.length){const byId=new Map([...state.teams,...result].map(t=>[t.id,t]));state.teams=[...byId.values()];fillTeams()}}catch(e){setWarning('Full school directory unavailable. The included schools remain selectable. '+e.message)}}
+async function loadTeams(){const requestedLeague=state.league;state.teams=picks();fillTeams();let endpoint=ESPN+LEAGUES[requestedLeague]+'/teams?limit=500';
+try{let raw=await get(endpoint,{year:CURRENT});const result=parseTeams(raw);if(result.length){const byId=new Map([...state.teams,...result].map(t=>[t.id,t]));if(state.league!==requestedLeague)return;state.teams=[...byId.values()];fillTeams()}}catch(e){if(state.league===requestedLeague)setWarning('Full school directory unavailable. The included schools remain selectable. '+e.message)}}
 function extractId(obj){if(!obj)return '';if(obj.id!=null)return String(obj.id);const ref=obj['$ref']||obj.href||'';let m=String(ref).match(/\/athletes\/(\d+)(?:[/?]|$)/);return m?m[1]:''}
 function normalizeAthlete(obj){const a=obj.athlete||obj.person||obj;const id=extractId(a)||extractId(obj);if(!id)return null;let person={id,name:a.displayName||a.fullName||a.name||a.shortName||'',head:typeof a.headshot==='string'?a.headshot:(a.headshot?.href||a.headshot?.url||''),number:a.jersey??obj.jersey??'',pos:a.position?.abbreviation||obj.position?.abbreviation||a.position?.name||'',classYear:a.experience?.abbreviation||a.experience?.displayValue||a.displayClass||a.class||'',stats:null};
 if(a.statistics){person.stats=parseStats(a.statistics)}
@@ -82,8 +82,8 @@ return out.map(normalizeAthlete).filter(Boolean)}
 async function coreRoster(team,year,league,signal){
  const root=CORE+LEAGUES[league]+'/seasons/'+year+'/teams/'+team+'/athletes?limit=200&lang=en&region=us';
  const first=await get(root,{year,signal,priority:true});
- let items=[...(first.items||[])],pages=Math.min(5,Math.max(1,Number(first.pageCount)||1));
- if(pages>1){const extras=await Promise.allSettled(Array.from({length:pages-1},(_,i)=>get(root+'&page='+(i+2),{year,signal,priority:true})));for(const r of extras){if(r.status==='fulfilled')items.push(...(r.value.items||[]))}}
+ let items=[...(first.items||[])],pages=Math.min(5,Math.max(1,Number(first.pageCount)||1)),pageFailed=false;
+ if(pages>1){const extras=await Promise.allSettled(Array.from({length:pages-1},(_,i)=>get(root+'&page='+(i+2),{year,signal,priority:true})));for(const r of extras){if(r.status==='fulfilled')items.push(...(r.value.items||[]));else pageFailed=true}}
  if(!items.length)throw Error('No season roster was returned');
  const map=new Map();
  for(const entry of items){const ref=entry['$ref']||entry.athlete?.['$ref']||entry.href||'';
@@ -107,7 +107,7 @@ async function coreRoster(team,year,league,signal){
  }));
  if(signal?.aborted)throw Error('Cancelled');
  const players=[...map.values()].map(p=>({...p,name:p.name||'Athlete #'+p.id}));
- return {players,origin:'ESPN historical roster',unresolved:problems.length,hasMore:Number(first.pageCount)>pages};
+ return {players,origin:'ESPN historical roster',unresolved:problems.length,hasMore:Number(first.pageCount)>pages||pageFailed};
 }
 async function roster(team,year,league,signal){
  if(year===CURRENT){
@@ -161,7 +161,7 @@ const field=k==='rebounds'?'rebounds':k==='assists'?'assists':'points';let av=a.
 function statHTML(p){let s=p.stats;return ['points','rebounds','assists'].map((key,i)=>'<span class="stat'+(s?.[key]==null?' undisplayed':'')+'"><b>'+fmt(s?.[key])+'</b>'+['PPG','RPG','APG'][i]+'</span>').join('')}
 function renderPlayer(p,year){return '<button class="person'+(p.isNew?' new':'')+'" type="button" data-player="'+safe(p.id)+'" data-year="'+year+'" title="View season details for '+safe(p.name)+'">'+avatar(p)+'<span class="pinfo"><span class="name">'+safe(p.name||'Athlete #'+p.id)+'</span><span class="byline">'+(p.number?'#'+safe(p.number)+' · ':'')+safe(p.pos||'Player')+(p.classYear?' · '+safe(p.classYear):'')+(p.isNew?'<span class="newlabel">NEW</span>':'')+'</span><span class="stats">'+statHTML(p)+'</span></span></button>'}
 function renderLane(y){let r=state.records.get(y),isLatest=y===state.end;let body='',meta='';if(!r){body='<div class="loading">Waiting to load season…</div>';meta='Pending'}else if(!r.ok){body='<div class="emptystate">Roster unavailable for '+yearLabel(y)+'<div style="margin-top:8px;font-size:10px">'+safe(r.error||'')+'</div><button class="action secondary" data-retry="'+y+'" style="margin-top:10px">Retry year</button></div>';meta='Unavailable'}else{let p=sortPlayers(r.players);meta=r.players.length+' players · '+r.players.filter(x=>x.isNew).length+' new';body=p.length?p.map(x=>renderPlayer(x,y)).join(''):'<div class="emptystate">No players match these filters.</div>';if(r.loadingStats)meta+=' · retrieving stats';if(r.unresolved)meta+=' · '+r.unresolved+' names missing'}
-return '<article class="lane'+(isLatest?' latest':'')+'" data-season="'+y+'"><div class="lane-head"><div class="yearline"><h2>'+yearLabel(y)+'</h2>'+(isLatest?'<span class="latestmark">CURRENT / NEWEST</span>':'')+'</div><div class="meta"><span>'+safe(meta)+'</span><span>'+y+'</span></div></div><div class="lane-body">'+body+'</div>'+(r?.origin&&r.ok?'<div class="lane-flag">'+safe(r.origin)+'</div>':'')+'</article>'}
+return '<article class="lane'+(isLatest?' latest':'')+'" data-season="'+y+'"><div class="lane-head"><div class="yearline"><h2>'+yearLabel(y)+'</h2>'+(isLatest?'<span class="latestmark">NEWEST</span>':'')+'</div><div class="meta"><span>'+safe(meta)+'</span><span>'+y+'</span></div></div><div class="lane-body">'+body+'</div>'+(r?.origin&&r.ok?'<div class="lane-flag">'+safe(r.origin)+'</div>':'')+'</article>'}
 let drawScheduled=false;function scheduleDraw(keep=true){if(drawScheduled)return;drawScheduled=true;requestAnimationFrame(()=>{drawScheduled=false;draw(keep)})}
 function draw(keep=true){
  const board=$('board'),offset=board.scrollLeft;
@@ -200,20 +200,41 @@ async function loadTimeline(force=false){
   setWarning([state.failures.length?state.failures.length+' seasons unavailable ('+state.failures.join(', ')+')':'',incomplete.length?incomplete.length+' season(s) have unresolved athlete details or an incomplete roster index':''].filter(Boolean).join(' · ')+'. Missing data is not estimated.');
  }
 }
-async function retryYear(year){state.records.delete(year);let token=state.loadId;await loadSeason(year,token,state.league,state.team,state.abort?.signal);markNew();scheduleDraw();if(!state.failures.some(y=>!state.records.get(y)?.ok))setWarning('')}
+
+async function retryYear(year){
+ state.records.delete(year);
+ const token=state.loadId;
+ await loadSeason(year,token,state.league,state.team,state.abort?.signal);
+ markNew();scheduleDraw();
+ if(!state.failures.some(y=>!state.records.get(y)?.ok))setWarning('');
+}
+async function extendTimeline(){
+ const before=ascSeasons()[0],target=Math.min(40,state.count+5);
+ if(target===state.count||before<=START)return;
+ state.count=target;const sel=$('seasonCount');
+ if(![...sel.options].some(o=>Number(o.value)===target))sel.add(new Option(target+' years',String(target)));
+ sel.value=String(target);saveURL();
+ draw(true);
+ const added=ascSeasons().filter(y=>y<before);
+ const baseline=ascSeasons()[0]-1;
+ const token=state.loadId,league=state.league,team=state.team,signal=state.abort?.signal;
+ const missing=[...added,baseline].filter(y=>!state.records.has(y));
+ await Promise.allSettled(missing.map(y=>loadSeason(y,token,league,team,signal)));
+ if(token===state.loadId){markNew();scheduleDraw()}
+}
 function showDetail(id,year){const p=state.records.get(year)?.players.find(x=>x.id===id);if(!p)return;
 $('modalImage').innerHTML=avatar(p);$('modalName').textContent=p.name;$('modalInfo').textContent=[p.pos,p.number?'#'+p.number:'',p.classYear].filter(Boolean).join(' · ');
 const hist=seasons().map(y=>({year:y,p:state.records.get(y)?.players.find(x=>x.id===id)})).filter(o=>o.p);
 $('modalHistory').innerHTML='<table class="history"><thead><tr><th>Season</th><th>GP</th><th>PPG</th><th>RPG</th><th>APG</th><th>FG%</th></tr></thead><tbody>'+hist.map(x=>'<tr><td>'+yearLabel(x.year)+(x.p.isNew?' · NEW':'')+'</td><td>'+(x.p.stats?.games??'—')+'</td><td>'+fmt(x.p.stats?.points)+'</td><td>'+fmt(x.p.stats?.rebounds)+'</td><td>'+fmt(x.p.stats?.assists)+'</td><td>'+(x.p.stats?.fg!=null?fmt(x.p.stats.fg):'—')+'</td></tr>').join('')+'</tbody></table>';
 $('modalFoot').innerHTML='<a href="https://www.espn.com/'+safe(LEAGUES[state.league])+'/player/_/id/'+encodeURIComponent(p.id)+'" target="_blank" rel="noopener">View ESPN player profile ↗</a><br>Season averages are shown when ESPN supplies them.';$('detail').showModal()}
-function updateYearOptions(){let options='';for(let y=CURRENT;y>=1980;y--)options+='<option value="'+y+'">'+yearLabel(y)+'</option>';$('endYear').innerHTML=options;$('endYear').value=state.end}
+function updateYearOptions(){let options='';for(let y=CURRENT;y>=START;y--)options+='<option value="'+y+'">'+yearLabel(y)+'</option>';$('endYear').innerHTML=options;$('endYear').value=state.end}
 function readURL(){let q=new URLSearchParams(location.search),lg=q.get('gender'),team=q.get('team'),yr=num(q.get('year')),count=num(q.get('seasons'));if(lg&&LEAGUES[lg])state.league=lg;if(team&&/^\d+$/.test(team))state.team=team;if(yr&&yr>=START&&yr<=CURRENT)state.end=yr;if([10,15,20,25,30,35,40].includes(count))state.count=count}
 function wire(){readURL();$('men').classList.toggle('active',state.league==='men');$('women').classList.toggle('active',state.league==='women');$('seasonCount').value=state.count;updateYearOptions();
 for(let g of ['men','women'])$(g).addEventListener('click',()=>{if(state.league===g)return;state.league=g;for(let k of ['men','women'])$(k).classList.toggle('active',k===g);loadTeams();loadTimeline()});
 $('teamSelect').addEventListener('change',()=>{state.team=$('teamSelect').value;fillTeams();loadTimeline()});
 $('teamFilter').addEventListener('input',fillTeams);$('endYear').addEventListener('change',()=>{state.end=Number($('endYear').value);loadTimeline()});
 $('seasonCount').addEventListener('change',()=>{state.count=Number($('seasonCount').value);loadTimeline()});
-$('older').addEventListener('click',()=>{state.count=Math.min(40,state.count+5);const selector=$('seasonCount');if(![...selector.options].some(o=>Number(o.value)===state.count))selector.add(new Option(state.count+' years',String(state.count)));selector.value=String(state.count);loadTimeline()});
+$('older').addEventListener('click',extendTimeline);
 $('sort').addEventListener('change',()=>{state.sort=$('sort').value;scheduleDraw()});
 $('playerFilter').addEventListener('input',()=>{state.filter=$('playerFilter').value.trim().toLowerCase();scheduleDraw()});
 $('onlyNew').addEventListener('change',()=>{state.onlyNew=$('onlyNew').checked;scheduleDraw()});
