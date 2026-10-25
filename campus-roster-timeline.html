@@ -27,7 +27,7 @@ dialog{width:min(560px,calc(100% - 24px));border:1px solid #49617b;border-radius
 <div class="statusbar"><strong id="summary">Select a school to explore roster history.</strong><span id="progress"></span><span class="key"><i class="square"></i>Green = new to team (confirmed by prior rosters)</span><span class="hint">Newest on left · older seasons →</span></div>
 <div id="warning" class="notice" hidden role="alert"></div>
 <section class="board-wrap"><div class="board" id="board" aria-label="Season roster timeline"><div class="loading">Loading teams…</div></div></section>
-<footer class="footer"><span>Data: ESPN season rosters and reported individual statistics. Missing numbers display as —. Green marks the first roster appearance <b>within the available historical comparison</b>, including incoming transfers. Earlier seasons outside that comparison can exist.</span><span>Seasons are labeled by ending year (2026–27 = 2027). Stats appear as they are retrieved; current-season stats may be unavailable.</span></footer>
+<footer class="footer"><span>Data: ESPN season rosters and reported individual statistics. Missing numbers display as —. Historical jerseys and class years are omitted when season-specific values are unavailable. Green marks the first roster appearance <b>within the available historical comparison</b>, including incoming transfers. Earlier seasons outside that comparison can exist.</span><span>Seasons are labeled by ending year (2026–27 = 2027). Stats appear as they are retrieved; current-season stats may be unavailable.</span></footer>
 </main>
 <dialog id="detail"><div class="modal-top"><div id="modalImage"></div><div><h2 id="modalName"></h2><p id="modalInfo"></p></div><button type="button" class="close" id="closeModal" aria-label="Close player detail">✕</button></div><div id="modalHistory"></div><div class="modalfoot" id="modalFoot"></div></dialog>
 <script>
@@ -101,7 +101,7 @@ async function coreRoster(team,year,league,signal){
    try{
     const detail=await get(url,{year:year,signal,priority:true});
     const person=normalizeAthlete(detail);
-    if(person?.name){const current=map.get(id);map.set(id,{...current,...person,id,number:person.number||current.number,pos:person.pos||current.pos})}
+    if(person?.name){const current=map.get(id);map.set(id,{...current,...person,id,number:year===CURRENT?(person.number||current.number):current.number,classYear:year===CURRENT?(person.classYear||current.classYear):current.classYear,pos:person.pos||current.pos})}
     else problems.push(id);
    }catch(e){if(!signal?.aborted)problems.push(id)}
  }));
