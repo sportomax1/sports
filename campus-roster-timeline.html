@@ -39,6 +39,22 @@ dialog{width:min(560px,calc(100% - 24px));border:1px solid #49617b;border-radius
 .person.dense .stat{font-size:9px}.person.dense .stat b{font-size:10px}.person.dense .player-tags{display:none}
 .person.extended{min-height:102px}.person.extended .avatar{height:58px;width:58px;flex-basis:58px}.person.extended .stats{margin-top:8px}
 .player-growth{font-size:10px;color:#a6e6bc;margin-top:5px}
+
+.dialog-tabs{display:flex;gap:5px;margin-top:14px}
+.dialog-tabs button{background:#1e334a;border:1px solid #465e79;border-radius:6px;color:#d8e6f4;padding:6px 11px;cursor:pointer}
+.dialog-tabs button.active{background:#496985;color:#fff}
+.growth-tabs{display:flex;gap:4px;margin:11px 0 2px}
+.growth-tabs button{background:transparent;border:1px solid #39536e;border-radius:5px;color:#b6cde5;padding:4px 8px}
+.growth-tabs button.active{background:#3c5773;color:#fff}
+.chart-bars{display:flex;align-items:end;gap:7px;height:140px;border-bottom:1px solid #465d73;padding:8px 3px}
+.chart-col{flex:1;min-width:0;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:end;height:100%}
+.chart-col .bar{width:75%;max-width:34px;background:#98b4d1;border-radius:3px 3px 0 0}
+.chart-col .bar.is-focus{background:#d6b477}
+.chart-col small{font-size:9px;color:#a5bbd0;white-space:nowrap}.chart-col strong{font-size:10px}
+.game-log{max-height:310px;overflow:auto;margin-top:10px}
+.game-item{padding:9px 4px;border-bottom:1px solid #2c4055;font-size:11px;display:flex;justify-content:space-between;gap:8px}
+.game-item .value{font-weight:800;color:#e4eef9;text-align:right}
+.stats-note{font-size:10px;color:#9eb4cc;margin:10px 0}
 </style></head>
 <body><main class="shell">
 <header class="top"><a href="./index.html" class="home">← Sports tools</a><div><div class="sub">NCAA • Season-by-season</div><h1>Campus Roster Timeline</h1></div><div class="spacer"></div><div id="teamTitle" class="pill">Choose a team</div><div id="loadIndicator" class="pill">Ready</div></header>
@@ -58,7 +74,7 @@ dialog{width:min(560px,calc(100% - 24px));border:1px solid #49617b;border-radius
 <section class="board-wrap"><div class="board" id="board" aria-label="Season roster timeline"><div class="loading">Loading teams…</div></div></section>
 <footer class="footer"><span>Data: ESPN season rosters and reported individual statistics. Missing numbers display as —. Historical jerseys and class years are omitted when season-specific values are unavailable. Green marks the first roster appearance <b>within the available historical comparison</b>, including incoming transfers. Earlier seasons outside that comparison can exist.</span><span>Seasons are labeled by ending year (2026–27 = 2027). Stats appear as they are retrieved; current-season stats may be unavailable.</span></footer>
 </main>
-<dialog id="detail"><div class="modal-top"><div id="modalImage"></div><div><h2 id="modalName"></h2><p id="modalInfo"></p></div><button type="button" class="close" id="closeModal" aria-label="Close player detail">✕</button></div><div id="modalHistory"></div><div class="modalfoot" id="modalFoot"></div></dialog>
+<dialog id="detail"><div class="modal-top"><div id="modalImage"></div><div><h2 id="modalName"></h2><p id="modalInfo"></p></div><button type="button" class="close" id="closeModal" aria-label="Close player detail">✕</button></div><div class="dialog-tabs" role="tablist" aria-label="Player details"><button type="button" class="active" data-detailtab="career">Career</button><button type="button" data-detailtab="gamelog">Game log</button></div><div id="modalHistory"></div><div class="modalfoot" id="modalFoot"></div></dialog>
 <script>
 'use strict';
 (function(){
@@ -70,7 +86,7 @@ const ESPN='https://site.api.espn.com/apis/site/v2/sports/basketball/';
 const CORE='https://sports.core.api.espn.com/v2/sports/basketball/leagues/';
 const WEB='https://site.web.api.espn.com/apis/common/v3/sports/basketball/';
 const PICKS=[[150,'Duke Blue Devils'],[153,'North Carolina Tar Heels'],[2305,'Kansas Jayhawks'],[96,'Kentucky Wildcats'],[41,'UConn Huskies'],[2250,'Gonzaga Bulldogs'],[248,'Houston Cougars'],[57,'Florida Gators'],[127,'Michigan State Spartans'],[333,'Alabama Crimson Tide'],[2633,'Tennessee Volunteers'],[239,'Baylor Bears'],[12,'Arizona Wildcats'],[2509,'Purdue Boilermakers'],[26,'UCLA Bruins'],[84,'Indiana Hoosiers'],[252,'BYU Cougars'],[156,'Creighton Bluejays'],[130,'Michigan Wolverines'],[66,'Iowa State Cyclones'],[2,'Auburn Tigers'],[97,'Louisville Cardinals'],[8,'Arkansas Razorbacks'],[201,'Oklahoma Sooners'],[275,'Wisconsin Badgers'],[61,'Georgia Bulldogs'],[145,'Ole Miss Rebels'],[52,'Florida State Seminoles'],[120,'Maryland Terrapins'],[2628,'TCU Horned Frogs'],[99,'LSU Tigers'],[344,'Mississippi State Bulldogs'],[356,'Illinois Fighting Illini'],[2641,'Texas Tech Red Raiders'],[251,'Texas Longhorns'],[2132,'Cincinnati Bearcats'],[152,'NC State Wolfpack'],[228,'Clemson Tigers']];
-const state={league:'men',team:'150',teams:[],end:CURRENT,count:10,records:new Map(),loadId:0,abort:null,filter:'',onlyNew:false,sort:'points',statsTasks:new Set(),loading:0,failures:[],intersect:null,statsTotal:0,statsDone:0,statsAvailable:0,selectedPlayer:null,hoverPlayer:null,density:'standard',directoryComplete:false,directoryLoading:false,teamSummaries:new Map(),gameLogs:new Map()};
+const state={league:'men',team:'150',teams:[],end:CURRENT,count:10,records:new Map(),loadId:0,abort:null,filter:'',onlyNew:false,sort:'points',statsTasks:new Set(),loading:0,failures:[],intersect:null,statsTotal:0,statsDone:0,statsAvailable:0,detailYear:null,detailTab:'career',growthStat:'points',selectedPlayer:null,hoverPlayer:null,density:'standard',directoryComplete:false,directoryLoading:false,teamSummaries:new Map(),gameLogs:new Map()};
 let dbPromise,requestQueue=[],inflight=0;
 function queue(task,priority=false){return new Promise((resolve,reject)=>{const job={task,resolve,reject};if(priority)requestQueue.unshift(job);else requestQueue.push(job);pump()})}
 function pump(){while(inflight<9&&requestQueue.length){const item=requestQueue.shift();inflight++;Promise.resolve().then(item.task).then(item.resolve,item.reject).finally(()=>{inflight--;pump()})}}
@@ -196,7 +212,7 @@ async function roster(team,year,league,signal){
 }
 function statArray(root){
  const out=[],seen=new WeakSet();
- const wanted=new Set(['gp','games','gamesplayed','avgpoints','pointspergame','ptspergame','ppg','avgrebounds','reboundspergame','rebpergame','rpg','avgassists','assistspergame','astpergame','apg','points','totalpoints','rebounds','totalrebounds','assists','totalassists','fieldgoalpct','fieldgoalpercentage','fgpct']);
+ const wanted=new Set(['gp','games','gamesplayed','avgpoints','pointspergame','ptspergame','ppg','avgrebounds','reboundspergame','rebpergame','rpg','avgassists','assistspergame','astpergame','apg','points','totalpoints','rebounds','totalrebounds','assists','totalassists','fieldgoalpct','fieldgoalpercentage','fgpct','avgminutes','minutespergame','mpg','avgsteals','stealspergame','avgblocks','blockspergame','threepointfieldgoalpct','threepointfieldgoalpercentage','threepointpct','threeptpct','freethrowpct','freethrowpercentage']);
  const norm=x=>String(x||'').replace(/[^a-z0-9]/gi,'').toLowerCase();
  function add(name,value,path){const n=num(value);if(n!=null&&name)out.push({name:String(name),value:n,path})}
  function walk(v,path='',depth=0){
@@ -227,8 +243,15 @@ if(points==null&&games>0){const v=find(['points','totalPoints']);if(v!=null)poin
 if(rebounds==null&&games>0){const v=find(['rebounds','totalRebounds']);if(v!=null)rebounds=v/games}
 if(assists==null&&games>0){const v=find(['assists','totalAssists']);if(v!=null)assists=v/games}
 let fg=find(['fieldGoalPct','fieldGoalPercentage','fgPct']);if(fg!=null&&fg<=1)fg*=100;
-if(points==null&&rebounds==null&&assists==null&&fg==null)return null;
-return{points,rebounds,assists,games,fg}}
+const minutes=find(['avgMinutes','minutesPerGame','MPG']);
+const steals=find(['avgSteals','stealsPerGame']);
+const blocks=find(['avgBlocks','blocksPerGame']);
+let threePct=find(['threePointFieldGoalPct','threePointFieldGoalPercentage','threePointPct','threePtPct']);
+let ft=find(['freeThrowPct','freeThrowPercentage']);
+if(threePct!=null&&threePct<=1)threePct*=100;
+if(ft!=null&&ft<=1)ft*=100;
+if(points==null&&rebounds==null&&assists==null&&fg==null&&minutes==null&&steals==null&&blocks==null)return null;
+return{points,rebounds,assists,games,fg,minutes,steals,blocks,threePct,ft}}
 
 async function playerStats(p,year,league,signal){
  const first=WEB+LEAGUES[league]+'/athletes/'+p.id+'/stats?season='+year;
@@ -446,11 +469,80 @@ async function extendTimeline(){
  await Promise.allSettled(missing.map(y=>loadSeason(y,token,league,team,signal)));
  if(token===state.loadId){markNew();scheduleDraw()}
 }
-function showDetail(id,year){const p=state.records.get(year)?.players.find(x=>x.id===id);if(!p)return;
-$('modalImage').innerHTML=avatar(p);$('modalName').textContent=p.name;$('modalInfo').textContent=[p.pos,p.number?'#'+p.number:'',p.classYear].filter(Boolean).join(' · ');
-const hist=seasons().map(y=>({year:y,p:state.records.get(y)?.players.find(x=>x.id===id)})).filter(o=>o.p);
-$('modalHistory').innerHTML='<table class="history"><thead><tr><th>Season</th><th>GP</th><th>PPG</th><th>RPG</th><th>APG</th><th>FG%</th></tr></thead><tbody>'+hist.map(x=>'<tr><td>'+yearLabel(x.year)+(x.p.isNew?' · NEW':'')+'</td><td>'+(x.p.stats?.games??'—')+'</td><td>'+fmt(x.p.stats?.points)+'</td><td>'+fmt(x.p.stats?.rebounds)+'</td><td>'+fmt(x.p.stats?.assists)+'</td><td>'+(x.p.stats?.fg!=null?fmt(x.p.stats.fg):'—')+'</td></tr>').join('')+'</tbody></table>';
-$('modalFoot').innerHTML='<a href="https://www.espn.com/'+safe(LEAGUES[state.league])+'/player/_/id/'+encodeURIComponent(p.id)+'" target="_blank" rel="noopener">View ESPN player profile ↗</a><br>Season averages are shown when ESPN supplies them.';$('detail').showModal()}
+
+function detailEntries(id){
+ return seasons().map(year=>({year,p:state.records.get(year)?.players?.find(p=>p.id===id)})).filter(x=>x.p);
+}
+function growthChart(entries){
+ const key=state.growthStat,label={points:'PPG',rebounds:'RPG',assists:'APG',minutes:'MPG',threePct:'3P%'}[key]||'PPG';
+ const values=entries.slice().reverse().filter(x=>x.p.stats?.[key]!=null);
+ if(!values.length)return '<div class="stats-note">No verified '+label+' values for these seasons.</div>';
+ const max=Math.max(1,...values.map(x=>x.p.stats[key]));
+ return '<div class="chart-bars" role="img" aria-label="'+safe(label)+' chart by season">'+values.map(x=>{
+   const v=x.p.stats[key];return '<div class="chart-col"><strong>'+fmt(v)+'</strong><div class="bar'+(x.year===state.detailYear?' is-focus':'')+'" style="height:'+Math.max(4,(v/max)*100)+'%"></div><small>'+yearLabel(x.year)+'</small></div>'
+ }).join('')+'</div>';
+}
+function renderCareer(id){
+ const entries=detailEntries(id),valid=entries.filter(x=>x.p.stats);
+ const best=valid.length?Math.max(...valid.map(x=>x.p.stats.points??0)):null;
+ const kpis=valid.length?'<div class="stats-note">Best season: '+(best!=null?fmt(best)+' PPG':'not available')+' · '+valid.length+' seasons with reported stats</div>':'<div class="stats-note">Season stats not yet available.</div>';
+ const head='<div class="growth-tabs">'+[['points','PPG'],['rebounds','RPG'],['assists','APG'],['minutes','MPG'],['threePct','3P%']].map(([key,label])=>'<button type="button" class="'+(state.growthStat===key?'active':'')+'" data-growth="'+key+'">'+label+'</button>').join('')+'</div>';
+ const table='<table class="history"><thead><tr><th>Season</th><th>GP</th><th>PPG</th><th>RPG</th><th>APG</th><th>MIN</th><th>FG%</th></tr></thead><tbody>'+entries.map(x=>'<tr><td>'+yearLabel(x.year)+(x.p.isNew?' · NEW':'')+'</td><td>'+(x.p.stats?.games??'—')+'</td><td>'+fmt(x.p.stats?.points)+'</td><td>'+fmt(x.p.stats?.rebounds)+'</td><td>'+fmt(x.p.stats?.assists)+'</td><td>'+fmt(x.p.stats?.minutes)+'</td><td>'+fmt(x.p.stats?.fg)+'</td></tr>').join('')+'</tbody></table>';
+ return head+growthChart(entries)+kpis+table;
+}
+function gameLogRows(json){
+ const output=[],events=json?.events||{},seasons=json?.seasonTypes||json?.seasons||[];
+ const eventMap=Array.isArray(events)?new Map(events.map(x=>[String(x.id),x])):new Map(Object.entries(events));
+ const segments=Array.isArray(seasons)?seasons:[];
+ for(const segment of segments){
+  for(const category of segment.categories||[]){
+   const labels=category.labels||category.names||[];
+   for(const item of category.events||category.entries||[]){
+    const info=eventMap.get(String(item.eventId||item.id))||{};
+    const stats=item.stats||item.statistics||[];
+    const mapped=Array.isArray(stats)?stats.map((v,i)=>({label:labels[i]||String(i),value:v})):[];
+    const pts=mapped.find(x=>/^(pts|points)$/i.test(x.label));
+    const date=info.gameDate||info.date||item.date||'';
+    const opponent=info.opponent?.displayName||info.opponent?.name||item.opponent?.name||info.shortName||'Opponent unavailable';
+    output.push({id:String(item.eventId||item.id||''),date,opponent,pts:pts?.value??null,line:mapped.filter(x=>/^(pts|reb|ast|fg|3pt|stl|blk)$/i.test(x.label)).map(x=>x.label+': '+x.value).join(' · ')});
+   }
+  }
+ }
+ return [...new Map(output.map(x=>[x.id||x.date+'-'+x.opponent,x])).values()].sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+}
+async function loadGameLog(id,year){
+ const key=state.league+':'+id+':'+year,token=state.loadId;
+ if(state.gameLogs.has(key)){if(state.detailTab==='gamelog')renderDetail();return}
+ const url=WEB+LEAGUES[state.league]+'/athletes/'+id+'/gamelog?season='+year;
+ try{
+  const raw=await get(url,{year,signal:state.abort?.signal});
+  if(token!==state.loadId)return;
+  const rows=gameLogRows(raw);state.gameLogs.set(key,{rows,available:rows.length>0});
+ }catch(e){if(token!==state.loadId)return;state.gameLogs.set(key,{rows:[],available:false})}
+ if(state.detailTab==='gamelog'&&state.selectedPlayer===id&&state.detailYear===year)renderDetail();
+}
+function renderDetail(){
+ const id=state.selectedPlayer,year=state.detailYear,p=state.records.get(year)?.players?.find(p=>p.id===id);
+ if(!p)return;
+ $('modalImage').innerHTML=avatar(p);$('modalName').textContent=p.name;
+ $('modalInfo').textContent=[p.pos,p.number?'#'+p.number:'',p.classYear].filter(Boolean).join(' · ');
+ document.querySelectorAll('[data-detailtab]').forEach(el=>el.classList.toggle('active',el.dataset.detailtab===state.detailTab));
+ if(state.detailTab==='career'){$('modalHistory').innerHTML=renderCareer(id)}
+ else{
+  const key=state.league+':'+id+':'+year,record=state.gameLogs.get(key);
+  if(!record){$('modalHistory').innerHTML='<div class="loading">Loading ESPN game log…</div>';loadGameLog(id,year)}
+  else if(record.rows.length){$('modalHistory').innerHTML='<div class="game-log">'+record.rows.map(x=>'<div class="game-item"><span>'+safe(x.date?String(x.date).slice(0,10):'')+' · '+safe(x.opponent)+'</span><span class="value">'+safe(x.line|| (x.pts!=null?x.pts+' points':'Box score available'))+'</span></div>').join('')+'</div>'}
+  else $('modalHistory').innerHTML='<div class="stats-note">No game-by-game records were returned for this athlete and season. Open ESPN to check other coverage.</div>';
+ }
+ const career=detailEntries(id),valid=career.filter(x=>x.p.stats?.points!=null);
+ const high=valid.length?Math.max(...valid.map(x=>x.p.stats.points)):null;
+ $('modalFoot').innerHTML='<a href="https://www.espn.com/'+safe(LEAGUES[state.league])+'/player/_/id/'+encodeURIComponent(id)+'" target="_blank" rel="noopener">ESPN player profile ↗</a> · <a href="https://www.espn.com/'+safe(LEAGUES[state.league])+'/player/gamelog/_/id/'+encodeURIComponent(id)+'" target="_blank" rel="noopener">ESPN game log ↗</a><div class="stats-note">Best displayed season average: '+(high!=null?fmt(high)+' PPG':'not available')+'. Individual game career highs require a complete game log.</div>';
+}
+function showDetail(id,year){
+ state.selectedPlayer=id;state.detailYear=year;state.detailTab='career';state.growthStat='points';
+ renderDetail();if(!$('detail').open)$('detail').showModal();
+}
+
 function updateYearOptions(){let options='';for(let y=CURRENT;y>=START;y--)options+='<option value="'+y+'">'+yearLabel(y)+'</option>';$('endYear').innerHTML=options;$('endYear').value=state.end}
 function readURL(){let q=new URLSearchParams(location.search),lg=q.get('gender'),team=q.get('team'),yr=num(q.get('year')),count=num(q.get('seasons'));if(lg&&LEAGUES[lg])state.league=lg;if(team&&/^\d+$/.test(team))state.team=team;if(yr&&yr>=START&&yr<=CURRENT)state.end=yr;if([10,15,20,25,30,35,40].includes(count))state.count=count}
 function wire(){readURL();$('men').classList.toggle('active',state.league==='men');$('women').classList.toggle('active',state.league==='women');$('seasonCount').value=state.count;updateYearOptions();
@@ -475,6 +567,7 @@ $('board').addEventListener('pointerover',e=>{const b=e.target.closest('[data-pl
 $('board').addEventListener('pointerleave',()=>{state.hoverPlayer=null;updateLinkedCards()});
 $('spotlight').addEventListener('click',e=>{if(e.target.id==='clearSpotlight'){state.selectedPlayer=null;updateLinkedCards();updateSpotlight()}});
 
+$('detail').addEventListener('click',e=>{const t=e.target.closest('[data-detailtab]');if(t){state.detailTab=t.dataset.detailtab;renderDetail();return}const g=e.target.closest('[data-growth]');if(g){state.growthStat=g.dataset.growth;renderDetail()}});
 $('closeModal').addEventListener('click',()=>$('detail').close());$('detail').addEventListener('click',e=>{if(e.target===$('detail'))$('detail').close()});
 window.__CAMPUS_ROSTER_TEST__={parseStats,siteRoster,normalizeAthlete,parseTeams,getState:()=>state,yearLabel};
 state.teams=picks();fillTeams();const initialTeam=state.team;loadTeams().then(()=>{if(state.team!==initialTeam)loadTimeline()});loadTimeline();}
