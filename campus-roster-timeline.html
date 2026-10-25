@@ -41,7 +41,7 @@ const ESPN='https://site.api.espn.com/apis/site/v2/sports/basketball/';
 const CORE='https://sports.core.api.espn.com/v2/sports/basketball/leagues/';
 const WEB='https://site.web.api.espn.com/apis/common/v3/sports/basketball/';
 const PICKS=[[150,'Duke Blue Devils'],[153,'North Carolina Tar Heels'],[2305,'Kansas Jayhawks'],[96,'Kentucky Wildcats'],[41,'UConn Huskies'],[2250,'Gonzaga Bulldogs'],[248,'Houston Cougars'],[57,'Florida Gators'],[127,'Michigan State Spartans'],[333,'Alabama Crimson Tide'],[2633,'Tennessee Volunteers'],[239,'Baylor Bears'],[12,'Arizona Wildcats'],[2509,'Purdue Boilermakers'],[26,'UCLA Bruins'],[84,'Indiana Hoosiers'],[252,'BYU Cougars'],[156,'Creighton Bluejays'],[130,'Michigan Wolverines'],[66,'Iowa State Cyclones'],[2,'Auburn Tigers'],[97,'Louisville Cardinals'],[8,'Arkansas Razorbacks'],[201,'Oklahoma Sooners'],[275,'Wisconsin Badgers'],[61,'Georgia Bulldogs'],[145,'Ole Miss Rebels'],[52,'Florida State Seminoles'],[120,'Maryland Terrapins'],[2628,'TCU Horned Frogs'],[99,'LSU Tigers'],[344,'Mississippi State Bulldogs'],[356,'Illinois Fighting Illini'],[2641,'Texas Tech Red Raiders'],[251,'Texas Longhorns'],[2132,'Cincinnati Bearcats'],[152,'NC State Wolfpack'],[228,'Clemson Tigers']];
-const state={league:'men',team:'150',teams:[],end:CURRENT,count:10,records:new Map(),loadId:0,abort:null,filter:'',onlyNew:false,sort:'points',statsTasks:new Set(),loading:0,failures:[],intersect:null,statsTotal:0,statsDone:0};
+const state={league:'men',team:'150',teams:[],end:CURRENT,count:10,records:new Map(),loadId:0,abort:null,filter:'',onlyNew:false,sort:'points',statsTasks:new Set(),loading:0,failures:[],intersect:null,statsTotal:0,statsDone:0,statsAvailable:0};
 let dbPromise,requestQueue=[],inflight=0;
 function queue(task,priority=false){return new Promise((resolve,reject)=>{const job={task,resolve,reject};if(priority)requestQueue.unshift(job);else requestQueue.push(job);pump()})}
 function pump(){while(inflight<9&&requestQueue.length){const item=requestQueue.shift();inflight++;Promise.resolve().then(item.task).then(item.resolve,item.reject).finally(()=>{inflight--;pump()})}}
@@ -55,15 +55,15 @@ async function get(url,{force=false,year=0,signal=null,priority=false}={}){const
 if(!force){let saved=await fromDb(url);if(saved&&Date.now()-saved.at<ttl)return saved.data}
 if(signal&&signal.aborted)throw Error('Cancelled');
 return queue(async()=>{if(signal?.aborted)throw Error('Cancelled');let errors=[];const routes=[url,'https://api.allorigins.win/raw?url='+encodeURIComponent(url),'https://corsproxy.io/?url='+encodeURIComponent(url)];
-for(const route of routes){if(signal&&signal.aborted)throw Error('Cancelled');try{const data=await fetchOne(route,signal);intoDb(url,{at:Date.now(),data});return data}catch(e){errors.push(e.message);if(e.name==='AbortError'&&signal&&signal.aborted)throw Error('Cancelled')}}
+for(const route of routes){if(signal&&signal.aborted)throw Error('Cancelled');try{const data=await fetchOne(route,signal);intoDb(url,{at:Date.now(),data});return data}catch(e){errors.push(e.message);if(e.name==='AbortError'&&signal&&signal.aborted)throw Error('Cancelled');if(/^HTTP (400|404|410)(?:$|\s)/.test(e.message))break}}
 throw Error('ESPN request failed: '+errors.join('; '))},priority)}
 function safe(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function num(s){if(s==null||s==='—'||s==='')return null;const n=Number(String(s).replace(/,/g,''));return Number.isFinite(n)?n:null}
 function fmt(n){return n==null?'—':Number(n).toFixed(1)}
 function yearLabel(y){return String(y-1)+'–'+String(y).slice(-2)}
 function initials(name){return String(name||'?').split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase()}
-function avatar(p){const url=p.head|| (p.id?'https://a.espncdn.com/i/headshots/'+LEAGUES[state.league]+'/players/full/'+encodeURIComponent(p.id)+'.png':'');return '<span class="avatar">'+(url?'<img loading="lazy" src="'+safe(url)+'" alt="" onerror="this.remove()">':'')+'<span class="initial">'+safe(initials(p.name))+'</span></span>'}
-function setStatus(){let count=state.records.size;const wanted=seasons().length+1;const loaded=[...state.records.values()].filter(r=>r.ok).length;$('progress').textContent=loaded+'/'+wanted+' rosters'+(state.statsTotal?' · '+state.statsDone+'/'+state.statsTotal+' player stats':'');$('loadIndicator').textContent=state.loading?'Loading '+state.loading:'Updated';$('loadIndicator').classList.toggle('good',!state.loading&&loaded>0)}
+function avatar(p){const fallback=p.id?'https://a.espncdn.com/i/headshots/'+LEAGUES[state.league]+'/players/full/'+encodeURIComponent(p.id)+'.png':'';const url=p.head||fallback;const other=p.head&&fallback!==url?fallback:'';return '<span class="avatar">'+(url?'<img loading="lazy" src="'+safe(url)+'" data-fallback="'+safe(other)+'" alt="" onerror="if(this.dataset.fallback){const backup=this.dataset.fallback;this.dataset.fallback=\'\';this.src=backup}else this.remove()">':'')+'<span class="initial">'+safe(initials(p.name))+'</span></span>'}
+function setStatus(){let count=state.records.size;const wanted=seasons().length+1;const loaded=[...state.records.values()].filter(r=>r.ok).length;$('progress').textContent=loaded+'/'+wanted+' rosters'+(state.statsTotal?' · '+state.statsAvailable+' stats available / '+state.statsDone+' checked / '+state.statsTotal+' players':'');$('loadIndicator').textContent=state.loading?'Loading '+state.loading:'Updated';$('loadIndicator').classList.toggle('good',!state.loading&&loaded>0)}
 function setWarning(message){$('warning').hidden=!message;$('warning').textContent=message||''}
 function saveURL(){try{const x=new URL(location.href);x.searchParams.set('gender',state.league);x.searchParams.set('team',state.team);x.searchParams.set('year',state.end);x.searchParams.set('seasons',state.count);history.replaceState(null,'',x)}catch{}}
 function picks(){return PICKS.map(([id,name])=>({id:String(id),name,logo:'https://a.espncdn.com/i/teamlogos/ncaa/500/'+id+'.png'}))}
@@ -199,7 +199,7 @@ function draw(keep=true){
  if(state.intersect)state.intersect.disconnect();state.intersect=null;
 }
 async function startStats(y){const record=state.records.get(y);if(!record?.ok||record.statsStarted)return;record.statsStarted=true;record.loadingStats=true;const token=state.loadId;const targets=record.players.filter(p=>!p.stats);state.statsTotal+=targets.length;
-await Promise.allSettled(targets.map(p=>(async()=>{if(token!==state.loadId||state.abort?.signal.aborted)return;let stats=await playerStats(p,y,state.league,state.abort?.signal);if(token!==state.loadId)return;p.stats=stats;state.statsDone++;setStatus();const card=document.querySelector('.lane[data-season="'+y+'"] .person[data-player="'+p.id+'"]');if(card)card.outerHTML=renderPlayer(p,y)})()));if(token===state.loadId){record.loadingStats=false;scheduleDraw()}}
+await Promise.allSettled(targets.map(p=>(async()=>{if(token!==state.loadId||state.abort?.signal.aborted)return;let stats=await playerStats(p,y,state.league,state.abort?.signal);if(token!==state.loadId)return;p.stats=stats;state.statsDone++;if(stats)state.statsAvailable++;setStatus();const card=document.querySelector('.lane[data-season="'+y+'"] .person[data-player="'+p.id+'"]');if(card)card.outerHTML=renderPlayer(p,y)})()));if(token===state.loadId){record.loadingStats=false;scheduleDraw()}}
 async function loadSeason(y,token,league,team,signal){state.loading++;setStatus();try{const data=await roster(team,y,league,signal);if(token!==state.loadId)return;
 const map=new Map();for(const p of data.players)if(p&&p.id)map.set(p.id,p);
 state.records.set(y,{year:y,players:[...map.values()],ok:true,origin:data.origin,unresolved:data.unresolved||0,hasMore:data.hasMore||false});scheduleDraw();startStats(y)}
@@ -210,7 +210,7 @@ async function loadTimeline(force=false){
  const abort=new AbortController();state.abort=abort;
  state.loadId++;
  const token=state.loadId,league=state.league,team=state.team;
- state.records=new Map();state.statsTasks.clear();state.failures=[];state.loading=0;state.statsTotal=0;state.statsDone=0;
+ state.records=new Map();state.statsTasks.clear();state.failures=[];state.loading=0;state.statsTotal=0;state.statsDone=0;state.statsAvailable=0;
  saveURL();setWarning('');draw(false);
  const wanted=[...seasons(),ascSeasons()[0]-1];
  await Promise.allSettled(wanted.map(y=>loadSeason(y,token,league,team,abort.signal)));
@@ -239,6 +239,7 @@ async function extendTimeline(){
  const added=ascSeasons().filter(y=>y<before);
  const baseline=ascSeasons()[0]-1;
  const token=state.loadId,league=state.league,team=state.team,signal=state.abort?.signal;
+ for(const y of added){if(state.records.get(y)?.ok)startStats(y)}
  const missing=[...added,baseline].filter(y=>!state.records.has(y));
  await Promise.allSettled(missing.map(y=>loadSeason(y,token,league,team,signal)));
  if(token===state.loadId){markNew();scheduleDraw()}
