@@ -135,11 +135,11 @@ async function loadTeams(){
   if(league!==state.league)return;
   if(!teams.length)throw Error('ESPN returned zero Division I schools');
   state.teams=[...new Map(teams.map(t=>[t.id,t])).values()];
-  state.directoryComplete=!count||state.teams.length>=count;
+  state.directoryComplete=state.teams.length>=300&&(!count||state.teams.length>=count);
   if(!state.teams.some(t=>t.id===state.team))state.team=state.teams[0].id;
   $('teamFilter').value=state.teams.find(t=>t.id===state.team)?.name||'';
   fillTeams();
-  if(!state.directoryComplete)setWarning('Division I team directory appears incomplete: '+state.teams.length+' of '+count);
+  if(!state.directoryComplete)setWarning('Division I directory incomplete: '+state.teams.length+' schools returned.');
  }catch(e){
   if(league!==state.league)return;
   state.teams=picks();state.directoryComplete=false;
@@ -247,6 +247,7 @@ function markNew(){
  const years=ascSeasons(),history=new Set(),baseline=state.records.get(years[0]-1);
  if(baseline?.ok&&!baseline.hasMore&&!baseline.unresolved)for(const p of baseline.players)history.add(p.id);
  let prior=baseline;
+ for(const record of state.records.values())if(record?.ok)for(const player of record.players){player.departed=false;player.isNew=false;player.returning=false}
  for(const year of years){
   const row=state.records.get(year);
   if(!row?.ok){prior=null;continue}
@@ -352,13 +353,60 @@ function draw(keep=true){
  // Stats start as soon as each season roster arrives, not only for visible columns.
  if(state.intersect)state.intersect.disconnect();state.intersect=null;
 }
-async function startStats(y){const record=state.records.get(y);if(!record?.ok||record.statsStarted)return;record.statsStarted=true;record.loadingStats=true;const token=state.loadId;const targets=record.players.filter(p=>!p.stats);state.statsTotal+=targets.length;
-await Promise.allSettled(targets.map(p=>(async()=>{if(token!==state.loadId||state.abort?.signal.aborted)return;let stats=await playerStats(p,y,state.league,state.abort?.signal);if(token!==state.loadId)return;p.stats=stats;state.statsDone++;if(stats)state.statsAvailable++;setStatus();const card=document.querySelector('.lane[data-season="'+y+'"] .person[data-player="'+p.id+'"]');if(card)card.outerHTML=renderPlayer(p,y)})()));if(token===state.loadId){record.loadingStats=false;scheduleDraw()}}
-async function loadSeason(y,token,league,team,signal){state.loading++;setStatus();try{const data=await roster(team,y,league,signal);if(token!==state.loadId)return;
-const map=new Map();for(const p of data.players)if(p&&p.id)map.set(p.id,p);
-state.records.set(y,{year:y,players:[...map.values()],ok:true,origin:data.origin,unresolved:data.unresolved||0,hasMore:data.hasMore||false});scheduleDraw();startStats(y)}
-catch(e){if(token===state.loadId){state.records.set(y,{year:y,ok:false,error:e.message,players:[]});state.failures.push(y);scheduleDraw();}}finally{if(token===state.loadId){state.loading--;setStatus()}}}
+async function startStats(y){const record=state.records.get(y);if(!record?.ok||record.statsStarted)return;record.statsStarted=true;record.loadingStats=true;const token=state.loadId;const targets=record.players.filter(p=>!p.statsChecked);state.statsTotal+=targets.length;
+await Promise.allSettled(targets.map(p=>(async()=>{if(token!==state.loadId||state.abort?.signal.aborted)return;let stats=await playerStats(p,y,state.league,state.abort?.signal);if(token!==state.loadId)return;p.stats=stats;p.statsChecked=true;state.statsDone++;if(stats)state.statsAvailable++;setStatus();const card=document.querySelector('.lane[data-season="'+y+'"] .person[data-player="'+p.id+'"]');if(card)card.outerHTML=renderPlayer(p,y)})()));if(token===state.loadId){record.loadingStats=false;scheduleDraw();persistYearSnapshot(y,token)}}
 
+function recordFromAPI(json){
+ const items=[...(json?.items||json?.records||[]),...(json?.record?.items||[])];
+ if(typeof json?.summary==='string'&&/^\d+\s*-\s*\d+/.test(json.summary))return json.summary;
+ const total=items.find(x=>/total|overall/i.test(String(x.type?.name||x.type?.description||x.name||'')))||items.find(x=>/^\d+\s*-\s*\d+/.test(String(x.summary||'')));
+ if(total?.summary&&/^\d+\s*-\s*\d+/.test(total.summary))return total.summary;
+ const stats=total?.stats||json?.stats||[];
+ const stat=k=>num(stats.find(x=>k.includes(String(x.name||x.abbreviation||'').toLowerCase()))?.value);
+ const w=stat(['wins','w']),l=stat(['losses','l']);return w!=null&&l!=null?w+'–'+l:null;
+}
+async function loadTeamSummary(y,token,team,league,signal){
+ const info={record:null,ppg:null,coach:null,conference:null,tournament:null};
+ try{
+  const profile=await get(CORE+LEAGUES[league]+'/seasons/'+y+'/teams/'+team+'?lang=en&region=us',{year:y,signal});
+  if(profile?.id&&String(profile.id)!==String(team))throw Error('Wrong season team');
+  const refs=[['record',profile.record?.['$ref']],['statistics',profile.statistics?.['$ref']],['coaches',profile.coaches?.['$ref']],['groups',profile.groups?.['$ref']]];
+  await Promise.allSettled(refs.filter(x=>x[1]).map(async([key,url])=>{
+   try{
+    const d=await get(url,{year:y,signal});
+    if(key==='record')info.record=recordFromAPI(d);
+    if(key==='statistics')info.ppg=parseStats(d)?.points??null;
+    if(key==='coaches'){const coach=(d.items||d.coaches||[]).find?.(x=>x?.displayName||x?.fullName);info.coach=coach?.displayName||coach?.fullName||d.displayName||null}
+    if(key==='groups')info.conference=d.name||null;
+   }catch{}
+  }));
+ }catch{}
+ if(token!==state.loadId||signal?.aborted)return;
+ state.teamSummaries.set(y,info);scheduleDraw();persistYearSnapshot(y,token);
+}
+function derivedKey(lg,team,y){return 'compiled-v2:'+lg+':'+team+':'+y}
+async function persistYearSnapshot(y,token){
+ if(token!==state.loadId)return;
+ const row=state.records.get(y);if(!row?.ok)return;
+ const data={players:row.players.map(p=>({...p})),origin:row.origin,unresolved:row.unresolved,hasMore:row.hasMore,summary:state.teamSummaries.get(y)||null};
+ await intoDb(derivedKey(state.league,state.team,y),{at:Date.now(),data});
+}
+async function loadSeason(y,token,league,team,signal,force=false){
+ state.loading++;setStatus();
+ try{
+  const cached=force?null:await fromDb(derivedKey(league,team,y));
+  const ttl=y>=CURRENT?3*3600000:24*30*3600000;
+  const data=cached?.data?.players?.length&&Date.now()-cached.at<ttl?cached.data:await roster(team,y,league,signal);
+  if(token!==state.loadId||signal?.aborted)return;
+  const players=[...new Map(data.players.filter(p=>p?.id).map(p=>[p.id,p])).values()];
+  state.records.set(y,{year:y,players,ok:true,origin:data.origin,unresolved:data.unresolved||0,hasMore:!!data.hasMore});
+  if(data.summary)state.teamSummaries.set(y,data.summary);
+  scheduleDraw();startStats(y);
+  if(!data.summary)loadTeamSummary(y,token,team,league,signal);
+ }catch(e){
+  if(token===state.loadId&&!signal?.aborted){state.records.set(y,{year:y,ok:false,error:e.message,players:[]});state.failures.push(y);scheduleDraw()}
+ }finally{if(token===state.loadId){state.loading--;setStatus()}}
+}
 async function loadTimeline(force=false){
  state.abort?.abort();
  const abort=new AbortController();state.abort=abort;
@@ -367,7 +415,7 @@ async function loadTimeline(force=false){
  state.records=new Map();state.teamSummaries=new Map();state.selectedPlayer=null;state.statsTasks.clear();state.failures=[];state.loading=0;state.statsTotal=0;state.statsDone=0;state.statsAvailable=0;
  saveURL();setWarning('');draw(false);
  const wanted=[...seasons(),ascSeasons()[0]-1];
- await Promise.allSettled(wanted.map(y=>loadSeason(y,token,league,team,abort.signal)));
+ await Promise.allSettled(wanted.map(y=>loadSeason(y,token,league,team,abort.signal,force)));
  if(token!==state.loadId)return;
  markNew();draw(true);
  const incomplete=[...state.records.values()].filter(r=>r.ok&&(r.unresolved||r.hasMore));
@@ -429,7 +477,7 @@ $('spotlight').addEventListener('click',e=>{if(e.target.id==='clearSpotlight'){s
 
 $('closeModal').addEventListener('click',()=>$('detail').close());$('detail').addEventListener('click',e=>{if(e.target===$('detail'))$('detail').close()});
 window.__CAMPUS_ROSTER_TEST__={parseStats,siteRoster,normalizeAthlete,parseTeams,getState:()=>state,yearLabel};
-state.teams=picks();fillTeams();loadTeams();loadTimeline();}
+state.teams=picks();fillTeams();const initialTeam=state.team;loadTeams().then(()=>{if(state.team!==initialTeam)loadTimeline()});loadTimeline();}
 wire();
 })();
 </script></body></html>
