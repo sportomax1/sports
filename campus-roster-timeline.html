@@ -19,6 +19,26 @@ dialog{width:min(560px,calc(100% - 24px));border:1px solid #49617b;border-radius
 .smallnote{font-size:10px;color:var(--muted)}.spotlight{padding:9px 11px;margin-bottom:9px;border:1px solid #546c86;border-radius:9px;background:#1a2e43}
 .spotlight button{margin-left:8px;border:1px solid #71859a;color:#fff;background:#284059;border-radius:5px;padding:3px 8px}
 
+
+.person.departed{box-shadow:inset -4px 0 #ab5963}
+.person.linked{border:2px solid #e0ba71!important;background:#374357!important}
+.person.focused{outline:2px solid #e0ba71;outline-offset:1px}
+.player-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.small-tag{font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid #4e657c;color:#c6d8e8}
+.small-tag.red{color:#e6a2ac;border-color:#8c4e59}
+.small-tag.green{color:#b5efcb;border-color:#437b5c}
+.lane-head .rec-row{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-top:6px}
+.rec-pill{font-size:12px;font-weight:900;padding:2px 7px;border-radius:6px;background:#253a50;border:1px solid #4d637c}
+.rec-detail{font-size:10px;color:#b1c5db}
+.turnover{display:flex;height:7px;overflow:hidden;margin-top:7px;border-radius:5px;background:#35465b}
+.turnover span{height:100%}.turnover .kept{background:#7297bb}.turnover .arrived{background:#48ab7b}.turnover .unknown{background:#53657b}
+.lane-head .coverage{font-size:10px;color:#9eb4c9;margin-top:5px}.lane-head .coverage.low{color:#e2b586}
+.person.dense{min-height:49px;padding:4px 6px;gap:6px}
+.person.dense .avatar{height:32px;width:32px;flex-basis:32px;font-size:12px}
+.person.dense .name{font-size:11px}.person.dense .byline{margin-top:1px}.person.dense .stats{margin-top:2px;gap:5px}
+.person.dense .stat{font-size:9px}.person.dense .stat b{font-size:10px}.person.dense .player-tags{display:none}
+.person.extended{min-height:102px}.person.extended .avatar{height:58px;width:58px;flex-basis:58px}.person.extended .stats{margin-top:8px}
+.player-growth{font-size:10px;color:#a6e6bc;margin-top:5px}
 </style></head>
 <body><main class="shell">
 <header class="top"><a href="./index.html" class="home">← Sports tools</a><div><div class="sub">NCAA • Season-by-season</div><h1>Campus Roster Timeline</h1></div><div class="spacer"></div><div id="teamTitle" class="pill">Choose a team</div><div id="loadIndicator" class="pill">Ready</div></header>
@@ -130,7 +150,7 @@ async function loadTeams(){
 }
 
 function extractId(obj){if(!obj)return '';if(obj.id!=null)return String(obj.id);const ref=obj['$ref']||obj.href||'';let m=String(ref).match(/\/athletes\/(\d+)(?:[/?]|$)/);return m?m[1]:''}
-function normalizeAthlete(obj){const a=obj.athlete||obj.person||obj;const id=extractId(a)||extractId(obj);if(!id)return null;let person={id,name:a.displayName||a.fullName||a.name||a.shortName||'',head:typeof a.headshot==='string'?a.headshot:(a.headshot?.href||a.headshot?.url||''),number:a.jersey??obj.jersey??'',pos:a.position?.abbreviation||obj.position?.abbreviation||a.position?.name||'',classYear:a.experience?.abbreviation||a.experience?.displayValue||a.displayClass||a.class||'',stats:null};
+function normalizeAthlete(obj){const a=obj.athlete||obj.person||obj;const id=extractId(a)||extractId(obj);if(!id)return null;let person={id,name:a.displayName||a.fullName||a.name||a.shortName||'',head:typeof a.headshot==='string'?a.headshot:(a.headshot?.href||a.headshot?.url||''),number:a.jersey??obj.jersey??'',pos:a.position?.abbreviation||obj.position?.abbreviation||a.position?.name||'',classYear:a.experience?.abbreviation||a.experience?.displayValue||a.displayClass||a.class||'',stats:null,previousTeamName:a.previousTeam?.displayName||a.previousSchool?.displayName||a.previousSchool?.name||'',transferVerified:!!(a.transfer?.confirmed||a.transferInfo?.confirmed)};
 if(a.statistics){person.stats=parseStats(a.statistics)}
 return person}
 function siteRoster(json){const arr=json?.athletes||json?.roster||json?.team?.athletes||[];let out=[];for(let entry of arr){if(Array.isArray(entry.items))out.push(...entry.items);else if(Array.isArray(entry.athletes))out.push(...entry.athletes);else out.push(entry)}
@@ -222,29 +242,106 @@ async function playerStats(p,year,league,signal){
 }
 function seasons(){return Array.from({length:Math.min(state.count,state.end-START+1)},(_,i)=>state.end-i)}
 function ascSeasons(){return seasons().slice().reverse()}
+
 function markNew(){
- const ascending=ascSeasons();let seen=new Set();let previous=state.records.get(ascending[0]-1);
- if(previous?.ok)for(const p of previous.players)seen.add(p.id);
- for(const y of ascending){
-  const row=state.records.get(y);
-  if(!row?.ok){previous=row;continue}
-  for(const p of row.players){p.isNew=!!previous?.ok&&!seen.has(p.id);p.knownFirst=p.isNew}
-  for(const p of row.players)seen.add(p.id);
-  previous=row;
+ const years=ascSeasons(),history=new Set(),baseline=state.records.get(years[0]-1);
+ if(baseline?.ok&&!baseline.hasMore&&!baseline.unresolved)for(const p of baseline.players)history.add(p.id);
+ let prior=baseline;
+ for(const year of years){
+  const row=state.records.get(year);
+  if(!row?.ok){prior=null;continue}
+  const reliablePrior=!!(prior?.ok&&!prior.hasMore&&!prior.unresolved&&!row.hasMore&&!row.unresolved);
+  const prevIds=new Set(prior?.players?.map(p=>p.id)||[]);
+  let additions=0,returners=0,unclassified=0;
+  for(const p of row.players){
+   p.isNew=reliablePrior&&!history.has(p.id);
+   p.knownFirst=p.isNew;
+   p.returning=reliablePrior&&prevIds.has(p.id);
+   p.arrivalType=p.isNew?(isFreshman(p)?'Freshman*':(explicitTransfer(p)?'Transfer':'New · type unverified')):'';
+   if(p.isNew)additions++;else if(p.returning)returners++;else unclassified++;
+   const yPrev=state.records.get(year-1)?.players?.find(x=>x.id===p.id);
+   p.growth=(yPrev?.stats?.points!=null&&p.stats?.points!=null)?p.stats.points-yPrev.stats.points:null;
+  }
+  row.turnover={additions,returners,unclassified,departures:null,known:reliablePrior};
+  if(prior?.ok&&reliablePrior){
+   const ids=new Set(row.players.map(p=>p.id));
+   for(const p of prior.players)p.departed=!ids.has(p.id);
+   if(prior.turnover)prior.turnover.departures=prior.players.filter(p=>p.departed).length;
+  }
+  for(const p of row.players)history.add(p.id);
+  prior=row;
  }
 }
+function isFreshman(p){return /^(FR|FRESHMAN|FIRST.YEAR)$/i.test(String(p.classYear||'').trim())}
+function explicitTransfer(p){return !!(p.previousTeamName||p.transferVerified)}
+
 function sortPlayers(players){const filtered=players.filter(p=>(!state.onlyNew||p.isNew)&&(!state.filter||p.name.toLowerCase().includes(state.filter)||String(p.number).includes(state.filter)));
 const k=state.sort;filtered.sort((a,b)=>{if(k==='name')return a.name.localeCompare(b.name);if(k==='number')return (num(a.number)??999)-(num(b.number)??999)||a.name.localeCompare(b.name);if(k==='position')return String(a.pos).localeCompare(String(b.pos))||a.name.localeCompare(b.name);
 const field=k==='rebounds'?'rebounds':k==='assists'?'assists':'points';let av=a.stats?.[field]??-1,bv=b.stats?.[field]??-1;return bv-av||a.name.localeCompare(b.name)});return filtered}
 function statHTML(p){let s=p.stats;return ['points','rebounds','assists'].map((key,i)=>'<span class="stat'+(s?.[key]==null?' undisplayed':'')+'"><b>'+fmt(s?.[key])+'</b>'+['PPG','RPG','APG'][i]+'</span>').join('')}
-function renderPlayer(p,year){return '<button class="person'+(p.isNew?' new':'')+'" type="button" data-player="'+safe(p.id)+'" data-year="'+year+'" title="View season details for '+safe(p.name)+'">'+avatar(p)+'<span class="pinfo"><span class="name">'+safe(p.name||'Athlete #'+p.id)+'</span><span class="byline">'+(p.number?'#'+safe(p.number)+' · ':'')+safe(p.pos||'Player')+(p.classYear?' · '+safe(p.classYear):'')+(p.isNew?'<span class="newlabel">NEW</span>':'')+'</span><span class="stats">'+statHTML(p)+'</span></span></button>'}
-function renderLane(y){let r=state.records.get(y),isLatest=y===state.end;let body='',meta='';if(!r){body='<div class="loading">Waiting to load season…</div>';meta='Pending'}else if(!r.ok){body='<div class="emptystate">Roster unavailable for '+yearLabel(y)+'<div style="margin-top:8px;font-size:10px">'+safe(r.error||'')+'</div><button class="action secondary" data-retry="'+y+'" style="margin-top:10px">Retry year</button></div>';meta='Unavailable'}else{let p=sortPlayers(r.players);meta=r.players.length+' players · '+r.players.filter(x=>x.isNew).length+' new';body=p.length?p.map(x=>renderPlayer(x,y)).join(''):'<div class="emptystate">No players match these filters.</div>';if(r.loadingStats)meta+=' · retrieving stats';if(r.unresolved)meta+=' · '+r.unresolved+' names missing'}
-return '<article class="lane'+(isLatest?' latest':'')+'" data-season="'+y+'"><div class="lane-head"><div class="yearline"><h2>'+yearLabel(y)+'</h2>'+(isLatest?'<span class="latestmark">NEWEST</span>':'')+'</div><div class="meta"><span>'+safe(meta)+'</span><span>'+y+'</span></div></div><div class="lane-body">'+body+'</div>'+(r?.origin&&r.ok?'<div class="lane-flag">'+safe(r.origin)+'</div>':'')+'</article>'}
+
+function renderPlayer(p,year){
+ const classes=['person',p.isNew?'new':'',p.departed?'departed':'',state.density==='compact'?'dense':'',state.density==='detailed'?'extended':'',(state.selectedPlayer&&p.id===state.selectedPlayer)?'linked':'',(state.hoverPlayer&&p.id===state.hoverPlayer)?'focused':''].filter(Boolean).join(' ');
+ const tags=(p.arrivalType?'<span class="small-tag '+(p.isNew?'green':'')+'">'+safe(p.arrivalType)+'</span>':'')+(p.departed?'<span class="small-tag red">LEFT NEXT YEAR</span>':'');
+ const growth=p.growth!=null&&state.density==='detailed'?'<div class="player-growth">PPG '+(p.growth>=0?'+':'')+fmt(p.growth)+' vs previous season</div>':'';
+ return '<button class="'+classes+'" type="button" data-player="'+safe(p.id)+'" data-year="'+year+'" title="Trace player: '+safe(p.name)+'">'+avatar(p)+'<span class="pinfo"><span class="name">'+safe(p.name||'Athlete #'+p.id)+'</span><span class="byline">'+(p.number?'#'+safe(p.number)+' · ':'')+safe(p.pos||'Player')+(p.classYear?' · '+safe(p.classYear):'')+(p.isNew?'<span class="newlabel">NEW</span>':'')+'</span><span class="stats">'+statHTML(p)+'</span><span class="player-tags">'+tags+'</span>'+growth+'</span></button>'
+}
+function turnoverHTML(r){
+ const t=r?.turnover;
+ if(!t?.known)return '<div class="coverage low">Turnover: awaiting adjacent verified rosters</div>';
+ const total=Math.max(1,t.additions+t.returners+t.unclassified);
+ return '<div class="turnover" title="'+t.returners+' returning · '+t.additions+' arriving · '+t.unclassified+' unclassified">'+
+ '<span class="kept" style="width:'+(t.returners/total*100)+'%"></span>'+
+ '<span class="arrived" style="width:'+(t.additions/total*100)+'%"></span>'+
+ '<span class="unknown" style="width:'+(t.unclassified/total*100)+'%"></span></div>'+
+ '<div class="coverage">'+t.returners+' retained · '+t.additions+' new'+(t.departures!=null?' · '+t.departures+' left following season':'')+'</div>';
+}
+function coverageHTML(r){
+ if(!r?.ok)return '';
+ const withName=r.players.filter(p=>p.name&&!p.name.startsWith('Athlete #')).length;
+ const withPhoto=r.players.filter(p=>p.head).length;
+ const statCount=r.players.filter(p=>p.stats!=null).length;
+ return '<div class="coverage'+(r.unresolved||r.hasMore?' low':'')+'">'+withName+'/'+r.players.length+' named · '+withPhoto+'/'+r.players.length+' source photos · '+statCount+'/'+r.players.length+' stats '+(r.hasMore?' · incomplete roster':'')+'</div>';
+}
+function updateSpotlight(){
+ const id=state.selectedPlayer,holder=$('spotlight');if(!id){holder.hidden=true;return}
+ const entries=seasons().map(y=>({year:y,p:state.records.get(y)?.players?.find(p=>p.id===id)})).filter(x=>x.p);
+ if(!entries.length){state.selectedPlayer=null;holder.hidden=true;return}
+ const name=entries[0].p.name,available=entries.filter(x=>x.p.stats?.points!=null);
+ const max=available.length?Math.max(...available.map(x=>x.p.stats.points)):null;
+ holder.hidden=false;holder.innerHTML='<strong>'+safe(name)+'</strong> · '+entries.length+' observed team season(s) · '+entries.map(x=>yearLabel(x.year)).join(' / ')+(max!=null?' · Best PPG '+fmt(max):'')+'<button type="button" id="clearSpotlight">Clear</button>';
+}
+function updateLinkedCards(){
+ document.querySelectorAll('.person').forEach(el=>{el.classList.toggle('linked',!!state.selectedPlayer&&el.dataset.player===state.selectedPlayer);el.classList.toggle('focused',!!state.hoverPlayer&&el.dataset.player===state.hoverPlayer)});
+}
+
+
+function renderLane(y){
+ const r=state.records.get(y),latest=y===state.end;
+ let body='',meta='';
+ if(!r){body='<div class="loading">Loading season…</div>';meta='Pending'}
+ else if(!r.ok){body='<div class="emptystate">No verified roster for '+yearLabel(y)+'<div style="margin-top:8px;font-size:10px">'+safe(r.error||'')+'</div><button class="action secondary" data-retry="'+y+'">Retry season</button></div>';meta='Unavailable'}
+ else{
+  const filtered=sortPlayers(r.players);
+  meta=r.players.length+' players · '+r.players.filter(p=>p.isNew).length+' arrivals';
+  body=filtered.length?filtered.map(p=>renderPlayer(p,y)).join(''):'<div class="emptystate">No players match</div>';
+  if(r.loadingStats)meta+=' · stats loading';
+ }
+ const summary=state.teamSummaries.get(y);
+ const record=summary?.record||'—';
+ const rec='<div class="rec-row"><span class="rec-pill">'+safe(record)+'</span><span class="rec-detail">'+safe(summary?.record?'overall W–L':'Record unavailable')+'</span></div>'+
+ (summary?.coach?'<div class="rec-detail">Coach: '+safe(summary.coach)+'</div>':'')+
+ (summary?.ppg!=null?'<div class="rec-detail">Team PPG '+fmt(summary.ppg)+'</div>':'')+
+ (summary?.conference?'<div class="rec-detail">Conference: '+safe(summary.conference)+'</div>':'')+
+ (summary?.tournament?'<div class="rec-detail">NCAA: '+safe(summary.tournament)+'</div>':'');
+ return '<article class="lane'+(latest?' latest':'')+'" data-season="'+y+'"><div class="lane-head"><div class="yearline"><h2>'+yearLabel(y)+'</h2>'+(latest?'<span class="latestmark">NEWEST</span>':'')+'</div>'+rec+'<div class="meta"><span>'+safe(meta)+'</span><span>'+y+'</span></div>'+(r?.ok?turnoverHTML(r)+coverageHTML(r):'')+'</div><div class="lane-body">'+body+'</div>'+(r?.origin&&r.ok?'<div class="lane-flag">'+safe(r.origin)+'</div>':'')+'</article>';
+}
+
 let drawScheduled=false;function scheduleDraw(keep=true){if(drawScheduled)return;drawScheduled=true;requestAnimationFrame(()=>{drawScheduled=false;draw(keep)})}
 function draw(keep=true){
  const board=$('board'),offset=board.scrollLeft;
  const previousScroll=new Map([...board.querySelectorAll('.lane')].map(el=>[el.dataset.season,el.querySelector('.lane-body')?.scrollTop||0]));
- markNew();board.innerHTML=seasons().map(renderLane).join('');
+ markNew();board.innerHTML=seasons().map(renderLane).join('');updateSpotlight();
  board.scrollLeft=keep?offset:0;
  board.querySelectorAll('.lane').forEach(el=>{const body=el.querySelector('.lane-body');if(body)body.scrollTop=previousScroll.get(el.dataset.season)||0});
  setStatus();
@@ -267,7 +364,7 @@ async function loadTimeline(force=false){
  const abort=new AbortController();state.abort=abort;
  state.loadId++;
  const token=state.loadId,league=state.league,team=state.team;
- state.records=new Map();state.statsTasks.clear();state.failures=[];state.loading=0;state.statsTotal=0;state.statsDone=0;state.statsAvailable=0;
+ state.records=new Map();state.teamSummaries=new Map();state.selectedPlayer=null;state.statsTasks.clear();state.failures=[];state.loading=0;state.statsTotal=0;state.statsDone=0;state.statsAvailable=0;
  saveURL();setWarning('');draw(false);
  const wanted=[...seasons(),ascSeasons()[0]-1];
  await Promise.allSettled(wanted.map(y=>loadSeason(y,token,league,team,abort.signal)));
@@ -325,7 +422,11 @@ $('sort').addEventListener('change',()=>{state.sort=$('sort').value;scheduleDraw
 $('playerFilter').addEventListener('input',()=>{state.filter=$('playerFilter').value.trim().toLowerCase();scheduleDraw()});
 $('onlyNew').addEventListener('change',()=>{state.onlyNew=$('onlyNew').checked;scheduleDraw()});
 $('refresh').addEventListener('click',async()=>{const db=await openDb();if(db)await new Promise(resolve=>{try{const tx=db.transaction('responses','readwrite');tx.objectStore('responses').clear();tx.oncomplete=resolve;tx.onerror=resolve}catch{resolve()}});loadTimeline(true)});
-$('board').addEventListener('click',e=>{const retry=e.target.closest('[data-retry]');if(retry){retryYear(Number(retry.dataset.retry));return}const btn=e.target.closest('[data-player]');if(btn)showDetail(btn.dataset.player,Number(btn.dataset.year))});
+$('board').addEventListener('click',e=>{const retry=e.target.closest('[data-retry]');if(retry){retryYear(Number(retry.dataset.retry));return}const btn=e.target.closest('[data-player]');if(btn){state.selectedPlayer=btn.dataset.player;updateLinkedCards();updateSpotlight();showDetail(btn.dataset.player,Number(btn.dataset.year))}});
+$('board').addEventListener('pointerover',e=>{const b=e.target.closest('[data-player]');if(b&&state.hoverPlayer!==b.dataset.player){state.hoverPlayer=b.dataset.player;updateLinkedCards()}});
+$('board').addEventListener('pointerleave',()=>{state.hoverPlayer=null;updateLinkedCards()});
+$('spotlight').addEventListener('click',e=>{if(e.target.id==='clearSpotlight'){state.selectedPlayer=null;updateLinkedCards();updateSpotlight()}});
+
 $('closeModal').addEventListener('click',()=>$('detail').close());$('detail').addEventListener('click',e=>{if(e.target===$('detail'))$('detail').close()});
 window.__CAMPUS_ROSTER_TEST__={parseStats,siteRoster,normalizeAthlete,parseTeams,getState:()=>state,yearLabel};
 state.teams=picks();fillTeams();loadTeams();loadTimeline();}
