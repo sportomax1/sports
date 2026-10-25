@@ -63,7 +63,7 @@ dialog{width:min(560px,calc(100% - 24px));border:1px solid #49617b;border-radius
  <div class="control team team-picker" id="picker"><label for="teamFilter">Division I school</label><div class="picker-line"><img id="pickedLogo" alt=""><input id="teamFilter" type="search" role="combobox" aria-controls="teamResults" aria-autocomplete="list" aria-expanded="false" autocomplete="off" placeholder="Search all Division I teams…"><button class="action secondary" id="teamToggle" type="button">▾</button></div><div id="teamResults" class="team-menu" role="listbox" hidden></div><select id="teamSelect" aria-label="Selected school" hidden></select><span id="schoolCoverage" class="smallnote">Loading school directory</span></div>
  <div class="control year"><label>Newest season</label><select id="endYear"></select></div>
  <div class="control narrow"><label>Seasons</label><select id="seasonCount"><option value="10" selected>10 years</option><option value="15">15 years</option><option value="20">20 years</option><option value="30">30 years</option><option value="40">40 years</option></select></div>
- <div class="control sort"><label>Order players</label><select id="sort"><option value="points">PPG (high → low)</option><option value="name">Name (A–Z)</option><option value="number">Jersey #</option><option value="position">Position</option><option value="rebounds">RPG (high → low)</option><option value="assists">APG (high → low)</option></select></div>
+ <div class="control sort"><label>Order players</label><select id="sort"><option value="points">PPG (high → low)</option><option value="name">Name (A–Z)</option><option value="number">Jersey #</option><option value="position">Position</option><option value="rebounds">RPG (high → low)</option><option value="assists">APG (high → low)</option><option value="improvement">PPG gain (largest)</option><option value="decline">PPG decline (largest)</option></select></div>
  <div class="control playerfind"><label>Player filter</label><input id="playerFilter" type="search" placeholder="Find a player…"></div><div class="control narrow"><label>Cards</label><select id="density"><option value="standard">Standard</option><option value="compact">Compact</option><option value="detailed">Detailed</option></select></div>
  <button id="older" class="action secondary" type="button" title="Add five older seasons">+5 older</button>
  <label class="checkbox"><input type="checkbox" id="onlyNew"> New players only</label>
@@ -72,7 +72,7 @@ dialog{width:min(560px,calc(100% - 24px));border:1px solid #49617b;border-radius
 <div class="statusbar"><strong id="summary">Select a school to explore roster history.</strong><span id="progress"></span><span class="key"><i class="square"></i>Green = new to team (confirmed by prior rosters)</span><span class="hint">Newest on left · older seasons →</span></div>
 <div id="warning" class="notice" hidden role="alert"></div><div id="spotlight" class="spotlight" hidden></div>
 <section class="board-wrap"><div class="board" id="board" aria-label="Season roster timeline"><div class="loading">Loading teams…</div></div></section>
-<footer class="footer"><span>Data: ESPN season rosters and reported individual statistics. Missing numbers display as —. Historical jerseys and class years are omitted when season-specific values are unavailable. Green marks the first roster appearance <b>within the available historical comparison</b>, including incoming transfers. Earlier seasons outside that comparison can exist.</span><span>Seasons are labeled by ending year (2026–27 = 2027). Stats appear as they are retrieved; current-season stats may be unavailable.</span></footer>
+<footer class="footer"><span>Data: ESPN season rosters and reported individual statistics. Missing numbers display as —. Historical jerseys and class years are omitted when season-specific values are unavailable. Freshman* is based on reported class year only; other arrival types remain unverified without evidence. Green marks the first roster appearance <b>within the available historical comparison</b>, including incoming transfers. Earlier seasons outside that comparison can exist.</span><span>Seasons are labeled by ending year (2026–27 = 2027). Stats appear as they are retrieved; current-season stats may be unavailable.</span></footer>
 </main>
 <dialog id="detail"><div class="modal-top"><div id="modalImage"></div><div><h2 id="modalName"></h2><p id="modalInfo"></p></div><button type="button" class="close" id="closeModal" aria-label="Close player detail">✕</button></div><div class="dialog-tabs" role="tablist" aria-label="Player details"><button type="button" class="active" data-detailtab="career">Career</button><button type="button" data-detailtab="gamelog">Game log</button></div><div id="modalHistory"></div><div class="modalfoot" id="modalFoot"></div></dialog>
 <script>
@@ -319,7 +319,7 @@ function isFreshman(p){return /^(FR|FRESHMAN|FIRST.YEAR)$/i.test(String(p.classY
 function explicitTransfer(p){return !!(p.previousTeamName||p.transferVerified)}
 
 function sortPlayers(players){const filtered=players.filter(p=>(!state.onlyNew||p.isNew)&&(!state.filter||p.name.toLowerCase().includes(state.filter)||String(p.number).includes(state.filter)));
-const k=state.sort;filtered.sort((a,b)=>{if(k==='name')return a.name.localeCompare(b.name);if(k==='number')return (num(a.number)??999)-(num(b.number)??999)||a.name.localeCompare(b.name);if(k==='position')return String(a.pos).localeCompare(String(b.pos))||a.name.localeCompare(b.name);
+const k=state.sort;filtered.sort((a,b)=>{if(k==='improvement'||k==='decline'){const av=a.growth,bv=b.growth;if(av==null&&bv==null)return a.name.localeCompare(b.name);if(av==null)return 1;if(bv==null)return -1;return (k==='improvement'?bv-av:av-bv)||a.name.localeCompare(b.name)}if(k==='name')return a.name.localeCompare(b.name);if(k==='number')return (num(a.number)??999)-(num(b.number)??999)||a.name.localeCompare(b.name);if(k==='position')return String(a.pos).localeCompare(String(b.pos))||a.name.localeCompare(b.name);
 const field=k==='rebounds'?'rebounds':k==='assists'?'assists':'points';let av=a.stats?.[field]??-1,bv=b.stats?.[field]??-1;return bv-av||a.name.localeCompare(b.name)});return filtered}
 function statHTML(p){let s=p.stats;return ['points','rebounds','assists'].map((key,i)=>'<span class="stat'+(s?.[key]==null?' undisplayed':'')+'"><b>'+fmt(s?.[key])+'</b>'+['PPG','RPG','APG'][i]+'</span>').join('')}
 
@@ -532,7 +532,7 @@ async function loadTimeline(force=false){
  const abort=new AbortController();state.abort=abort;
  state.loadId++;
  const token=state.loadId,league=state.league,team=state.team;
- state.records=new Map();state.teamSummaries=new Map();state.selectedPlayer=null;state.statsTasks.clear();state.failures=[];state.loading=0;state.statsTotal=0;state.statsDone=0;state.statsAvailable=0;
+ state.records=new Map();state.teamSummaries=new Map();state.selectedPlayer=null;if($('detail').open)$('detail').close();state.statsTasks.clear();state.failures=[];state.loading=0;state.statsTotal=0;state.statsDone=0;state.statsAvailable=0;
  saveURL();setWarning('');draw(false);
  const wanted=[...seasons(),ascSeasons()[0]-1];
  await Promise.allSettled(wanted.map(y=>loadSeason(y,token,league,team,abort.signal,force)));
@@ -628,7 +628,7 @@ function renderDetail(){
  else{
   const key=state.league+':'+id+':'+year,record=state.gameLogs.get(key);
   if(!record){$('modalHistory').innerHTML='<div class="loading">Loading ESPN game log…</div>';loadGameLog(id,year)}
-  else if(record.rows.length){$('modalHistory').innerHTML='<div class="game-log">'+record.rows.map(x=>'<div class="game-item"><span>'+safe(x.date?String(x.date).slice(0,10):'')+' · '+safe(x.opponent)+'</span><span class="value">'+safe(x.line|| (x.pts!=null?x.pts+' points':'Box score available'))+'</span></div>').join('')+'</div>'}
+  else if(record.rows.length){const points=record.rows.map(x=>num(x.pts)).filter(v=>v!=null);const high=points.length?'<div class="stats-note">High in returned games: '+Math.max(...points)+' points ('+points.length+' games with points reported)</div>':'';$('modalHistory').innerHTML=high+'<div class="game-log">'+record.rows.map(x=>'<div class="game-item"><span>'+safe(x.date?String(x.date).slice(0,10):'')+' · '+safe(x.opponent)+'</span><span class="value">'+safe(x.line|| (x.pts!=null?x.pts+' points':'Box score available'))+'</span></div>').join('')+'</div>'}
   else $('modalHistory').innerHTML='<div class="stats-note">No game-by-game records were returned for this athlete and season. Open ESPN to check other coverage.</div>';
  }
  const career=detailEntries(id),valid=career.filter(x=>x.p.stats?.points!=null);
