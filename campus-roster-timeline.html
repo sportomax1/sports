@@ -135,36 +135,55 @@ function selectTeam(id){
  state.team=String(id);$('teamFilter').value=t.name;showTeamMenu(false);fillTeams();
  if(changed)loadTimeline();
 }
+
+function teamsFromStandings(root){
+ const output=[];function visit(node){
+  for(const entry of node?.standings?.entries||[]){
+   const t=entry.team;if(!t?.id||!(t.displayName||t.name))continue;
+   output.push({id:String(t.id),name:t.displayName||t.name,abbr:t.abbreviation||'',logo:t.logos?.[0]?.href||t.logo||'https://a.espncdn.com/i/teamlogos/ncaa/500/'+t.id+'.png'});
+  }
+  for(const child of node?.children||[])visit(child);
+ }visit(root);return output;
+}
 async function loadTeams(){
  const league=state.league;state.directoryLoading=true;state.directoryComplete=false;fillTeams();
+ const base=ESPN+LEAGUES[league]+'/teams?groups=50&limit=500';
+ const standings='https://site.api.espn.com/apis/v2/sports/basketball/'+LEAGUES[league]+'/standings?region=us&lang=en&contentorigin=espn&group=50&level=3&season='+CURRENT;
+ const fallbackStandings='https://site.api.espn.com/apis/v2/sports/basketball/'+LEAGUES[league]+'/standings?region=us&lang=en&contentorigin=espn&group=50&level=3&season='+(CURRENT-1);
+ let groups=[],expected=0,problems=[];
  try{
-  const base=ESPN+LEAGUES[league]+'/teams?groups=50&limit=500';
-  const data=await get(base,{year:CURRENT,priority:true});
-  const count=Number(data?.count??data?.sports?.[0]?.leagues?.[0]?.count??0);
-  let teams=parseTeams(data);
-  if(count>teams.length&&count<=2000){
-   for(let page=2;page<=Math.ceil(count/500);page++){
-    const d=await get(base+'&page='+page,{year:CURRENT,priority:true});
-    teams.push(...parseTeams(d));
+  const attempts=await Promise.allSettled([get(base,{year:CURRENT,priority:true}),get(standings,{year:CURRENT,priority:true})]);
+  if(attempts[0].status==='fulfilled'){
+   const data=attempts[0].value;groups.push(...parseTeams(data));expected=Number(data?.count??data?.sports?.[0]?.leagues?.[0]?.count??0);
+   if(expected>groups.length&&expected<=2000){
+    for(let page=2;page<=Math.ceil(expected/500);page++)try{const next=await get(base+'&page='+page,{year:CURRENT,priority:true});groups.push(...parseTeams(next))}catch(e){problems.push('Team page '+page)}
    }
+  }else problems.push('Team index: '+attempts[0].reason?.message);
+  if(attempts[1].status==='fulfilled')groups.push(...teamsFromStandings(attempts[1].value));else problems.push('Standings: '+attempts[1].reason?.message);
+  if(groups.length<300){
+   try{
+    const prev=teamsFromStandings(await get(fallbackStandings,{year:CURRENT-1,priority:true}));
+    if(prev.length>groups.length)groups.push(...prev);
+    problems.push('Previous-season directory used for missing schools');
+   }catch(e){problems.push('Prior standings unavailable')}
   }
   if(league!==state.league)return;
-  if(!teams.length)throw Error('ESPN returned zero Division I schools');
-  state.teams=[...new Map(teams.map(t=>[t.id,t])).values()];
-  state.directoryComplete=state.teams.length>=300&&(!count||state.teams.length>=count);
+  const byId=new Map(groups.map(t=>[t.id,t]));
+  if(!byId.size)throw Error(problems.join('; ')||'No schools returned');
+  state.teams=[...byId.values()];
+  state.directoryComplete=state.teams.length>=300&&(!expected||state.teams.length>=expected)&&!problems.some(x=>x.includes('Previous-season'));
   if(!state.teams.some(t=>t.id===state.team))state.team=state.teams[0].id;
   $('teamFilter').value=state.teams.find(t=>t.id===state.team)?.name||'';
   fillTeams();
-  if(!state.directoryComplete)setWarning('Division I directory incomplete: '+state.teams.length+' schools returned.');
+  if(!state.directoryComplete)setWarning('Division I school coverage is not fully verified. '+state.teams.length+' schools found. '+problems.join('; '));
  }catch(e){
   if(league!==state.league)return;
   state.teams=picks();state.directoryComplete=false;
   if(!state.teams.some(t=>t.id===state.team))state.team=state.teams[0].id;
   $('teamFilter').value=state.teams.find(t=>t.id===state.team)?.name||'';
-  fillTeams();setWarning('Division I directory unavailable. Only fallback schools shown, NOT all Division I teams. '+e.message);
+  fillTeams();setWarning('Full Division I directory unavailable. Limited fallback list shown. '+e.message);
  }finally{if(league===state.league){state.directoryLoading=false;fillTeams()}}
 }
-
 function extractId(obj){if(!obj)return '';if(obj.id!=null)return String(obj.id);const ref=obj['$ref']||obj.href||'';let m=String(ref).match(/\/athletes\/(\d+)(?:[/?]|$)/);return m?m[1]:''}
 function normalizeAthlete(obj){const a=obj.athlete||obj.person||obj;const id=extractId(a)||extractId(obj);if(!id)return null;let person={id,name:a.displayName||a.fullName||a.name||a.shortName||'',head:typeof a.headshot==='string'?a.headshot:(a.headshot?.href||a.headshot?.url||''),number:a.jersey??obj.jersey??'',pos:a.position?.abbreviation||obj.position?.abbreviation||a.position?.name||'',classYear:a.experience?.abbreviation||a.experience?.displayValue||a.displayClass||a.class||'',stats:null,previousTeamName:a.previousTeam?.displayName||a.previousSchool?.displayName||a.previousSchool?.name||'',transferVerified:!!(a.transfer?.confirmed||a.transferInfo?.confirmed)};
 if(a.statistics){person.stats=parseStats(a.statistics)}
