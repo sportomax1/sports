@@ -353,10 +353,10 @@ function renderLane(y){
  }
  const summary=state.teamSummaries.get(y);
  const record=summary?.record||'—';
- const rec='<div class="rec-row"><span class="rec-pill">'+safe(record)+'</span><span class="rec-detail">'+safe(summary?.record?'overall W–L':'Record unavailable')+'</span></div>'+
+ const rec='<div class="rec-row"><span class="rec-pill">'+safe(record)+'</span><span class="rec-detail">'+safe(summary?.recordLabel||'Record unavailable')+'</span></div>'+
  (summary?.coach?'<div class="rec-detail">Coach: '+safe(summary.coach)+'</div>':'')+
  (summary?.ppg!=null?'<div class="rec-detail">Team PPG '+fmt(summary.ppg)+'</div>':'')+
- (summary?.conference?'<div class="rec-detail">Conference: '+safe(summary.conference)+'</div>':'')+
+ (summary?.conference?'<div class="rec-detail">Conference: '+safe(summary.conference)+'</div>':'')+(summary?.conferenceFinish?'<div class="rec-detail">Finish: '+safe(summary.conferenceFinish)+'</div>':'')+
  (summary?.tournament?'<div class="rec-detail">NCAA: '+safe(summary.tournament)+'</div>':'');
  return '<article class="lane'+(latest?' latest':'')+'" data-season="'+y+'"><div class="lane-head"><div class="yearline"><h2>'+yearLabel(y)+'</h2>'+(latest?'<span class="latestmark">NEWEST</span>':'')+'</div>'+rec+'<div class="meta"><span>'+safe(meta)+'</span><span>'+y+'</span></div>'+(r?.ok?turnoverHTML(r)+coverageHTML(r):'')+'</div><div class="lane-body">'+body+'</div>'+(r?.origin&&r.ok?'<div class="lane-flag">'+safe(r.origin)+'</div>':'')+'</article>';
 }
@@ -388,8 +388,44 @@ function recordFromAPI(json){
  const stat=k=>num(stats.find(x=>k.includes(String(x.name||x.abbreviation||'').toLowerCase()))?.value);
  const w=stat(['wins','w']),l=stat(['losses','l']);return w!=null&&l!=null?w+'–'+l:null;
 }
+
+function scheduleSummaryData(payload,team,year){
+ const events=payload?.events||[],selected=[];
+ for(const ev of events){
+  if(ev.season?.year&&Number(ev.season.year)!==year)continue;
+  const date=String(ev.date||'');
+  if(date&&/^\d{4}/.test(date)){
+   const yr=Number(date.slice(0,4)),month=Number(date.slice(5,7));
+   if(!(yr===year&&month<=7)&&!(yr===year-1&&month>=7))continue;
+  }
+  const comp=ev.competitions?.[0];
+  if(!comp)continue;
+  const mine=comp.competitors?.find(c=>String(c.team?.id||c.id)===String(team)),other=comp.competitors?.find(c=>String(c.team?.id||c.id)!==String(team));
+  if(!mine||!other)continue;
+  const completed=ev.status?.type?.completed===true||comp.status?.type?.completed===true;
+  if(!completed)continue;
+  let win=mine.winner;
+  if(typeof win!=='boolean'){
+   const a=num(mine.score?.value??mine.score),b=num(other.score?.value??other.score);
+   if(a!=null&&b!=null&&a!==b)win=a>b;
+  }
+  if(typeof win!=='boolean')continue;
+  selected.push({win,points:num(mine.score?.value??mine.score),event:ev});
+ }
+ const w=selected.filter(x=>x.win).length,l=selected.length-w;
+ const scorePoints=selected.filter(x=>x.points!=null);
+ const ppg=scorePoints.length?scorePoints.reduce((total,x)=>total+x.points,0)/scorePoints.length:null;
+ const tourney=selected.find(x=>/ncaa.{0,40}tournament|ncaa championship/i.test(String(x.event?.notes?.[0]?.headline||x.event?.name||'')));
+ return{record:selected.length? w+'–'+l:null,ppg,tournament:tourney?'Tournament appearance (verified game)':null};
+}
+async function scheduleSummary(y,team,league,signal){
+ const url=ESPN+LEAGUES[league]+'/teams/'+team+'/schedule?season='+y+'&limit=500';
+ const payload=await get(url,{year:y,signal});
+ if(payload?.season?.year&&Number(payload.season.year)!==y)throw Error('Historical schedule season mismatch');
+ return scheduleSummaryData(payload,team,y);
+}
 async function loadTeamSummary(y,token,team,league,signal){
- const info={record:null,ppg:null,coach:null,conference:null,tournament:null};
+ const info={record:null,recordLabel:null,ppg:null,coach:null,conference:null,conferenceFinish:null,tournament:null};
  try{
   const profile=await get(CORE+LEAGUES[league]+'/seasons/'+y+'/teams/'+team+'?lang=en&region=us',{year:y,signal});
   if(profile?.id&&String(profile.id)!==String(team))throw Error('Wrong season team');
@@ -397,16 +433,33 @@ async function loadTeamSummary(y,token,team,league,signal){
   await Promise.allSettled(refs.filter(x=>x[1]).map(async([key,url])=>{
    try{
     const d=await get(url,{year:y,signal});
-    if(key==='record')info.record=recordFromAPI(d);
+    if(key==='record'){info.record=recordFromAPI(d);if(info.record)info.recordLabel='Official season record'}
     if(key==='statistics')info.ppg=parseStats(d)?.points??null;
-    if(key==='coaches'){const coach=(d.items||d.coaches||[]).find?.(x=>x?.displayName||x?.fullName);info.coach=coach?.displayName||coach?.fullName||d.displayName||null}
-    if(key==='groups')info.conference=d.name||null;
+    if(key==='coaches'){
+     const coach=(d.items||d.coaches||[]).find?.(x=>x?.displayName||x?.fullName);
+     info.coach=coach?.displayName||coach?.fullName||d.displayName||null;
+     if(!info.coach){const ref=(d.items||d.coaches||[])[0]?.['$ref'];if(ref)try{const c=await get(ref,{year:y,signal});info.coach=c.displayName||c.fullName||c.name||null}catch{}}
+    }
+    if(key==='groups'){
+     info.conference=d.name||null;
+     if(!info.conference){const ref=(d.items||d.groups||[])[0]?.['$ref'];if(ref)try{const group=await get(ref,{year:y,signal});info.conference=group.name||null}catch{}}
+    }
    }catch{}
   }));
  }catch{}
+ // Team schedule can fill W/L from confirmed finals, but only as coverage-limited games.
+ if(!info.record||info.ppg==null||!info.tournament){
+  try{
+   const derived=await scheduleSummary(y,team,league,signal);
+   if(!info.record&&derived.record){info.record=derived.record;info.recordLabel='W–L from covered final games'}
+   if(info.ppg==null&&derived.ppg!=null)info.ppg=derived.ppg;
+   if(derived.tournament)info.tournament=derived.tournament;
+  }catch{}
+ }
  if(token!==state.loadId||signal?.aborted)return;
  state.teamSummaries.set(y,info);scheduleDraw();persistYearSnapshot(y,token);
 }
+
 function derivedKey(lg,team,y){return 'compiled-v2:'+lg+':'+team+':'+y}
 async function persistYearSnapshot(y,token){
  if(token!==state.loadId)return;
