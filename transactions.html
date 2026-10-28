@@ -3,55 +3,203 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0b111b">
+<meta name="theme-color" content="#f3f6f8">
 <title>Transaction Wire | Sports Hub</title>
 <style>
-:root{color-scheme:dark;--bg:#080d15;--surface:#111a28;--surface2:#172336;--stroke:#2a394e;--text:#f2f6fc;--muted:#94a6be;--gold:#f3bb46;--nfl:#70a5f6;--nba:#ec944d;--mlb:#e76775;--nhl:#78c4b8}
-*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font:14px/1.45 Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}body{background:radial-gradient(ellipse at 60% -200px,#172b47 0,transparent 50%),var(--bg)}button,input,select{font:inherit;color:inherit}button{cursor:pointer}button:disabled{opacity:.48;cursor:default}a{color:inherit}.wrap{width:min(1220px,calc(100% - 28px));margin:auto}
-.top{border-bottom:1px solid var(--stroke);background:#0c1420ef}.topinner{min-height:68px;display:flex;align-items:center;gap:15px}.brand{font-size:15px;font-weight:850;letter-spacing:.02em;white-space:nowrap}.brand span{color:var(--gold)}.toplinks{margin-left:auto;display:flex;gap:8px}.homelink,.helpbutton{padding:9px 12px;border:1px solid var(--stroke);border-radius:9px;text-decoration:none;color:#becde0;background:#121e2e;font-size:12px;font-weight:700}.helpbutton{background:transparent}
-.hero{padding:30px 0 17px}.eyebrow{font-size:11px;text-transform:uppercase;font-weight:900;letter-spacing:.15em;color:var(--gold)}.hero h1{font-size:clamp(28px,4vw,42px);letter-spacing:-.04em;line-height:1.1;margin:6px 0}.hero p{margin:7px 0 0;font-size:13px;color:var(--muted);max-width:690px}
-.filterpanel{border:1px solid var(--stroke);border-radius:15px;background:linear-gradient(160deg,#131e2d,#0f1826);padding:13px;margin-bottom:14px}.leaguebar{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}.leaguebtn{display:flex;align-items:center;gap:8px;min-height:43px;padding:7px 13px;border:1px solid #334459;background:#131f30;border-radius:10px;font-weight:850;transition:background .15s}.leaguebtn.on{background:#f3bd50;color:#151515;border-color:#f3bd50}.leaguebtn[data-league="NFL"]:not(.on){color:var(--nfl)}.leaguebtn[data-league="NBA"]:not(.on){color:var(--nba)}.leaguebtn[data-league="MLB"]:not(.on){color:var(--mlb)}.leaguebtn[data-league="NHL"]:not(.on){color:var(--nhl)}.leaguebtn .count{font-size:10px;opacity:.75}.leaguebtn img{width:23px;height:23px;object-fit:contain}
-.controls{display:grid;grid-template-columns:minmax(160px,1.4fr) minmax(105px,.85fr) minmax(125px,1fr) minmax(125px,1fr) auto;gap:9px;align-items:end}.control label{display:block;color:#b6c4d5;font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:850;margin-bottom:5px}.control input,.control select{background:#0a1320;border:1px solid #304056;min-height:41px;padding:9px 10px;border-radius:9px;width:100%;min-width:0;outline:none}.control input:focus,.control select:focus{border-color:var(--gold)}.btn{border:1px solid #35465e;border-radius:9px;background:#172539;min-height:41px;padding:8px 12px;font-weight:750}.btn.primary{background:#efb83f;color:#15120c;border-color:#efb83f}.btn.small{min-height:32px;font-size:11px;padding:5px 9px}.presets{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:12px}.presets small{font-size:11px;color:var(--muted);margin-right:4px}.preset{padding:6px 10px;font-size:11px;border:1px solid #33445a;border-radius:7px;background:#172335}.preset.on{border-color:#efb83f;color:#ffdc85;background:#3c311f}.secondary{display:flex;align-items:center;gap:9px;margin-left:auto}
-.summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:0 0 14px}.stat{border:1px solid var(--stroke);border-radius:11px;background:#111b29;padding:12px 14px}.stat strong{display:block;font-size:22px;line-height:1.2;font-variant-numeric:tabular-nums}.stat span{display:block;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:5px;font-weight:750}.stat.nfl{border-top:2px solid var(--nfl)}.stat.nba{border-top:2px solid var(--nba)}.stat.mlb{border-top:2px solid var(--mlb)}.stat.nhl{border-top:2px solid var(--nhl)}
-.toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:15px 0 8px}.toolbarleft,.toolbarright{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.status{font-size:12px;color:var(--muted)}.status strong{color:#f2f5fa}.warn{padding:10px 12px;border:1px solid #78602c;color:#e2c989;border-radius:9px;background:#2a251b;font-size:11px;margin-bottom:12px;line-height:1.5}.warn a{text-decoration:underline}.hidden{display:none!important}.feed{padding-bottom:70px}.day{margin-top:18px}.dayhead{display:flex;align-items:center;gap:10px;color:#bacce1;font-size:12px;font-weight:850;margin-bottom:9px}.dayhead:after{content:"";height:1px;flex:1;background:#29384c}.dayhead .daycount{color:var(--muted);font-size:10px;font-weight:600}
-.entries{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.entry{position:relative;min-width:0;display:flex;gap:11px;border:1px solid var(--stroke);background:linear-gradient(125deg,#142031,#101a27);border-radius:12px;padding:12px;overflow:hidden}.entry:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--league-color,#68758c)}.face{width:64px;height:64px;flex:none;display:grid;place-items:center;position:relative;background:#202e3f;border-radius:10px;overflow:hidden;border:1px solid #35445a;color:#9baec4;font-size:20px;font-weight:800}.face img{width:100%;height:100%;object-fit:cover;object-position:center top}.face .fallback{display:grid;place-items:center;width:100%;height:100%}.information{min-width:0;flex:1}.eyeline{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:4px}.tag{border:1px solid #3a4b61;background:#1b2b3d;color:#ccdae9;border-radius:5px;padding:2px 5px;font-size:9px;font-weight:850;letter-spacing:.035em}.tag.league{color:var(--league-color)}.tag.type{color:#e1c98a;border-color:#534731}.time{font-size:10px;color:var(--muted);margin-left:auto}.name{font-size:14px;font-weight:850;line-height:1.3;margin:3px 0}.description{font-size:12px;color:#bbcadb;margin:4px 0 7px;line-height:1.47;overflow-wrap:anywhere}.teamline{display:flex;gap:7px;align-items:center;min-height:22px;color:#a7b9ce;font-size:11px}.teamlogo{width:25px;height:25px;object-fit:contain}.teamname{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.entryactions{margin-left:auto;display:flex;gap:7px}.entryactions a{font-size:10px;text-decoration:none;color:#eac576}.entryactions a:hover{text-decoration:underline}
-.empty{border:1px dashed #3a4e67;border-radius:13px;text-align:center;padding:46px 12px;color:#a8b9cc}.empty h3{color:#e8eff8;font-size:17px;margin:0 0 5px}.empty p{margin:0 auto 12px;max-width:520px;font-size:12px}.spinner{width:25px;height:25px;border:3px solid #32425a;border-top-color:#f3bb46;border-radius:50%;animation:spin .9s linear infinite;margin:0 auto 13px}@keyframes spin{to{transform:rotate(360deg)}}
-.foot{color:var(--muted);font-size:11px;line-height:1.5;margin:20px 0 0;padding:14px 0 36px;border-top:1px solid var(--stroke)}.foot a{color:#c6dbf2}.more{display:flex;justify-content:center;margin:20px 0}
-.dialog{position:fixed;inset:0;z-index:99;display:grid;place-items:center;background:#000a;padding:16px}.dialog .panel{width:min(650px,100%);background:#122031;border:1px solid #465774;border-radius:14px;padding:18px;box-shadow:0 15px 60px #000a}.dialog h2{margin:0 0 8px;font-size:20px}.dialog p,.dialog li{color:#bdcada;font-size:13px}.dialog li{margin:8px 0}.dialog .close{float:right}
-@media(max-width:900px){.controls{grid-template-columns:repeat(4,minmax(0,1fr))}.control.search{grid-column:span 2}.control.team{grid-column:span 2}.controls .primary{grid-column:span 4}.entries{grid-template-columns:1fr 1fr}.secondary{margin-left:0}}
-@media(max-width:650px){.topinner{min-height:58px}.hero{padding:20px 0 13px}.toplinks .helpbutton{display:none}.leaguebar{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}.leaguebtn{flex-direction:column;gap:0;min-width:0;justify-content:center;min-height:52px;padding:6px 0;font-size:11px}.leaguebtn img{display:none}.leaguebtn .count{font-size:9px}.controls{grid-template-columns:repeat(2,minmax(0,1fr))}.control.search,.control.team{grid-column:span 2}.controls .primary{grid-column:span 2}.summary{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}.stat{padding:9px 7px;text-align:center}.stat strong{font-size:17px}.stat span{font-size:8px;letter-spacing:0}.entries{grid-template-columns:1fr}.entry{padding:11px}.face{height:59px;width:59px}.filterpanel{padding:10px}.preset{padding:5px 8px}.toolbar{align-items:start}.description{font-size:12px}}
-@media(prefers-reduced-motion:reduce){.spinner{animation:none}}
+:root{color-scheme:light;--bg:#f3f6f8;--paper:#fff;--paper2:#f8fafb;--line:#dce5eb;--ink:#122b3c;--ink2:#244459;--muted:#72899b;--navy:#14364a;--teal:#236b85;--teal-dark:#195773;--nfl:#4479bb;--nba:#cc7649;--mlb:#d26166;--nhl:#4c9892;--shadow:0 3px 16px rgba(27,52,71,.035)}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;line-height:1.48}
+button,input,select{font:inherit;color:inherit}button{cursor:pointer}button:disabled{opacity:.48;cursor:default}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #75b6db;outline-offset:2px}
+a{color:var(--teal-dark)}.hidden{display:none!important}
+.top{height:72px;background:var(--paper);border-bottom:1px solid var(--line)}
+.topinner{height:100%;display:flex;align-items:center;justify-content:space-between;padding:0 25px;gap:16px}
+.identity{display:flex;align-items:center;gap:12px;min-width:0}
+.appIcon{width:41px;height:41px;background:#122e40;border-radius:11px;display:grid;place-items:center;flex:none;font-size:15px;font-weight:950;letter-spacing:-.07em;color:#fff}
+.appIcon b{color:#a6d5e8;font-weight:900}
+.breadcrumb{color:#6a8497;letter-spacing:.13em;font-size:10px;font-weight:850;text-transform:uppercase;white-space:nowrap}
+.productName{font-size:16px;font-weight:860;line-height:1.2;letter-spacing:-.025em}
+.toplinks{display:flex;gap:16px;align-items:center;font-size:12px}
+.toplinks a{text-decoration:none;font-weight:700}
+.toplinks .preview{color:#8297a7;font-weight:500}
+.pill{border:1px solid #cde5df;background:#eff8f5;border-radius:7px;color:#2e806b;padding:7px 9px;font-weight:800;font-size:10px;white-space:nowrap}
+.shell{display:grid;grid-template-columns:290px minmax(0,1fr);align-items:start;min-height:calc(100vh - 72px)}
+.sidebar{background:var(--paper);border-right:1px solid var(--line);min-height:calc(100vh - 72px);padding:27px 21px 32px;position:sticky;top:0;align-self:stretch}
+.sidebarHead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.overline{font-weight:900;color:#698ba1;font-size:10px;letter-spacing:.14em;text-transform:uppercase}
+.sidebar h2{font-size:21px;font-weight:850;line-height:1.18;letter-spacing:-.04em;margin:10px 0 7px}
+.sideintro{color:var(--muted);font-size:12px;line-height:1.6;margin:0 0 25px}
+.mobileFilter{display:none}
+.sideDivider{height:1px;background:var(--line);margin:23px 0}
+.control{margin-bottom:14px}
+.control label,.sideTitle{display:block;font-size:10px;font-weight:900;letter-spacing:.05em;color:#3a5d72;margin-bottom:6px}
+.control input,.control select{height:43px;width:100%;min-width:0;border:1px solid #d5e1e9;background:#fff;border-radius:8px;padding:0 11px;font-size:13px}
+.control input::placeholder{color:#9eafbb}
+.dates{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.dates .control input{padding:0 7px;font-size:12px}
+.presetLabel{margin-bottom:8px}
+.presets{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin:6px 0 18px}
+.preset{padding:8px 1px;border:1px solid #d7e2e9;background:#f8fbfd;border-radius:7px;font-weight:750;font-size:11px}
+.preset.on{background:#e8f3f8;border-color:#8ec2db;color:#1b6485}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:40px;padding:9px 13px;border-radius:8px;border:1px solid #d6e2e9;background:#fff;color:#1e506a;font-weight:800;font-size:12px;white-space:nowrap}
+.btn:hover,.preset:hover{background:#eef5f8}
+.btn.primary{background:var(--teal);color:#fff;border-color:var(--teal)}
+.btn.primary:hover{background:#17536b}
+.full{width:100%}
+.sideActions{display:grid;grid-template-columns:1fr auto;gap:7px}
+#refresh{width:42px;padding:0;font-size:17px}
+.helpbutton{background:#f4f8fa;width:100%;justify-content:flex-start;font-weight:750;white-space:normal;text-align:left}
+.sideNote{color:#778e9e;font-size:11px;line-height:1.65}
+.sideNote b{color:#2a546d}
+.sourceItem{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:11px;color:#4e6b7f;padding:8px 0;border-bottom:1px solid #e8eff3}
+.sourceItem:last-of-type{border:0}
+.sourceBadge{background:#eff5f7;border:1px solid #dbe6eb;color:#557e8e;font-size:9px;padding:3px 6px;border-radius:5px;font-weight:800}
+.sideBottom{display:flex;align-items:center;gap:7px;padding-top:11px;font-size:11px}
+.main{max-width:1520px;width:100%;min-width:0;padding:32px clamp(18px,3vw,52px) 22px;margin:0 auto}
+.hero{min-height:177px;display:flex;align-items:center;justify-content:space-between;gap:20px;position:relative;overflow:hidden;background:linear-gradient(110deg,#16394e,#26576b);color:#fff;border-radius:15px;padding:26px 34px;margin-bottom:17px;isolation:isolate}
+.hero:before,.hero:after{content:"";position:absolute;z-index:-1;pointer-events:none;border:1px solid #ffffff22;border-radius:50%;width:330px;height:330px;right:-95px;top:-165px;box-shadow:0 0 0 55px #ffffff07,0 0 0 104px #ffffff06}
+.hero:after{width:580px;height:580px;right:-310px;top:-270px;box-shadow:none}
+.hero .eyebrow{color:#b9e2f2;letter-spacing:.12em;text-transform:uppercase;font-weight:850;font-size:11px}
+.hero h1{font-size:clamp(30px,3.4vw,44px);line-height:1.13;letter-spacing:-.045em;margin:10px 0 8px;font-weight:850}
+.hero p{font-size:13px;color:#d1e7f1;line-height:1.6;max-width:600px;margin:0}
+.heroLabel{position:relative;z-index:1;align-self:end;flex:none;font-size:11px;font-weight:800;color:#d7edf6;white-space:nowrap;text-decoration:none}
+.summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:11px;margin-bottom:28px}
+.stat{background:var(--paper);border:1px solid var(--line);border-radius:11px;padding:17px 19px;box-shadow:var(--shadow);min-width:0;position:relative;overflow:hidden}
+.stat strong{display:block;font-size:clamp(22px,2.1vw,30px);font-weight:850;line-height:1.17;font-variant-numeric:tabular-nums;letter-spacing:-.045em}
+.stat span{display:block;font-size:10px;color:#728da0;line-height:1.45;font-weight:800;margin-top:6px}
+.stat:not(:first-child):before{content:"";position:absolute;top:0;right:0;height:3px;width:100%;background:var(--stat-color)}
+.stat.nfl{--stat-color:var(--nfl)}.stat.nba{--stat-color:var(--nba)}.stat.mlb{--stat-color:var(--mlb)}.stat.nhl{--stat-color:var(--nhl)}
+.headingRow{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:12px}
+.headingRow h2{margin:0;font-size:22px;font-weight:850;letter-spacing:-.035em}
+.headingRow p{font-size:12px;color:var(--muted);margin:3px 0 0}
+.viewtoggle{display:flex;align-items:center;gap:4px;padding:3px;border-radius:9px;background:#e8eef2}
+.viewbtn{border:0;border-radius:7px;background:transparent;color:#678498;font-size:12px;font-weight:850;min-height:34px;padding:6px 15px}
+.viewbtn.active{background:#fff;color:#205b78;box-shadow:0 1px 5px #2c506020}
+.leaguebar{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;padding:9px;background:#fff;border:1px solid var(--line);border-radius:12px;margin-bottom:15px}
+.leaguebtn{min-width:0;border:1px solid transparent;border-radius:8px;min-height:49px;display:flex;align-items:center;justify-content:center;gap:9px;color:#678295;background:#f6f9fb;font-size:12px;font-weight:850}
+.leaguebtn img{height:24px;width:24px;object-fit:contain}
+.leaguebtn.on{background:#e8f4fa;color:#1b5c7b;border-color:#b8dce9}
+.leaguebtn:hover:not(.on){background:#eaf1f6}
+.leaguebtn .count{font-size:10px;font-weight:800;color:#8da2b0}
+.leaguebtn.on .count{color:#317896}
+.listPanel{border:1px solid var(--line);border-radius:12px;background:#fff;padding:14px 17px;margin-bottom:13px}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.toolbarleft,.toolbarright{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.status{font-size:12px;color:#6f8899}
+.status strong{color:#123c54;font-weight:900}
+#updated{font-size:11px}
+#export{min-height:34px;background:#fff}
+.warn{padding:12px 15px;border-radius:9px;border:1px solid #ecd9b1;background:#fff8eb;color:#9c6825;font-size:12px;line-height:1.5;margin:0 0 12px}
+.feed{padding-bottom:4px;min-height:130px}
+.day{margin:14px 0 23px}
+.dayhead{display:flex;align-items:center;gap:12px;font-size:12px;font-weight:850;color:#264a60;margin-bottom:10px}
+.dayhead:after{content:"";height:1px;background:#dce5eb;flex:1}
+.dayhead .daycount{order:3;color:#86a0ae;font-size:11px;font-weight:650}
+.entries{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.entry{position:relative;min-width:0;background:#fff;border:1px solid #dbe5eb;box-shadow:var(--shadow);border-radius:11px;display:flex;gap:14px;padding:16px;overflow:hidden;transition:box-shadow .15s,border-color .15s}
+.entry:hover{border-color:#b1d0e1;box-shadow:0 6px 20px #22466012}
+.entry:before{content:"";position:absolute;width:3px;left:0;top:0;bottom:0;background:var(--league-color,#aac)}
+.face{width:70px;height:70px;flex:none;display:grid;place-items:center;background:#ecf3f6;border:1px solid #e0e9ee;border-radius:10px;overflow:hidden;color:#6995ae;font-weight:800;font-size:19px}
+.face img{width:100%;height:100%;object-fit:cover;object-position:center top}
+.face .fallback{display:grid;place-items:center;width:100%;height:100%}
+.information{min-width:0;flex:1}
+.eyeline{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.tag{display:inline-flex;align-items:center;gap:4px;border-radius:5px;background:#edf4f7;color:#496b80;font-size:10px;font-weight:850;padding:3px 6px}
+.tag.league{color:var(--league-color);background:color-mix(in srgb,var(--league-color) 10%,white)}
+.tag.type{background:#f2f6f7;color:#607785}
+.time{font-size:10px;color:#8da2ae;margin-left:auto}
+.name{font-weight:850;font-size:15px;letter-spacing:-.02em;line-height:1.27;color:#17384a}
+.description{font-size:12px;color:#5e788a;line-height:1.55;margin:7px 0 10px;overflow-wrap:anywhere}
+.teamline{display:flex;align-items:center;gap:7px;color:#47687b;font-size:11px;font-weight:700}
+.teamlogo{width:24px;height:24px;object-fit:contain}
+.teamname{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.entryactions{display:flex;gap:8px;margin-left:auto;flex:none}
+.entryactions a{font-size:10px;text-decoration:none;color:#2b7799;font-weight:800}
+.entryactions a:hover{text-decoration:underline}
+.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:11px;background:#fff;margin-top:13px}
+.wiretable{width:100%;border-collapse:collapse;min-width:700px;font-size:12px}
+.wiretable th{font-size:10px;text-transform:uppercase;letter-spacing:.06em;background:#f5f8fa;color:#6f8a9b;text-align:left;padding:11px 14px;position:sticky;top:0}
+.wiretable td{border-top:1px solid #e7edf1;padding:11px 14px;vertical-align:middle;color:#526e80}
+.wiretable tr:hover td{background:#f9fcfd}
+.tableperson,.tableteam{display:flex;align-items:center;gap:9px;min-width:130px}
+.tableperson .face{width:39px;height:39px;border-radius:7px;font-size:12px}
+.tableperson b{font-size:12px;color:#1d4559}
+.tableteam img{width:25px;height:25px;object-fit:contain}
+.wiretable .descCell{max-width:490px;min-width:255px;line-height:1.45}
+.wiretable .dateCell{font-variant-numeric:tabular-nums;white-space:nowrap}
+.wiretable a{font-weight:800;text-decoration:none;white-space:nowrap}
+.wiretable a:hover{text-decoration:underline}
+.empty{border:1px dashed #cbdce6;border-radius:12px;padding:55px 18px;text-align:center;background:#f9fbfc;color:#698398;font-size:13px;margin-top:12px}
+.empty h3{font-size:16px;color:#264a5f;margin:0 0 6px}
+.empty p{max-width:530px;margin:0 auto 10px;line-height:1.6}
+.spinner{width:27px;height:27px;border-radius:50%;border:3px solid #d9e8ef;border-top-color:var(--teal);animation:spin .8s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.more{text-align:center;margin:20px 0}.more .btn{min-width:165px}
+.foot{border-top:1px solid var(--line);padding:17px 0 30px;color:#7b91a1;font-size:11px;line-height:1.7}
+.dialog{position:fixed;inset:0;background:#071a2980;display:grid;place-items:center;padding:16px;z-index:100}
+.dialog .panel{position:relative;background:#fff;border:1px solid #dde7ed;border-radius:14px;width:min(640px,100%);box-shadow:0 20px 70px #0b263d33;padding:24px}
+.dialog h2{margin:0 0 10px;color:#173e52;font-size:21px}
+.dialog p,.dialog li{font-size:13px;color:#617d8d;line-height:1.65}.dialog li{margin-bottom:6px}
+.dialog .close{float:right}
+@media(max-width:1190px){.shell{grid-template-columns:260px minmax(0,1fr)}.sidebar{padding:22px 14px}.entries{grid-template-columns:1fr}.main{padding:24px 25px}.stat{padding:14px 12px}}
+@media(max-width:760px){.top{height:60px}.topinner{padding:0 15px}.breadcrumb{font-size:8px}.productName{font-size:14px}.appIcon{height:36px;width:36px;border-radius:9px}.toplinks .preview{display:none}.shell{display:flex;flex-direction:column}.sidebar{min-height:0;width:100%;position:relative;border-right:0;border-bottom:1px solid var(--line);padding:12px 16px}.sidebar h2{font-size:16px;margin:3px 0}.sidebar .sideintro{display:none}.sidebarBody{display:none;padding-top:15px}.sidebar.open .sidebarBody{display:block}.mobileFilter{display:inline-flex;min-height:34px;padding:5px 9px}.sidebar.open .mobileFilter{background:#e8f4fa}.sidebar .overline{font-size:9px}.main{padding:17px 14px}.hero{min-height:155px;padding:21px 20px}.heroLabel{display:none}.summary{gap:6px;margin-bottom:21px}.stat{padding:11px 8px;text-align:center}.stat strong{font-size:22px}.stat span{font-size:9px}.headingRow h2{font-size:20px}.leaguebar{gap:4px;padding:5px}.leaguebtn{min-height:49px;flex-direction:column;gap:0;padding:5px 0;font-size:11px}.leaguebtn img{display:none}.leaguebtn .count{font-size:9px}.listPanel{padding:10px 12px}.entry{padding:13px}.face{width:61px;height:61px}.toplinks .pill{display:none}}
+@media(max-width:395px){.hero h1{font-size:28px}.summary{grid-template-columns:repeat(5,minmax(0,1fr))}.stat strong{font-size:17px}.stat span{font-size:8px}.entry{gap:10px;padding:10px}.face{height:53px;width:53px}.entryactions{gap:5px}.name{font-size:14px}.toolbar{gap:6px}.toplinks a{font-size:11px}.viewbtn{padding:5px 10px}}
+@media(prefers-reduced-motion:reduce){.spinner{animation:none}*{scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
-<header class="top"><div class="wrap topinner"><div class="brand"><span>SPORTS HUB</span> / TRANSACTION WIRE</div><nav class="toplinks"><a class="homelink" href="./index.html">← Sports Home</a><button class="helpbutton" id="help" type="button">About data</button></nav></div></header>
-<main class="wrap">
-<section class="hero"><div class="eyebrow">NFL · NBA · MLB · NHL</div><h1>Player Transactions</h1><p>Signings, trades, waivers, releases, injured-list moves, and roster changes across the Core Four. Filter by league, date, team, or player.</p></section>
-<section class="filterpanel" aria-label="Transaction filters">
-<div class="leaguebar" id="leaguebar">
-<button class="leaguebtn on" data-league="ALL" type="button">ALL <span class="count" id="tab-ALL"></span></button>
-<button class="leaguebtn" data-league="NFL" type="button"><img src="https://a.espncdn.com/i/teamlogos/leagues/500/nfl.png" alt="" onerror="this.style.display='none'"> NFL <span class="count" id="tab-NFL"></span></button>
-<button class="leaguebtn" data-league="NBA" type="button"><img src="https://a.espncdn.com/i/teamlogos/leagues/500/nba.png" alt="" onerror="this.style.display='none'"> NBA <span class="count" id="tab-NBA"></span></button>
-<button class="leaguebtn" data-league="MLB" type="button"><img src="https://a.espncdn.com/i/teamlogos/leagues/500/mlb.png" alt="" onerror="this.style.display='none'"> MLB <span class="count" id="tab-MLB"></span></button>
-<button class="leaguebtn" data-league="NHL" type="button"><img src="https://a.espncdn.com/i/teamlogos/leagues/500/nhl.png" alt="" onerror="this.style.display='none'"> NHL <span class="count" id="tab-NHL"></span></button>
+<header class="top"><div class="topinner">
+<div class="identity"><div class="appIcon">S<b>H</b></div><div><div class="breadcrumb">Sports Hub / Core Four</div><div class="productName">Transaction Wire</div></div></div>
+<div class="toplinks"><span class="preview">League-wide player movement explorer</span><a href="./index.html">Sports Home ↗</a><span class="pill">LIVE DATA</span></div>
+</div></header>
+<div class="shell">
+<aside class="sidebar" id="sidebar" aria-label="Transaction filters">
+<div class="sidebarHead"><div><div class="overline">Explore transactions</div><h2>Filter the wire</h2></div><button type="button" id="toggleFilters" class="btn mobileFilter" aria-expanded="false" aria-controls="sidebarBody">☰ Filters</button></div>
+<p class="sideintro">Narrow down league moves by player, team, date, or transaction type.</p>
+<div class="sidebarBody" id="sidebarBody">
+<div class="control"><label for="search">PLAYER / SEARCH</label><input id="search" type="search" placeholder="Name, keyword, team..." autocomplete="off"></div>
+<div class="control"><label for="team">TEAM</label><select id="team"><option value="">All teams</option></select></div>
+<div class="control"><label for="type">TRANSACTION TYPE</label><select id="type"><option value="">All transactions</option><option value="Trade">Trades</option><option value="Signing">Signings / contracts</option><option value="Release">Releases / waivers</option><option value="Injury">Injury / IL / IR</option><option value="Roster">Call-ups / assignments</option><option value="Other">Other</option></select></div>
+<div class="sideDivider"></div>
+<div class="sideTitle">DATE RANGE</div>
+<div class="dates"><div class="control"><label for="start">FROM</label><input id="start" type="date"></div><div class="control"><label for="end">THROUGH</label><input id="end" type="date"></div></div>
+<div class="sideTitle presetLabel">QUICK RANGES</div>
+<div class="presets"><button class="preset on" data-days="7" type="button">7D</button><button class="preset" data-days="14" type="button">14D</button><button class="preset" data-days="30" type="button">30D</button><button class="preset" data-days="90" type="button">90D</button></div>
+<div class="sideActions"><button id="apply" class="btn primary full" type="button">↻ Load transactions</button><button class="btn" id="refresh" type="button" title="Bypass cached transactions" aria-label="Force refresh">⟳</button></div>
+<div class="sideDivider"></div>
+<div class="overline">Data coverage</div>
+<div class="sourceItem">NFL · ESPN <span class="sourceBadge">Unofficial</span></div>
+<div class="sourceItem">NBA · ESPN <span class="sourceBadge">Unofficial</span></div>
+<div class="sourceItem">MLB · StatsAPI <span class="sourceBadge">Public</span></div>
+<div class="sourceItem">NHL · ESPN <span class="sourceBadge">Unofficial</span></div>
+<p class="sideNote">ESPN history may be incomplete. The app reports missing feeds rather than counting failed requests as zero.</p>
+<button class="btn helpbutton" id="help" type="button">ⓘ &nbsp; About sources &amp; limitations</button>
 </div>
-<div class="controls">
-<div class="control search"><label for="search">Player / keyword</label><input id="search" type="search" placeholder="Search player, description, team…" autocomplete="off"></div>
-<div class="control team"><label for="team">Team</label><select id="team"><option value="">All teams</option></select></div>
-<div class="control"><label for="start">From</label><input type="date" id="start"></div>
-<div class="control"><label for="end">Through</label><input type="date" id="end"></div>
-<button class="btn primary" id="apply" type="button">Load transactions</button>
-</div>
-<div class="presets"><small>Quick range</small><button class="preset on" type="button" data-days="7">7 days</button><button class="preset" type="button" data-days="14">14 days</button><button class="preset" type="button" data-days="30">30 days</button><button class="preset" type="button" data-days="90">90 days</button><div class="secondary"><select id="type" class="btn small" aria-label="Transaction type"><option value="">All transaction types</option><option value="Trade">Trades</option><option value="Signing">Signings / contracts</option><option value="Release">Releases / waivers</option><option value="Injury">Injury / IL / IR</option><option value="Roster">Call-ups / assignments</option><option value="Other">Other</option></select><button class="btn small" type="button" id="refresh" title="Bypass cache and reload">↻ Refresh</button><button class="btn small" type="button" id="export">CSV</button></div></div>
+</aside>
+<main class="main">
+<section class="hero"><div><div class="eyebrow">Professional sports · Player movement</div><h1>The Transaction Wire</h1><p>A single feed for trades, signings, releases, waivers, injured lists, and roster changes across the NFL, NBA, MLB and NHL.</p></div><span class="heroLabel">Core Four leagues ↗</span></section>
+<section class="summary" aria-label="Transactions by league">
+<div class="stat"><strong id="metric-all">—</strong><span>Total transactions</span></div>
+<div class="stat nfl"><strong id="metric-NFL">—</strong><span>NFL moves</span></div>
+<div class="stat nba"><strong id="metric-NBA">—</strong><span>NBA moves</span></div>
+<div class="stat mlb"><strong id="metric-MLB">—</strong><span>MLB moves</span></div>
+<div class="stat nhl"><strong id="metric-NHL">—</strong><span>NHL moves</span></div>
 </section>
-<section class="summary" aria-label="Transactions by league"><div class="stat"><strong id="metric-all">—</strong><span>All moves</span></div><div class="stat nfl"><strong id="metric-NFL">—</strong><span>NFL</span></div><div class="stat nba"><strong id="metric-NBA">—</strong><span>NBA</span></div><div class="stat mlb"><strong id="metric-MLB">—</strong><span>MLB</span></div><div class="stat nhl"><strong id="metric-NHL">—</strong><span>NHL</span></div></section>
+<div class="headingRow"><div><h2>Explore the moves</h2><p>Latest available transactions, unified in one searchable feed.</p></div><div class="viewtoggle" role="group" aria-label="Display mode"><button class="viewbtn active" data-view="cards" type="button" aria-pressed="true">▦ Cards</button><button class="viewbtn" data-view="table" type="button" aria-pressed="false">☷ Table</button></div></div>
+<nav class="leaguebar" id="leaguebar" aria-label="Choose sports league">
+<button class="leaguebtn on" data-league="ALL" type="button" aria-pressed="true">All leagues <span class="count" id="tab-ALL"></span></button>
+<button class="leaguebtn" data-league="NFL" type="button" aria-pressed="false"><img src="https://a.espncdn.com/i/teamlogos/leagues/500/nfl.png" alt="" onerror="this.style.display='none'"> NFL <span class="count" id="tab-NFL"></span></button>
+<button class="leaguebtn" data-league="NBA" type="button" aria-pressed="false"><img src="https://a.espncdn.com/i/teamlogos/leagues/500/nba.png" alt="" onerror="this.style.display='none'"> NBA <span class="count" id="tab-NBA"></span></button>
+<button class="leaguebtn" data-league="MLB" type="button" aria-pressed="false"><img src="https://a.espncdn.com/i/teamlogos/leagues/500/mlb.png" alt="" onerror="this.style.display='none'"> MLB <span class="count" id="tab-MLB"></span></button>
+<button class="leaguebtn" data-league="NHL" type="button" aria-pressed="false"><img src="https://a.espncdn.com/i/teamlogos/leagues/500/nhl.png" alt="" onerror="this.style.display='none'"> NHL <span class="count" id="tab-NHL"></span></button>
+</nav>
 <div id="warnings" aria-live="polite"></div>
-<div class="toolbar"><div class="toolbarleft"><span class="status" id="status">Preparing transaction feeds…</span></div><div class="toolbarright"><span class="status" id="updated"></span></div></div>
+<section class="listPanel"><div class="toolbar"><div class="toolbarleft"><span class="status" id="status" role="status">Preparing transaction feeds…</span></div><div class="toolbarright"><span class="status" id="updated"></span><button class="btn" type="button" id="export">↓ Export CSV</button></div></div></section>
 <div id="feed" class="feed" aria-live="polite"><div class="empty"><div class="spinner"></div>Loading transactions…</div></div>
 <div class="more"><button class="btn hidden" id="more" type="button">Show more</button></div>
-<footer class="foot">Sources: ESPN unofficial site transaction feeds (NFL, NBA, NHL); MLB StatsAPI (MLB). Team/player images from ESPN's player indexes, ESPN CDN, and MLB assets. Entries reflect provider reporting and can be incomplete, delayed, or missing historic moves. Date filters are inclusive. No API keys required.</footer>
-</main>
-<div id="dialog" class="dialog hidden" role="dialog" aria-modal="true" aria-labelledby="dialog-title"><div class="panel"><button class="btn close" id="dialog-close" type="button">Close</button><h2 id="dialog-title">Data &amp; limitations</h2><p>The NFL, NBA, and NHL feeds are undocumented ESPN endpoints. Their filters, history and coverage can change without notice. The MLB feed is MLB StatsAPI and supports exact date-range requests.</p><ul><li>For ESPN, the requested date range is filtered against returned records. If the API does not supply the entire period, this app cannot guarantee that zero results means no transactions occurred.</li><li>Player portraits are matched to Sports Hub's cached ESPN player indexes. Headshots may be absent for former players, free agents, or ambiguous names.</li><li>Results are temporarily cached in your browser. Refresh bypasses the transaction cache.</li></ul><p>For source verification, consult the official <a href="https://www.nfl.com/transactions/" target="_blank" rel="noopener noreferrer">NFL transactions</a> and each league's published transactions.</p></div></div>
+<footer class="foot">Source data: ESPN unofficial transaction feeds (NFL, NBA, NHL), MLB StatsAPI (MLB); portraits and team logos from ESPN and MLB. Dates are inclusive. Some moves and older transactions may not appear in the source feeds.</footer>
+</main></div>
+<div id="dialog" class="dialog hidden" role="dialog" aria-modal="true" aria-labelledby="dialog-title"><div class="panel"><button class="btn close" id="dialog-close" type="button">Close</button><h2 id="dialog-title">Sources &amp; coverage</h2><p>Transaction Wire combines ESPN's undocumented NFL, NBA and NHL endpoints with MLB StatsAPI's date-range transaction feed.</p><ul><li>ESPN may return recent transactions only. Filtering by a historical date does not guarantee full coverage.</li><li>Player photos and logos are matched against existing Sports Hub player indexes and provider images. Some former, traded, or free-agent players may not have a portrait.</li><li>Results are cached in IndexedDB for responsiveness. Force Refresh re-requests the feeds.</li></ul><p><a href="https://www.nfl.com/transactions/" target="_blank" rel="noopener noreferrer">NFL official transactions ↗</a></p></div></div>
 <script>
 (function(){"use strict";
 var $=function(id){return document.getElementById(id)};
