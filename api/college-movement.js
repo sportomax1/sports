@@ -1,6 +1,7 @@
 // Vercel serverless API for College Movement Lab.
 // Keep CFBD_API_KEY and CBBD_API_KEY in Vercel environment variables, not client code.
 'use strict';
+const {timingSafeEqual} = require('node:crypto');
 const SOURCES = {
   football: { base:'https://api.collegefootballdata.com', key:'CFBD_API_KEY', portal:'/player/portal', draft:'/draft/picks', roster:'/roster' },
   basketball: { base:'https://api.collegebasketballdata.com', key:'CBBD_API_KEY', portal:'/recruiting/portal', draft:'/draft/picks', roster:'/teams/roster' }
@@ -57,10 +58,16 @@ module.exports=async function handler(req,res) {
  const type=String(q.type||'status').toLowerCase();
  if(type==='status') return res.status(200).json({
    available:{football:!!process.env.CFBD_API_KEY,basketball:!!process.env.CBBD_API_KEY},
-   message:'Configure CFBD_API_KEY and CBBD_API_KEY as private Vercel environment variables.',
+   secured:typeof process.env.DASHBOARD_ACCESS_TOKEN==='string'&&process.env.DASHBOARD_ACCESS_TOKEN.length>=24,
+   message:'Player-level data requires a private dashboard access token.',
    sources:{football:SOURCES.football.base,basketball:SOURCES.basketball.base}
  });
  if(!SOURCES[sport] || !['portal','draft','roster'].includes(type)) return res.status(400).json({error:'Invalid sport or dataset'});
+ const secret=process.env.DASHBOARD_ACCESS_TOKEN||'';
+ if(secret.length<24) return res.status(503).json({error:'Private dashboard access is not configured',code:'ACCESS_NOT_CONFIGURED'});
+ const provided=String(req.headers?.['x-dashboard-access']||'');
+ const sb=Buffer.from(secret,'utf8'),pb=Buffer.from(provided,'utf8');
+ if(sb.length!==pb.length||!timingSafeEqual(sb,pb))return res.status(401).json({error:'Private access token is required',code:'AUTH_REQUIRED'});
  const year=Number(q.year);
  const max=new Date().getUTCFullYear()+1;
  if(!Number.isInteger(year)||year<2001||year>max) return res.status(400).json({error:'Invalid year'});
