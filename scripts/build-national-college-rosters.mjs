@@ -90,6 +90,7 @@ async function roster(team){
 }
 async function main(){
  const teams=await directory();
+ if(process.argv.includes('--directory-only')){console.log('DIRECTORY CHECK PASS',sport,teams.length);return;}
  await mkdir(outDir,{recursive:true});
  // Reuse successful snapshots from previous interrupted runs and keep prior-year immutable.
  let prior;try{prior=JSON.parse(await readFile(outFile,'utf8'))}catch{}
