@@ -121,7 +121,8 @@ async function fetchRoster(team,year,run){
  }
  const ids=[...new Set(items.map(idFrom).filter(Boolean))];
  if(!ids.length)throw Error('ESPN returned no athletes for '+team.name+' '+year);
- const complete=!failedPages&&pageCount<=maxPages&&ids.length>0;
+ const expectedCount=Number(first.count)||ids.length;
+ const complete=!failedPages&&pageCount<=maxPages&&ids.length>=expectedCount;
  const result={at:Date.now(),ids,complete,unresolvedPages:failedPages,teamId:team.id,teamName:team.name,year};
  if(complete)cacheWrite(rosterCachePrefix+label,result);
  return result;
@@ -137,7 +138,7 @@ async function hydrate(run){
     const result=await getJSON(playerBase(config())+id+'?lang=en&region=us');
     if(run!==state.run)return;
     state.profiles[id]=sanitizeProfile(result,id);
-   }catch{failed++;state.profiles[id]={id,name:'Athlete #'+id,position:'',headshot:'',classYear:''}}
+   }catch{failed++}
    done++;
    if(done%25===0||done===allIds.length){
     updateProgress(fmt(state.rosters.size)+' roster snapshots · '+fmt(done)+'/'+fmt(allIds.length)+' player profiles · '+fmt(failed)+' unresolved');
