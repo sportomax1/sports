@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0c111b">
+<title>College Movement Lab | Sports Tools</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1019;--pane:#121c2a;--pane2:#192639;--line:#314157;--text:#edf3fb;--muted:#a2b1c4;--gold:#f2c263;--blue:#73a8e6;--green:#59c597;--red:#e78c92}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(155deg,#17263a 0%,#0b1019 32%,#0a1018 100%) fixed;color:var(--text);font:13px/1.46 system-ui,-apple-system,Segoe UI,sans-serif}button,input,select{font:inherit}button{cursor:pointer}a{color:#c3dbff}a:hover{text-decoration:underline}
+.shell{max-width:1560px;margin:auto;padding:20px clamp(12px,2vw,28px) 35px}
+.hero{display:flex;align-items:center;flex-wrap:wrap;gap:14px;margin-bottom:17px}.back{color:var(--muted);border:1px solid var(--line);text-decoration:none;padding:8px 10px;border-radius:8px}.eyebrow{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);font-weight:900}.hero h1{font-size:clamp(23px,3vw,34px);letter-spacing:-.04em;margin:2px 0}.hero p{margin:0;color:var(--muted);font-size:12px}.grow{flex:1}.chip{padding:8px 11px;border-radius:9px;border:1px solid var(--line);background:var(--pane);color:var(--muted);font-size:11px}
+.toolbar{display:flex;align-items:end;flex-wrap:wrap;gap:9px;background:var(--pane);border:1px solid var(--line);padding:11px;border-radius:13px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:110px}.field span{font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:850}.field select,.field input{border:1px solid #425671;border-radius:8px;min-height:38px;padding:7px 9px;background:#0c1624;color:var(--text);width:100%}.field.small{min-width:105px}.field.search{flex:1;min-width:160px}.field.school{flex:1;min-width:210px}button.action{background:#eac06b;border:1px solid #eac06b;color:#1a1c21;font-weight:900;min-height:38px;border-radius:8px;padding:7px 15px}.action.outline{color:var(--text);background:var(--pane2);border-color:var(--line)}button:disabled{opacity:.6;cursor:wait}input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.notice{margin:11px 0;padding:11px 13px;border:1px solid #76623b;background:#2f281d;border-radius:10px;color:#f1dbab}.notice.error{border-color:#813e48;background:#2b1a23;color:#ffc8cb}.notice a{color:#ffe3a0}.notice[hidden]{display:none}.statusline{margin:10px 1px 14px;color:var(--muted);font-size:11px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:7px}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin:15px 0}.kpi{border:1px solid var(--line);background:var(--pane);padding:13px;border-radius:12px;min-height:93px}.kpi strong{display:block;font-size:29px;line-height:1.15;letter-spacing:-.045em;font-variant-numeric:tabular-nums}.kpi small{font-size:10px;text-transform:uppercase;letter-spacing:.055em;color:var(--muted);font-weight:750}.kpi span{display:block;font-size:10px;color:var(--muted);margin-top:5px}
+.panel{border:1px solid var(--line);background:var(--pane);border-radius:12px;min-width:0;overflow:hidden}.panelhead{padding:13px 15px 9px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}.panelhead h2{font-size:15px;margin:0}.panelhead p{font-size:11px;color:var(--muted);margin:0}.charts{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(300px,1fr);gap:10px}.chart{height:285px;display:flex;gap:5px;align-items:end;padding:17px 15px 9px;overflow-x:auto}.bar-group{min-width:62px;flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}.bar-group .bars{height:215px;width:100%;display:flex;align-items:end;justify-content:center;gap:5px;border-bottom:1px solid #486077;position:relative}.bar{width:39%;max-width:35px;border-radius:5px 5px 0 0;min-height:1px;transition:height .2s}.bar.portals{background:var(--blue)}.bar.committed{background:var(--green)}.bar.drafts{background:var(--gold)}.bar-group small{color:var(--muted);font-size:10px}.bar-group em{font-style:normal;font-size:10px;font-weight:800;color:#e3ecf9}.legend{display:flex;gap:14px;flex-wrap:wrap;padding:0 16px 14px;font-size:10px;color:var(--muted)}.dot{height:9px;width:9px;display:inline-block;border-radius:2px;margin-right:4px}.dot.blue{background:var(--blue)}.dot.green{background:var(--green)}.dot.gold{background:var(--gold)}
+.ranklist{padding:3px 14px 16px;display:flex;flex-direction:column;gap:9px;max-height:340px;overflow:auto}.rankrow{display:grid;grid-template-columns:135px 1fr 37px;align-items:center;gap:8px;font-size:11px}.rankrow .name{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.track{height:9px;border-radius:8px;background:#28394d;overflow:hidden}.track i{height:100%;display:block;background:#79a4e2;border-radius:8px}.rankrow b{text-align:right;font-variant-numeric:tabular-nums}
+.tabs{display:flex;flex-wrap:wrap;gap:5px;margin-top:13px}.tab{border:1px solid var(--line);padding:10px 14px;border-radius:8px 8px 0 0;background:var(--pane);color:var(--muted);font-weight:850}.tab[aria-selected=true]{background:#29405b;color:#fff;border-color:#507196}.subtabs{padding:12px 13px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}.subtabs p{margin:0;color:var(--muted);font-size:11px}.subtabs .grow{flex:1}.subtabs select{background:#0d1723;color:var(--text);border:1px solid var(--line);border-radius:7px;padding:5px 8px}
+.tablewrap{overflow:auto;max-height:590px}.table{width:100%;border-collapse:collapse;white-space:nowrap;font-size:12px}.table th{position:sticky;top:0;z-index:1;background:#1c2d41;text-align:left;color:#afc3d8;font-size:10px;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #48617b}.table td,.table th{padding:10px 12px;border-bottom:1px solid #273b50}.table tbody tr:hover{background:#1e2c3d}.table td.small{font-size:10px;color:var(--muted)}.table .muted{color:var(--muted)}.table .good{color:#85dfb1}.table .pending{color:#f7c97e}.table .click{border:none;background:transparent;padding:0;color:#c6dcfc;font-weight:850;text-decoration:underline;text-underline-offset:3px;text-decoration-color:#526980;cursor:pointer}.empty{text-align:center;color:var(--muted);padding:33px 15px}.tag{font-size:10px;border:1px solid #436081;background:#21354e;border-radius:6px;padding:3px 6px}.tag.pro{border-color:#8d7042;background:#48391f;color:#ffdc92}
+.comparison{padding:14px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.comp{border:1px solid var(--line);background:var(--pane2);padding:12px;border-radius:9px}.comp strong{display:block;font-size:23px}.comp small{color:var(--muted)}.comparetools{padding:12px 14px;display:flex;align-items:end;gap:10px;flex-wrap:wrap}.foot{margin-top:13px;color:var(--muted);font-size:11px;line-height:1.65}.foot a{margin-right:8px}dialog{width:min(670px,calc(100vw - 24px));color:var(--text);background:var(--pane);border:1px solid #546b85;border-radius:13px;padding:18px;box-shadow:0 20px 70px #000b}dialog::backdrop{background:#000b}dialog h2{font-size:22px;margin:0 0 6px}.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.close{margin-left:auto;border:1px solid var(--line);background:#23374c;border-radius:8px;padding:6px 10px;color:var(--text)}.path{margin:12px 0;padding:9px;border:1px solid var(--line);border-radius:8px;background:#0c1623}.path-item{padding:9px 5px;border-bottom:1px solid var(--line)}.path-item:last-child{border:0}.path-item small{color:var(--muted)}
+@media(max-width:950px){.charts{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(3,1fr)}.rankrow{grid-template-columns:180px 1fr 50px}}@media(max-width:600px){.shell{padding:11px}.hero{gap:7px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi strong{font-size:24px}.comparison{grid-template-columns:1fr 1fr}.field.small{flex:1;min-width:90px}.rankrow{grid-template-columns:112px 1fr 36px}.tabs{overflow:auto;flex-wrap:nowrap}.tab{white-space:nowrap;padding:10px 9px}}
+</style></head>
+<body><main class="shell">
+<header class="hero"><a class="back" href="./index.html">← Tools</a><div><div class="eyebrow">College football + men's basketball</div><h1>College Movement Lab</h1><p>Transfer portal • historical pipelines • roster retention • NFL / NBA draft</p></div><div class="grow"></div><a class="chip" href="./campus-roster-timeline.html">Basketball roster timeline ↗</a><span class="chip" id="keyStatus">Checking API…</span></header>
+<section class="toolbar" aria-label="Dataset controls">
+ <label class="field"><span>Sport</span><select id="sport"><option value="football">🏈 College football</option><option value="basketball">🏀 Men's basketball</option></select></label>
+ <label class="field small"><span>From cycle</span><select id="fromYear"></select></label>
+ <label class="field small"><span>Through cycle</span><select id="toYear"></select></label>
+ <label class="field school"><span>School (inbound + outbound)</span><select id="team"><option value="">All schools</option></select></label>
+ <label class="field search"><span>Player / school search</span><input id="search" type="search" placeholder="Search names, teams, positions…"></label>
+ <button class="action" id="load">↻ Load data</button><button class="action outline" id="csv">Export CSV</button>
+</section>
+<div class="notice" id="notice" hidden role="alert"></div><div class="statusline"><span id="loaded">No data loaded</span><span id="coverage">Portal records start in 2021 • Draft records may extend further</span></div>
+<section class="kpis" aria-label="Summary statistics">
+ <div class="kpi"><small>Portal entries</small><strong id="kEntries">—</strong><span>Known player entries</span></div>
+ <div class="kpi"><small>Known destinations</small><strong id="kLanded">—</strong><span>Transfers with a listed destination</span></div>
+ <div class="kpi"><small>Destination unknown</small><strong id="kOpen">—</strong><span>Not necessarily still in portal</span></div>
+ <div class="kpi"><small>Schools involved</small><strong id="kSchools">—</strong><span>Distinct origin / destination names</span></div>
+ <div class="kpi"><small>Draft picks</small><strong id="kDraft">—</strong><span>Drafted, not all pro departures</span></div>
+</section>
+<section class="charts" aria-label="Historical analysis">
+ <div class="panel"><div class="panelhead"><h2>Portal activity by year</h2><p>Entries vs. known destination records</p></div><div id="trend" class="chart"></div><div class="legend"><span><i class="dot blue"></i>Portal entries</span><span><i class="dot green"></i>Listed destinations</span><span>Portal cycle year · partial years remain partial</span></div></div>
+ <div class="panel"><div class="panelhead"><h2>Biggest transfer sources</h2><p>Schools losing portal entrants in the selected data</p></div><div id="rank" class="ranklist"></div></div>
+</section>
+<nav class="tabs" role="tablist" aria-label="Views">
+<button class="tab" type="button" role="tab" aria-selected="true" data-tab="moves">Transfer directory</button>
+<button class="tab" type="button" role="tab" aria-selected="false" data-tab="teams">Team leaderboard</button>
+<button class="tab" type="button" role="tab" aria-selected="false" data-tab="routes">School pipelines</button>
+<button class="tab" type="button" role="tab" aria-selected="false" data-tab="draft">Going pro</button>
+<button class="tab" type="button" role="tab" aria-selected="false" data-tab="retention">Roster turnover</button>
+</nav>
+<section class="panel" id="results" aria-live="polite"><div class="subtabs"><strong id="viewTitle">Portal entries</strong><p id="viewDescription">Only documented portal entries, not all roster departures.</p><div class="grow"></div><select id="moveFilter" aria-label="Destination status"><option value="all">All destinations</option><option value="placed">Destination known</option><option value="unknown">Destination unknown</option></select><select id="rowLimit" aria-label="Rows to show"><option>100</option><option selected>250</option><option>500</option><option>1000</option></select></div><div id="tabContent"></div></section>
+<footer class="foot">Sources: <a href="https://api.collegefootballdata.com/data-availability" target="_blank" rel="noopener">CollegeFootballData</a> <a href="https://api.collegebasketballdata.com/data-availability" target="_blank" rel="noopener">CollegeBasketballData</a> <a href="https://github.com/sportomax1/sports/blob/main/api/college-movement.js" target="_blank" rel="noopener">Server API</a>.
+ Definitions: a portal entry is not necessarily a completed transfer; known destination means a destination is listed in the provider's data. Undrafted professionals, eligibility exits, graduations, and early declarations are not established by draft picks alone. A roster disappearance is not proof of transfer or pro status. Some 2026 or 2027 data may be incomplete. Historical school names may not be standardized.</footer>
+</main>
+<dialog id="playerDialog"><div class="row"><h2 id="dialogTitle"></h2><button class="close" id="dismiss">Close ✕</button></div><div id="dialogBody"></div></dialog>
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id),yearNow=new Date().getFullYear(),min=2021,max=Math.min(2030,yearNow+1);
+let sport='football',portal=[],draft=[],tab='moves',loadedYears=[],failures=[],rosterView=null,requestId=0;
+const cache=new Map(); const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=x=>Number(x).toLocaleString('en-US'),key=x=>String(x||'').toLowerCase().trim().replace(/\s+/g,' ');
+const byId=(a,b)=>key(a).localeCompare(key(b)),uniq=arr=>[...new Set(arr.filter(Boolean))],num=x=>Number.isFinite(+x)?+x:0;
+const last=Math.min(yearNow,max),first=Math.max(min,last-3);
+for(let y=max;y>=min;y--) { $('fromYear').add(new Option(y,y,y===first,y===first));$('toYear').add(new Option(y,y,y===last,y===last));}
+function notice(message,isError){const n=$('notice');n.hidden=!message;n.classList.toggle('error',!!isError);n.textContent=message||''}
+async function api(type,year,team){
+ const params=new URLSearchParams({sport,type,year:String(year)});if(team)params.set('team',team);
+ const url='./api/college-movement?'+params.toString();
+ const res=await fetch(url,{headers:{Accept:'application/json'}}),body=await res.json().catch(()=>({}));
+ if(!res.ok)throw Error(body.error||('API HTTP '+res.status));
+ return body.records||[];
+}
+async function status(){
+ try{
+ const r=await fetch('./api/college-movement?type=status',{headers:{Accept:'application/json'}});if(!r.ok)throw Error('API route unavailable');
+ const data=await r.json();const enabled=data.available||{};const a=['football','basketball'].map(x=>(enabled[x]?'✓ ':'○ ')+(x==='football'?'Football':'Basketball')).join(' · ');
+ $('keyStatus').textContent=a;
+ if(!enabled.football||!enabled.basketball)notice('API setup required for '+(!enabled.football?'football ':'')+(!enabled.basketball?'basketball':'')+'. Add server-side CFBD_API_KEY and CBBD_API_KEY to Vercel and redeploy. Data is not fabricated.',false);
+ }catch(_){ $('keyStatus').textContent='API backend unavailable';notice('This page requires Vercel serverless functions. GitHub Pages or file:// will display the interface but cannot retrieve protected transfer data. Deploy the repo on Vercel with CFBD_API_KEY and CBBD_API_KEY.',true);}
+}
+async function one(type,year,team){
+ const c=[sport,type,year,team||''].join(':');if(cache.has(c))return cache.get(c);
+ const rows=await api(type,year,team);cache.set(c,rows);return rows;
+}
+async function load(){
+ const id=++requestId;sport=$('sport').value;let from=+$('fromYear').value,to=+$('toYear').value;
+ if(from>to){const tmp=from;from=to;to=tmp;$('fromYear').value=from;$('toYear').value=to;}
+ if(to-from>14){notice('Limit historical portal comparisons to 15 years to avoid exhausting API quota.',true);return;}
+ portal=[];draft=[];failures=[];loadedYears=[];rosterView=null;
+ $('load').disabled=true;$('load').textContent='Loading…';$('loaded').textContent='Fetching provider datasets…';render();
+ let years=Array.from({length:to-from+1},(_,i)=>from+i);let jobs=[];
+ for(const year of years) for(const type of ['portal','draft']) jobs.push({year,type});
+ let cursor=0;async function worker(){while(cursor<jobs.length){const job=jobs[cursor++];try{const records=await one(job.type,job.year);if(id!==requestId)return;if(job.type==='portal')portal.push(...records);else draft.push(...records);}catch(e){failures.push(job.type+' '+job.year+': '+e.message)} if(id===requestId){$('loaded').textContent='Loaded '+(portal.length+draft.length).toLocaleString()+' records · '+(cursor)+' / '+jobs.length+' requests';render();}}}
+ try{await Promise.all(Array.from({length:Math.min(3,jobs.length)},worker));}finally{
+ if(id!==requestId)return;loadedYears=years;$('load').disabled=false;$('load').textContent='↻ Load data';updateTeams();render();
+ if(failures.length)notice(failures.length+' request(s) failed: '+failures.slice(0,3).join(' · ')+(failures.length>3?' …':''),true);
+ else notice('',false);
+ $('loaded').textContent=portal.length+' portal entries · '+draft.length+' draft picks · '+years.length+' selected cycles'+(failures.length?' · incomplete coverage':'');
+ }}
+function updateTeams(){
+ const current=$('team').value,schools=uniq(portal.flatMap(r=>[r.origin,r.destination]).concat(draft.map(r=>r.college))).sort(byId);
+ $('team').replaceChildren(new Option('All schools',''));for(const s of schools)$('team').add(new Option(s,s));if(schools.includes(current))$('team').value=current;
+}
+function filtered(){
+ const team=$('team').value,q=key($('search').value),state=$('moveFilter').value;
+ const p=portal.filter(r=>(!team||key(r.origin)===key(team)||key(r.destination)===key(team))&&(!q||key([r.player,r.origin,r.destination,r.position,r.year].join(' ')).includes(q))&&(state==='all'||(state==='placed'?!!r.destination:!r.destination)));
+ const d=draft.filter(r=>(!team||key(r.college)===key(team))&&(!q||key([r.player,r.college,r.proTeam,r.year].join(' ')).includes(q)));
+ return {p,d};
+}
+function kpis(p,d){
+ const schools=uniq(p.flatMap(r=>[r.origin,r.destination]));
+ [['kEntries',p.length],['kLanded',p.filter(r=>r.destination).length],['kOpen',p.filter(r=>!r.destination).length],['kSchools',schools.length],['kDraft',d.length]].forEach(([id,n])=>$(id).textContent=fmt(n));
+}
+function renderTrend(p){
+ const years=loadedYears.length?loadedYears:Array.from({length:Math.max(0,+$('toYear').value-+$('fromYear').value+1)},(_,i)=>+$('fromYear').value+i);
+ let stats=years.map(y=>({year:y,total:p.filter(x=>x.year===y).length,placed:p.filter(x=>x.year===y&&x.destination).length}));
+ const peak=Math.max(1,...stats.map(x=>x.total));
+ $('trend').innerHTML=stats.map(x=>'<div class="bar-group"><div class="bars"><div class="bar portals" title="'+escape(x.year+': '+x.total+' portal entries')+'" style="height:'+Math.max(x.total?2:0,100*x.total/peak)+'%"></div><div class="bar committed" title="'+escape(x.year+': '+x.placed+' known destinations')+'" style="height:'+Math.max(x.placed?2:0,100*x.placed/peak)+'%"></div></div><em>'+fmt(x.total)+'</em><small>'+x.year+'</small></div>').join('');
+}
+function counts(p,prop){const m=new Map();for(const r of p){const k=r[prop];if(k)m.set(k,(m.get(k)||0)+1)}return [...m].sort((a,b)=>b[1]-a[1]||byId(a[0],b[0]));}
+function rank(p){let stats=counts(p,'origin').slice(0,12),peak=Math.max(1,stats[0]?.[1]||1);$('rank').innerHTML=stats.length?stats.map(([team,n])=>'<div class="rankrow"><span class="name" title="'+escape(team)+'">'+escape(team)+'</span><div class="track"><i style="width:'+(100*n/peak)+'%"></i></div><b>'+fmt(n)+'</b></div>').join(''):'<div class="empty">No portal entries for these filters.</div>'}
+function render(){
+ const {p,d}=filtered();kpis(p,d);renderTrend(p);rank(p);
+ document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===tab)));
+ $('moveFilter').hidden=tab!=='moves';$('rowLimit').hidden=tab==='retention';
+ if(tab==='moves')showMoves(p);
+ if(tab==='teams')showTeams(p,d);
+ if(tab==='routes')showRoutes(p);
+ if(tab==='draft')showDraft(d);
+ if(tab==='retention')showRoster();
+}
+function table(headers,rows,empty){
+ if(!rows.length)return '<div class="empty">'+escape(empty||'No matching records available.')+'</div>';
+ const limit=+$('rowLimit').value,subset=rows.slice(0,limit);
+ return '<div class="tablewrap"><table class="table"><thead><tr>'+headers.map(h=>'<th scope="col">'+escape(h)+'</th>').join('')+'</tr></thead><tbody>'+subset.map(cells=>'<tr>'+cells.map(c=>'<td>'+c+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'+(rows.length>limit?'<div class="subtabs">Showing '+fmt(limit)+' of '+fmt(rows.length)+' records. Increase the row limit or export all filtered records.</div>':'');
+}
+function playerLink(player){return '<button class="click" data-player="'+escape(encodeURIComponent(player))+'">'+escape(player)+'</button>'}
+function showMoves(p){
+ $('viewTitle').textContent='Portal directory · '+fmt(p.length);$('viewDescription').textContent='Reported source and destination; blank destination is unknown, not proof of an open portal status.';
+ const rows=p.slice().sort((a,b)=>b.year-a.year||byId(a.player,b.player)).map(r=>[escape(r.year),playerLink(r.player),escape(r.position||'—'),escape(r.origin||'—'),r.destination?'<span class="good">'+escape(r.destination)+'</span>':'<span class="pending">Unknown</span>',escape(r.date?String(r.date).slice(0,10):'—'),escape(r.stars==null?'—':r.stars+' ★')]);
+ $('tabContent').innerHTML=table(['Cycle','Player','Pos','From','To','Date','Rating'],rows,'No transfer entries match. Try fewer filters or verify API keys.');
+}
+function showTeams(p,d){
+ $('viewTitle').textContent='Team transfer leaderboard';$('viewDescription').textContent='Net movement counts only recorded portal destinations and departures, not complete roster change.';
+ const origins=new Map(counts(p,'origin')),dest=new Map(counts(p,'destination')),drafts=new Map(counts(d,'college'));
+ const teams=uniq([...origins.keys(),...dest.keys(),...drafts.keys()]);
+ const rows=teams.map(t=>({team:t,out:origins.get(t)||0,in:dest.get(t)||0,drafted:drafts.get(t)||0}))
+ .sort((a,b)=>b.in+b.out-a.in-a.out||byId(a.team,b.team));
+ $('tabContent').innerHTML=table(['School','Transfers in','Portal departures','Net confirmed','Draft picks'],rows.map(x=>[escape(x.team),'<span class="good">'+fmt(x.in)+'</span>',fmt(x.out),(x.in-x.out>0?'+':'')+fmt(x.in-x.out),fmt(x.drafted)]),'No team data for selection.');
+}
+function showRoutes(p){
+ $('viewTitle').textContent='School-to-school pipelines';$('viewDescription').textContent='Counts only entries where both schools are recorded; no destination inferred.';
+ const m=new Map();for(const r of p){if(!r.origin||!r.destination||key(r.origin)===key(r.destination))continue;const k=r.origin+' ⟶ '+r.destination;let o=m.get(k);if(!o)m.set(k,o={from:r.origin,to:r.destination,n:0,players:[]});o.n++;o.players.push(r.player);}
+ const rows=[...m.values()].sort((a,b)=>b.n-a.n||byId(a.from,b.from));
+ $('tabContent').innerHTML=table(['From school','To school','Transfers','Players'],rows.map(r=>[escape(r.from),escape(r.to),'<strong>'+fmt(r.n)+'</strong>',escape(r.players.slice(0,4).join(', '))+(r.players.length>4?'…':'')]),'No confirmed school-to-school paths for this selection.');
+}
+function showDraft(d){
+ $('viewTitle').textContent=(sport==='football'?'NFL':'NBA')+' draft picks · '+fmt(d.length);
+ $('viewDescription').textContent='Drafted players only; declaring early, being undrafted, and actual pro contracts require separate verified sources.';
+ const rows=d.slice().sort((a,b)=>b.year-a.year||(a.pick||999)-(b.pick||999)).map(r=>[escape(r.year),playerLink(r.player),escape(r.college||'—'),escape(r.proTeam||'—'),escape(r.round??'—'),escape(r.pick??'—'),'<span class="tag pro">Drafted</span>']);
+ $('tabContent').innerHTML=table(['Draft year','Player','College','Pro team','Round','Overall pick','Verified'],rows,'No draft picks match the filters.');
+}
+function showRoster(){
+ $('viewTitle').textContent='Roster comparison';$('viewDescription').textContent='Consecutive season snapshots; entrances and exits are not necessarily transfers.';
+ let team=$('team').value,year=+$('toYear').value;
+ let ui='<div class="comparetools"><label class="field school"><span>Selected school</span><input id="compareTeam" value="'+escape(team)+'" placeholder="e.g. Colorado, Duke"></label><label class="field small"><span>Comparison year</span><input id="compareYear" type="number" min="2004" max="'+(yearNow+1)+'" value="'+year+'"></label><button id="compare" class="action">Compare rosters</button><span style="color:var(--muted);font-size:11px">Compares '+(year-1)+' → '+year+' for the selected team</span></div><div id="compareResults"></div>';
+ $('tabContent').innerHTML=ui;
+ if(rosterView&&key(rosterView.team)===key(team)&&rosterView.year===year)drawRoster(rosterView);
+}
+function identity(p){return p.id ? 'id:'+p.id : 'name:'+key(p.player)}
+function drawRoster(view){
+ const a=new Map(view.previous.map(p=>[identity(p),p])),b=new Map(view.current.map(p=>[identity(p),p]));
+ const returning=view.current.filter(p=>a.has(identity(p)));
+ const entering=view.current.filter(p=>!a.has(identity(p)));
+ const exiting=view.previous.filter(p=>!b.has(identity(p)));
+ let html='<div class="comparison"><div class="comp"><strong>'+fmt(view.previous.length)+'</strong><small>'+(view.year-1)+' roster</small></div><div class="comp"><strong>'+fmt(view.current.length)+'</strong><small>'+view.year+' roster</small></div><div class="comp"><strong>'+fmt(returning.length)+'</strong><small>Matched returners ('+(view.previous.length?Math.round(returning.length/view.previous.length*100)+'%':'N/A')+')</small></div><div class="comp"><strong>'+fmt(entering.length)+' / '+fmt(exiting.length)+'</strong><small>New / disappeared</small></div></div>';
+ html+='<div class="subtabs">Matching uses provider athlete IDs where available; names otherwise. Players whose IDs changed may be counted as movement. Empty seasons are not comparable.</div>';
+ html+=table(['Roster status','Player','Position','Year'],entering.map(p=>['<span class="good">New roster appearance</span>',escape(p.player),escape(p.position),escape(view.year)]).concat(exiting.map(p=>['<span class="pending">No longer listed</span>',escape(p.player),escape(p.position),escape(view.year-1)])),'No unmatched players.');
+ $('compareResults').innerHTML=html;
+}
+async function compare(){
+ const team=($('compareTeam')?.value||'').trim(),year=Number($('compareYear')?.value);
+ if(!team){notice('Choose or enter a school first.',true);return;}
+ if(!Number.isInteger(year)||year<2005||year>yearNow+1){notice('Choose a valid comparison season from 2005 onward.',true);return;}
+ const btn=$('compare');btn.disabled=true;btn.textContent='Comparing…';
+ try{const [previous,current]=await Promise.all([one('roster',year-1,team),one('roster',year,team)]);
+ if(!previous.length||!current.length)throw Error('At least one season returned no roster records. No turnover percentage can be inferred.');
+ rosterView={previous,current,team,year};drawRoster(rosterView);notice('',false);
+ }catch(e){notice('Roster comparison: '+e.message,true);}finally{btn.disabled=false;btn.textContent='Compare rosters'}
+}
+function playerDetail(n){
+ const name=decodeURIComponent(n);$('dialogTitle').textContent=name;
+ const moves=portal.filter(r=>key(r.player)===key(name)).sort((a,b)=>a.year-b.year);
+ const picks=draft.filter(r=>key(r.player)===key(name)).sort((a,b)=>a.year-b.year);
+ let content='<div style="color:var(--muted);font-size:11px">Candidate history by exact normalized name. Same-name athletes may be different people; this is not identity-verified across seasons.</div><div class="path">';
+ for(const m of moves)content+='<div class="path-item"><b>'+escape(m.year)+' portal</b> · '+escape(m.origin||'Unknown origin')+' → '+escape(m.destination||'Destination not listed')+'<br><small>'+escape(m.position||'')+'</small></div>';
+ for(const p of picks)content+='<div class="path-item"><b>'+escape(p.year)+' '+(sport==='football'?'NFL':'NBA')+' draft</b> · '+escape(p.college)+' → '+escape(p.proTeam||'Unknown pro team')+'<br><small>Round '+escape(p.round??'—')+', overall pick '+escape(p.pick??'—')+'</small></div>';
+ content+='</div><div style="color:var(--muted);font-size:11px">No evidence here that draft selection followed an early declaration. Roster-history coverage may be incomplete.</div>';
+ $('dialogBody').innerHTML=content;$('playerDialog').showModal();
+}
+function exportCsv(){
+ let rows=[],cols=[];
+ const {p,d}=filtered();
+ if(tab==='moves'){cols=['Year','Player','Position','Origin','Destination','Transfer date','Stars'];rows=p.map(r=>[r.year,r.player,r.position,r.origin,r.destination,r.date,r.stars]);}
+ else if(tab==='draft'){cols=['Year','Player','College','Pro Team','Round','Overall Pick'];rows=d.map(r=>[r.year,r.player,r.college,r.proTeam,r.round,r.pick]);}
+ else if(tab==='teams'){cols=['School','Inbound','Outbound'];const o=new Map(counts(p,'origin')),i=new Map(counts(p,'destination'));rows=uniq([...o.keys(),...i.keys()]).map(t=>[t,i.get(t)||0,o.get(t)||0]);}
+ else if(tab==='routes'){cols=['Origin','Destination','Year','Player'];rows=p.filter(r=>r.destination).map(r=>[r.origin,r.destination,r.year,r.player]);}
+ else {notice('Export roster comparisons from the existing roster timeline tool.',false);return;}
+ const csv=[cols,...rows].map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
+ const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='college-'+sport+'-'+tab+'.csv';a.click();URL.revokeObjectURL(url);
+}
+$('load').addEventListener('click',load);$('sport').addEventListener('change',()=>{sport=$('sport').value;cache.clear();load()});
+$('team').addEventListener('change',()=>{rosterView=null;render()});$('search').addEventListener('input',render);$('moveFilter').addEventListener('change',render);$('rowLimit').addEventListener('change',render);
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{tab=b.dataset.tab;render()}));
+$('tabContent').addEventListener('click',e=>{const p=e.target.closest('[data-player]');if(p)playerDetail(p.dataset.player);if(e.target.id==='compare')compare()});
+$('dismiss').addEventListener('click',()=>$('playerDialog').close());$('csv').addEventListener('click',exportCsv);
+const searchParams=new URLSearchParams(location.search);if(['football','basketball'].includes(searchParams.get('sport')))$('sport').value=searchParams.get('sport');
+sport=$('sport').value;status();load();
+})();
+</script></body></html>
