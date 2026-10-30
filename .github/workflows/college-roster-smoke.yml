@@ -12,6 +12,8 @@ on:
       - 'scripts/test-national-page.mjs'
       - 'college-national-engine.js'
       - 'college-logo-ui.js'
+      - 'college-live-logos.js'
+      - 'college-movement-live.html'
       - 'scripts/test-college-logos.mjs'
       - 'scripts/build-national-college-rosters.mjs'
       - 'scripts/build-college-player-index.mjs'
@@ -30,6 +32,7 @@ jobs:
         run: |
           node --check college-national-engine.js
           node --check college-logo-ui.js
+          node --check college-live-logos.js
           node --check college-roster-engine.js
           node --check scripts/build-national-college-rosters.mjs
           node --check scripts/build-college-player-index.mjs
