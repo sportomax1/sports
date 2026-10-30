@@ -67,18 +67,39 @@ for(let y=max;y>=min;y--) { $('fromYear').add(new Option(y,y,y===first,y===first
 function notice(message,isError){const n=$('notice');n.hidden=!message;n.classList.toggle('error',!!isError);n.textContent=message||''}
 async function api(type,year,team){
  const params=new URLSearchParams({sport,type,year:String(year)});if(team)params.set('team',team);
- const url='./api/college-movement?'+params.toString();
- const res=await fetch(url,{headers:{Accept:'application/json'}}),body=await res.json().catch(()=>({}));
- if(!res.ok)throw Error(body.error||('API HTTP '+res.status));
- return body.records||[];
+ let apiError='Live API unavailable';
+ if(apiMode==='live'){
+  try{
+   const res=await fetch('./api/college-movement?'+params.toString(),{headers:{Accept:'application/json'}}),body=await res.json().catch(()=>({}));
+   if(res.ok)return body.records||[];
+   apiError=body.error||('API HTTP '+res.status);
+  }catch(e){apiError=e.message;}
+ }
+ if(type==='roster')throw Error('Roster comparison requires the live Vercel API. Static snapshots include portal and draft data only.');
+ if(!team){
+  try{
+   const res=await fetch('./data/college-movement/'+sport+'/'+type+'/'+year+'.json',{headers:{Accept:'application/json'}});
+   if(res.ok){const json=await res.json();if(Array.isArray(json.records))return json.records;}
+  }catch(_){}
+ }
+ throw Error(apiError+'; no stored '+sport+' '+type+' snapshot found for '+year);
 }
+let apiMode='snapshot';
 async function status(){
  try{
- const r=await fetch('./api/college-movement?type=status',{headers:{Accept:'application/json'}});if(!r.ok)throw Error('API route unavailable');
- const data=await r.json();const enabled=data.available||{};const a=['football','basketball'].map(x=>(enabled[x]?'✓ ':'○ ')+(x==='football'?'Football':'Basketball')).join(' · ');
- $('keyStatus').textContent=a;
- if(!enabled.football||!enabled.basketball)notice('API setup required for '+(!enabled.football?'football ':'')+(!enabled.basketball?'basketball':'')+'. Add server-side CFBD_API_KEY and CBBD_API_KEY to Vercel and redeploy. Data is not fabricated.',false);
- }catch(_){ $('keyStatus').textContent='API backend unavailable';notice('This page requires Vercel serverless functions. GitHub Pages or file:// will display the interface but cannot retrieve protected transfer data. Deploy the repo on Vercel with CFBD_API_KEY and CBBD_API_KEY.',true);}
+  const r=await fetch('./api/college-movement?type=status',{headers:{Accept:'application/json'}});
+  if(r.ok){const data=await r.json();if(data.available?.[sport]){apiMode='live';$('keyStatus').textContent='✓ Live '+(sport==='football'?'CFBD':'CBBD')+' API';return;}}
+ }catch(_){}
+ try{
+  const r=await fetch('./data/college-movement/manifest.json');
+  if(r.ok){const manifest=await r.json();if((manifest.snapshots||[]).some(x=>x.sport===sport)){
+   apiMode='snapshot';$('keyStatus').textContent='✓ Stored data · '+String(manifest.generatedAt||'').slice(0,10);
+   notice('Showing saved provider snapshots. Roster comparisons require the live Vercel API. Refresh depends on the repository GitHub Actions workflow.',false);
+   return;
+  }}
+ }catch(_){}
+ apiMode='snapshot';$('keyStatus').textContent='Data source not configured';
+ notice('No live API or saved snapshots are available for this sport. Add CFBD_API_KEY / CBBD_API_KEY as GitHub Actions secrets and run the College Movement Lab Data workflow with historical backfill, or configure these keys on Vercel.',true);
 }
 async function one(type,year,team){
  const c=[sport,type,year,team||''].join(':');if(cache.has(c))return cache.get(c);
@@ -211,12 +232,12 @@ function exportCsv(){
  const csv=[cols,...rows].map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='college-'+sport+'-'+tab+'.csv';a.click();URL.revokeObjectURL(url);
 }
-$('load').addEventListener('click',load);$('sport').addEventListener('change',()=>{sport=$('sport').value;cache.clear();load()});
+$('load').addEventListener('click',load);$('sport').addEventListener('change',()=>{sport=$('sport').value;cache.clear();status().then(load)});
 $('team').addEventListener('change',()=>{rosterView=null;render()});$('search').addEventListener('input',render);$('moveFilter').addEventListener('change',render);$('rowLimit').addEventListener('change',render);
 document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{tab=b.dataset.tab;render()}));
 $('tabContent').addEventListener('click',e=>{const p=e.target.closest('[data-player]');if(p)playerDetail(p.dataset.player);if(e.target.id==='compare')compare()});
 $('dismiss').addEventListener('click',()=>$('playerDialog').close());$('csv').addEventListener('click',exportCsv);
 const searchParams=new URLSearchParams(location.search);if(['football','basketball'].includes(searchParams.get('sport')))$('sport').value=searchParams.get('sport');
-sport=$('sport').value;status();load();
+sport=$('sport').value;status().then(load);
 })();
 </script></body></html>
