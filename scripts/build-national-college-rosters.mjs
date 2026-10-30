@@ -81,9 +81,10 @@ async function roster(team){
   }
   const ids=[...new Set(entries.map(athId).filter(Boolean))];
   const expected=Number(first.count)||ids.length;
-  const complete=!pagesFailed&&pageCount<=12&&ids.length>=expected&&ids.length>0;
+  const minimumRoster=sport==='football'?35:10;
+  const complete=!pagesFailed&&pageCount<=12&&ids.length>=expected&&ids.length>=minimumRoster;
   return {...team,status:complete?'ok':'partial',ids,reportedCount:expected,
-   note:complete?'':('Incomplete or missing roster pagination; expected '+expected+', got '+ids.length)};
+   note:complete?'':('Roster too sparse or incomplete; expected '+expected+', got '+ids.length+'; minimum '+minimumRoster)};
  }catch(e){
   return {...team,status:'missing',ids:[],reportedCount:null,note:e.message};
  }
@@ -94,7 +95,8 @@ async function main(){
  await mkdir(outDir,{recursive:true});
  // Reuse successful snapshots from previous interrupted runs and keep prior-year immutable.
  let prior;try{prior=JSON.parse(await readFile(outFile,'utf8'))}catch{}
- const existing=new Map((prior?.teams||[]).filter(t=>t.status==='ok'&&Array.isArray(t.ids)&&t.ids.length).map(t=>[t.id,t]));
+ const minimumRoster=sport==='football'?35:10;
+ const existing=new Map((prior?.teams||[]).filter(t=>t.status==='ok'&&Array.isArray(t.ids)&&t.ids.length>=minimumRoster).map(t=>[t.id,t]));
  const results=new Map(),work=teams.filter(t=>!existing.has(t.id));
  for(const t of teams)if(existing.has(t.id))results.set(t.id,{...t,...existing.get(t.id)});
  console.log(sport,year,'total schools',teams.length,'cached complete',existing.size,'to fetch',work.length);
@@ -115,7 +117,7 @@ async function main(){
  // Avoid publishing a badly failed season; fail the job rather than a misleading dataset.
  if(ok<Math.max(30,Math.floor(teams.length*.30)))throw Error('Only '+ok+'/'+teams.length+' complete team rosters; refusing to publish snapshot');
  const output={version:2,source:'ESPN Core historical season-athlete index',sport,year,
-  generatedAt:new Date().toISOString(),scope:sport==='football'?'NCAA Division I FBS + FCS':"NCAA Division I men's basketball",
+  generatedAt:new Date().toISOString(),scope:sport==='football'?'All ESPN-listed college football schools':"All ESPN-listed college men's basketball schools",
   coverage:{directoryTeams:teams.length,complete:ok,partial,missing,rosterCompletenessPct:Number((100*ok/rows.length).toFixed(1)),requests},
   teams:rows};
  await writeFile(outFile,JSON.stringify(output)+'\n');
