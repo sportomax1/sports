@@ -19,8 +19,9 @@ function validSnapshot(obj,sport,year){
   const id=clean(t.id);if(!/^\d+$/.test(id)||seen.has(id))continue;seen.add(id);
   const status=['ok','partial','missing'].includes(t.status)?t.status:'missing';
   const ids=status==='ok'&&Array.isArray(t.ids)?[...new Set(t.ids.map(clean).filter(x=>/^\d+$/.test(x)))]:[];
+  const minimum=sport==='football'?35:10;
   // Reject status="ok" when the provider index contains no valid athlete IDs.
-  teams.push({id,name:clean(t.name)||('Team '+id),logo:clean(t.logo),status:status==='ok'&&ids.length?'ok':status==='ok'?'partial':status,ids,reportedCount:t.reportedCount});
+  teams.push({id,name:clean(t.name)||('Team '+id),logo:clean(t.logo),status:status==='ok'&&ids.length>=minimum?'ok':status==='ok'?'partial':status,ids:ids.length>=minimum?ids:[],reportedCount:t.reportedCount});
  }
  return {year,teams,source:clean(obj.source),generatedAt:clean(obj.generatedAt),directoryTeams:teams.length};
 }
