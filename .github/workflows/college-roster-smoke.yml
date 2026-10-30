@@ -11,6 +11,8 @@ on:
       - 'scripts/test-national-college.mjs'
       - 'scripts/test-national-page.mjs'
       - 'college-national-engine.js'
+      - 'college-logo-ui.js'
+      - 'scripts/test-college-logos.mjs'
       - 'scripts/build-national-college-rosters.mjs'
       - 'scripts/build-college-player-index.mjs'
 permissions:
@@ -27,6 +29,7 @@ jobs:
       - name: Validate all college dashboard JavaScript
         run: |
           node --check college-national-engine.js
+          node --check college-logo-ui.js
           node --check college-roster-engine.js
           node --check scripts/build-national-college-rosters.mjs
           node --check scripts/build-college-player-index.mjs
@@ -34,5 +37,7 @@ jobs:
         run: node scripts/test-national-college.mjs
       - name: Test national dashboard UI against real snapshots
         run: node scripts/test-national-page.mjs
+      - name: Test ESPN school logos, logo picker, profile history and fallback
+        run: node scripts/test-college-logos.mjs
       - name: Test ESPN season-index and athlete-profile endpoints
         run: node scripts/test-college-roster.mjs
