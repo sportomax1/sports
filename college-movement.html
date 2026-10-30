@@ -327,10 +327,10 @@ function exportCsv(){
  if(apiMode==='snapshot'){exportAggregateCsv();return;}
  let rows=[],cols=[];
  const {p,d}=filtered();
- if(tab==='moves'){cols=['Year','Player','Position','Origin','Destination','Transfer date','Stars'];rows=p.map(r=>[r.year,r.player,r.position,r.origin,r.destination,r.date,r.stars]);}
- else if(tab==='draft'){cols=['Year','Player','College','Pro Team','Round','Overall Pick'];rows=d.map(r=>[r.year,r.player,r.college,r.proTeam,r.round,r.pick]);}
+ if(tab==='moves'){cols=['Year','Player','Position','Origin','Destination','Transfer date','Stars'];rows=p.slice(0,250).map(r=>[r.year,r.player,r.position,r.origin,r.destination,r.date,r.stars]);if(p.length>250)notice('Private export is limited to 250 filtered player records. Use school or name filters to narrow the report.',false);}
+ else if(tab==='draft'){cols=['Year','Player','College','Pro Team','Round','Overall Pick'];rows=d.slice(0,250).map(r=>[r.year,r.player,r.college,r.proTeam,r.round,r.pick]);if(d.length>250)notice('Private export is limited to 250 filtered player records. Use school or name filters to narrow the report.',false);}
  else if(tab==='teams'){cols=['School','Inbound','Outbound'];const o=new Map(counts(p,'origin')),i=new Map(counts(p,'destination'));rows=uniq([...o.keys(),...i.keys()]).map(t=>[t,i.get(t)||0,o.get(t)||0]);}
- else if(tab==='routes'){cols=['Origin','Destination','Year','Player'];rows=p.filter(r=>r.destination).map(r=>[r.origin,r.destination,r.year,r.player]);}
+ else if(tab==='routes'){cols=['Origin','Destination','Count'];const routes=new Map();for(const r of p){if(!r.origin||!r.destination)continue;const k=JSON.stringify([r.origin,r.destination]);routes.set(k,(routes.get(k)||0)+1)}rows=[...routes].map(([k,n])=>[...JSON.parse(k),n]);}
  else {notice('Export roster comparisons from the existing roster timeline tool.',false);return;}
  downloadCsv(cols,rows);
 }
