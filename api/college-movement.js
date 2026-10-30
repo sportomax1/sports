@@ -95,7 +95,8 @@ module.exports=async function handler(req,res) {
   let raw=JSON.parse(body);
   if(!Array.isArray(raw)) return res.status(502).json({error:'Unexpected provider response',source:src.base});
   const records=normalize(type,sport,raw,year,team);
-  res.setHeader('Cache-Control',type==='portal'?'s-maxage=900, stale-while-revalidate=3600':'s-maxage=86400, stale-while-revalidate=604800');
+  res.setHeader('Cache-Control','private, no-store, max-age=0');
+  res.setHeader('Vary','X-Dashboard-Access');
   return res.status(200).json({sport,type,year,team:team||null,records,source:src.base,updatedAt:new Date().toISOString(),count:records.length});
  }catch(e){return res.status(502).json({error:e.name==='AbortError'?'Provider request timed out':'Provider data could not be loaded',source:src.base});}
 };
