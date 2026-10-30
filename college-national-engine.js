@@ -272,6 +272,19 @@ async function load(){
  state.error=completed.filter(x=>x.error).map(x=>x.year+': '+x.error);
  state.raw.sort((a,b)=>a.year-b.year);
  state.model=state.raw.length?analyze(state.raw):null;
+ // Precomputed names cover all roster-observed transfer athletes, allowing national name search.
+ if(state.model){
+  try{
+   const profiles=await fetch('./data/college-rosters/profiles/'+state.sport+'.json',{cache:'default'});
+   if(profiles.ok){
+    const index=await profiles.json();
+    if(index.version===1&&index.sport===state.sport&&index.athletes&&typeof index.athletes==='object'){
+     for(const [athleteId,p] of Object.entries(index.athletes))if(p&&p.name)state.profiles.set(athleteId,{id:athleteId,name:clean(p.name),position:clean(p.position),image:clean(p.image)});
+    }
+   }
+  }catch(_){}
+ }
+ if(id!==state.run)return;
  state.loading=false;$('load').disabled=false;$('load').textContent='↻ Load index';
  fillScopes();render();
  if(!state.raw.length){
@@ -281,7 +294,14 @@ async function load(){
   if(state.error.length)setNotice('Partial year coverage: '+state.error.join(' · ')+'. Missing years are excluded, not treated as zero.',true);
   else if(state.model.coverage.some(x=>x.complete<x.total))setNotice('ESPN returned empty/partial rosters for some listed schools. Nationwide results cover only valid roster indexes; see Coverage tab.',false);
   else setNotice('',false);
-  status(number(state.model.movement.length)+' observed switches · '+number(state.model.athletes.size)+' unique athlete IDs · '+state.raw.length+'/'+years.length+' available years');
+  if(state.raw.length>=3){
+   const yearly=state.model.yearStats.filter(y=>y.comparisons>=75&&y.switches>0);
+   if(yearly.length>=2){
+    const high=Math.max(...yearly.map(y=>y.switches)),low=Math.min(...yearly.map(y=>y.switches));
+    if(low&&high/low>=3)setNotice('Important: ESPN historical school associations vary substantially by year ('+number(low)+' to '+number(high)+' observed switches). Do not interpret the jump as actual portal growth without independent verification.',false);
+   }
+  }
+  status(number(state.model.movement.length)+' observed school switches · '+number(state.model.athletes.size)+' athletes indexed · '+number([...state.profiles.keys()].filter(x=>state.model.athletes.has(x)).length)+' names · '+state.raw.length+'/'+years.length+' seasons');
  }
 }
 const profileUrl=id=>SPORT[state.sport].profile+encodeURIComponent(id)+'?lang=en&region=us';
