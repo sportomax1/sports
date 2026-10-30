@@ -1,0 +1,50 @@
+name: College Movement Lab Data
+on:
+  workflow_dispatch:
+    inputs:
+      history:
+        description: "Fetch every supported portal/draft cycle since 2021"
+        type: boolean
+        default: true
+  schedule:
+    - cron: '45 12 * * 1'
+permissions:
+  contents: write
+concurrency:
+  group: college-movement-data
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fetch protected portal and draft data
+        env:
+          CFBD_API_KEY: ${{ secrets.CFBD_API_KEY }}
+          CBBD_API_KEY: ${{ secrets.CBBD_API_KEY }}
+          BACKFILL: ${{ inputs.history }}
+        run: |
+          if [ "$BACKFILL" = "true" ]; then
+            node scripts/build-college-movement.mjs --history
+          else
+            node scripts/build-college-movement.mjs
+          fi
+      - name: Commit static snapshots
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/college-movement/
+          if ! git diff --cached --quiet; then
+            git commit -m "Update college football and basketball movement snapshots"
+            git fetch origin main
+            git rebase origin/main
+            git push
+          else
+            echo "Snapshot data unchanged"
+          fi
