@@ -6,8 +6,6 @@ on:
         description: "Fetch every supported portal/draft cycle since 2021"
         type: boolean
         default: true
-  schedule:
-    - cron: '45 12 * * 1'
 permissions:
   contents: write
 concurrency:
