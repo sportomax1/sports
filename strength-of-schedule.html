@@ -22,7 +22,7 @@
  <div class="control cutoff"><label for="cutoff">Through week / date</label><select id="week" hidden aria-label="Through week"></select><input id="date" type="date" hidden aria-label="Through date"></div>
  <div class="control window"><label for="window">Rank schedule</label><select id="window"><option value="remaining">Remaining</option><option value="played">Already played</option><option value="full">Full season</option></select></div>
  <div class="control basis"><label for="basis">Opponent records</label><select id="basis"><option value="cutoff">Current season · through cutoff</option><option value="latest">Current season · latest results</option><option value="prior">Previous season · final</option></select></div>
- <div class="control method"><label for="method">SOS formula</label><select id="method"><option value="combined">Combined opponent win %</option><option value="average">Average opponent win %</option></select></div>
+ <div class="control method"><label for="method">SOS formula</label><select id="method"><option value="average">Average opponent win %</option><option value="combined">Combined opponent win %</option></select></div>
  <button class="btn primary" id="load">Load season</button><button class="btn" id="refresh" title="Re-download ESPN data instead of using the local cache">↻ Refresh</button><button class="btn" id="csv" disabled>↓ CSV</button>
 </section>
 <div class="statusbar" role="status" aria-live="polite"><span id="status">Choose a league and season.</span><span class="right" id="coverage"></span></div>
@@ -30,12 +30,12 @@
 <div id="notice" class="warning" role="alert"></div>
 <section class="kpis" id="kpis" aria-label="Key figures"></section>
 <section class="panel" id="rankingPanel">
- <div class="panelhead"><div><strong id="rankingTitle">Schedule Difficulty Rankings</strong><div class="hint" id="rankingSubtitle">Select a league to explore opponent strength.</div></div><div class="toolbar"><input id="search" type="search" placeholder="Filter teams…" aria-label="Filter by team or abbreviation"><select id="order" aria-label="Sort rankings"><option value="hard">Hardest first</option><option value="easy">Easiest first</option><option value="name">Team A–Z</option></select></div></div>
+ <div class="panelhead"><div><strong id="rankingTitle">Schedule Difficulty Rankings</strong><div class="hint" id="rankingSubtitle">Select a league to explore opponent strength.</div></div><div class="toolbar"><input id="search" type="search" placeholder="Filter teams…" aria-label="Filter by team or abbreviation"><select id="order" aria-label="Sort rankings"><option value="hard">Hardest first</option><option value="easy">Easiest first</option><option value="name">Team A–Z</option><option value="coverage">Most rated games</option><option value="games">Most opponents</option><option value="record">Best team W%</option><option value="toughest">Toughest next opponent</option></select></div></div>
  <div class="tablewrap" id="tableWrap"><table><thead><tr><th data-sort="rank">#</th><th data-sort="team">Team</th><th data-sort="record">Team W–L</th><th data-sort="main">Ranked SOS</th><th data-sort="played">Played SOS</th><th data-sort="remaining">Remaining SOS</th><th data-sort="full">Full SOS</th><th data-sort="games">Opp. games</th><th data-sort="coverage">Rated</th><th data-sort="toughest">Toughest remaining</th></tr></thead><tbody id="rows"><tr><td colspan="10" class="empty">Loading season data…</td></tr></tbody></table></div>
  <div class="foot"><span id="rowCount">—</span><span>Higher SOS = harder opponents</span><span>Tap a team for its entire schedule</span><span>Missing opponent records are excluded and flagged</span></div>
 </section>
 <section class="panel detail" id="detail" hidden><div class="panelhead detailhead"><div id="detailHeading"></div><button class="btn small" id="closeDetail">Close ×</button></div><div class="detail-grid" id="detailKpis"></div><div class="detailsub" id="detailSub"></div><div class="detailscroll"><table class="detailtable"><thead><tr><th>Week / Date</th><th>Opponent</th><th>H/A</th><th>Status</th><th>Opp. record</th><th>Opp. W%</th><th>Result</th><th>Game</th></tr></thead><tbody id="detailRows"></tbody></table></div></section>
-<div class="source-note"><b>Methodology:</b> Rankings use only regular-season games. For a selected team, each game contributes its opponent's winning percentage, including repeat divisional matchups. <b>Combined opponent W%</b> = sum of opponents' wins + half their ties, divided by sum of opponents' decisions (each opponent appearance counted). <b>Average opponent W%</b> = arithmetic mean of each scheduled opponent's win percentage. Current-season records are reconstructed from completed games as of the chosen week/date or latest available results; previous-season records use final completed regular-season results. NHL overtime/shootout losses count as non-wins. College rankings include teams with sufficiently complete Division I/FBS schedules; lower-division opponents may lack representative records. No preseason or postseason games are included. Unrated opponents are excluded, with coverage disclosed. <a href="https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard" target="_blank" rel="noopener">Data: ESPN scoreboards</a> (unofficial, undocumented endpoint; availability can change).</div>
+<div class="source-note"><b>Methodology:</b> Rankings use only regular-season games. For a selected team, each game contributes its opponent's winning percentage, including repeat divisional matchups. <b>Average opponent W%</b> (default) = arithmetic mean of the winning percentages for each game's opponent, counting repeat matchups. <b>Combined opponent W%</b> = sum of opponents' wins plus half their ties, divided by their total decisions (opponent records are counted once per scheduled matchup). Current-season records are reconstructed from completed games as of the chosen week/date or latest available results; previous-season records use final completed regular-season results. NHL overtime/shootout losses count as non-wins. College rankings include teams with sufficiently complete Division I/FBS schedules; lower-division opponents may lack representative records. No preseason or postseason games are included. Unrated opponents are excluded, with coverage disclosed. <a href="https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard" target="_blank" rel="noopener">Data: ESPN scoreboards</a> (unofficial, undocumented endpoint; availability can change).</div>
 </div>
 <script>
 (()=>{'use strict';
@@ -57,7 +57,7 @@ const addDays=(ymd,n)=>iso(new Date(ymd+'T12:00:00Z').getTime()+n*86400000);
 const startDate=(y,md)=>`${y}-${String(md[0]).padStart(2,'0')}-${String(md[1]).padStart(2,'0')}`;
 const percent=n=>Number.isFinite(n)?(n*100).toFixed(1)+'%':'—';
 const numeric=n=>Number.isFinite(n)?n.toFixed(3):'—';
-let state={league:'nfl',year:now.getFullYear(),basis:'cutoff',window:'remaining',method:'combined',order:'hard',term:'',selected:null,rank:[],teamModels:[],games:[],baseRecords:new Map(),failed:[],cutoff:'',loaded:false};
+let state={league:'nfl',year:now.getFullYear(),basis:'cutoff',window:'remaining',method:'average',order:'hard',term:'',selected:null,rank:[],teamModels:[],games:[],baseRecords:new Map(),failed:[],cutoff:'',loaded:false};
 let memory=new Map(),dbPromise=null,loadSeq=0,controller=null;
 const elem=['league','season','week','date','window','basis','method','load','refresh','csv','status','coverage','notice','kpis','rows','search','order','rankingTitle','rankingSubtitle','rowCount','detail','detailHeading','detailKpis','detailSub','detailRows','closeDetail','progressTrack','progress','tableWrap'].reduce((o,id)=>(o[id]=$(id),o),{});
 function seasonName(l,y){return CFG[l].offset?`${y}–${String(y+1).slice(-2)}`:String(y)}
@@ -99,7 +99,25 @@ function openDB(){if(dbPromise)return dbPromise;dbPromise=new Promise(resolve=>{
 async function cacheRead(key){if(memory.has(key))return memory.get(key);const db=await openDB();if(!db)return null;return new Promise(resolve=>{try{const q=db.transaction('seasons','readonly').objectStore('seasons').get(key);q.onsuccess=()=>resolve(q.result||null);q.onerror=()=>resolve(null)}catch{resolve(null)}})}
 async function cacheWrite(key,data){memory.set(key,data);const db=await openDB();if(!db)return;try{db.transaction('seasons','readwrite').objectStore('seasons').put(data,key)}catch{}}
 function fetchTimeout(signal){const ctrl=new AbortController();let t=setTimeout(()=>ctrl.abort(new Error('Request timed out')),18000);const abort=()=>ctrl.abort(signal.reason);if(signal.aborted)abort();else signal.addEventListener('abort',abort,{once:true});return{signal:ctrl.signal,done:()=>{clearTimeout(t);signal.removeEventListener('abort',abort)}}}
-async function fetchJSON(url,signal){let last;for(let attempt=0;attempt<2;attempt++){if(signal.aborted)throw new DOMException('Aborted','AbortError');const clock=fetchTimeout(signal);try{const r=await fetch(url,{signal:clock.signal});if(!r.ok)throw Error('ESPN HTTP '+r.status);const body=await r.json();if(!Array.isArray(body?.events))throw Error('Invalid ESPN scoreboard format');return body.events}catch(e){last=e;if(signal.aborted)throw new DOMException('Aborted','AbortError')}finally{clock.done()}if(attempt===0)await new Promise((r,rej)=>{const t=setTimeout(r,450);signal.addEventListener('abort',()=>{clearTimeout(t);rej(new DOMException('Aborted','AbortError'))},{once:true})})}throw last}
+async function fetchJSON(url,signal){
+ let last;
+ for(let attempt=0;attempt<2;attempt++){
+  if(signal.aborted)throw new DOMException('Aborted','AbortError');
+  const clock=fetchTimeout(signal);
+  try{
+   const r=await fetch(url,{signal:clock.signal});
+   if(!r.ok){const e=Error(`ESPN HTTP ${r.status}${r.status===403?' (access denied)':r.status===429?' (rate limited)':''}`);e.status=r.status;throw e}
+   const body=await r.json();if(!Array.isArray(body?.events))throw Error('Invalid ESPN scoreboard format');return body.events;
+  }catch(e){
+   if(signal.aborted)throw new DOMException('Aborted','AbortError');
+   last=e instanceof TypeError?Object.assign(Error('ESPN network access blocked (possibly CORS or offline)'),{code:'network'}):e;
+   // Retrying a bad endpoint, forbidden response or rate limit immediately only makes it worse.
+   if(e.status===400||e.status===401||e.status===403||e.status===404||e.status===429||last.code==='network')break;
+  }finally{clock.done()}
+  if(attempt===0)await new Promise((resolve,reject)=>{const timer=setTimeout(()=>{signal.removeEventListener('abort',cancel);resolve()},650);const cancel=()=>{clearTimeout(timer);signal.removeEventListener('abort',cancel);reject(new DOMException('Aborted','AbortError'))};signal.addEventListener('abort',cancel,{once:true})});
+ }
+ throw last;
+}
 async function pool(items,worker,limit,onProgress){let at=0,done=0;const out=new Array(items.length);await Promise.all(Array.from({length:Math.min(limit,items.length)},async()=>{while(at<items.length){const i=at++;try{out[i]=await worker(items[i],i)}catch(e){out[i]={error:e}}done++;onProgress?.(done,items.length)}}));return out}
 function daysInMonth(month){const y=Number(month.slice(0,4)),m=Number(month.slice(4,6));return new Date(Date.UTC(y,m,0)).getUTCDate()}
 function monthOf(e){return e?.date?gameDay(e.date).slice(0,7).replace('-',''):null}
@@ -109,19 +127,28 @@ async function getMonth(l,y,month,{signal,force=false}={}){
  let events=[],failures=[],firstError=null;
  try{const batch=await fetchJSON(sourceUrl(l,month),signal);
   // Exactly the limit means there may be unreported games. ESPN may cap a response.
-  if(batch.length>=1000)throw Error('Monthly scoreboard reached 1,000-game cap');
+  if(batch.length>=1000){const e=Error('Monthly scoreboard reached 1,000-game cap');e.monthCap=true;throw e;}
   events=batch.filter(e=>monthOf(e)===month);
   const result={events,failures:[],t:Date.now()};await cacheWrite(key,result);return result;
- }catch(e){if(signal.aborted)throw e;firstError=e}
- // Known ESPN 2026 range issues can also affect a monthly response; one day works.
- const year=month.slice(0,4),days=Array.from({length:daysInMonth(month)},(_,i)=>month+String(i+1).padStart(2,'0'));
- const chunks=await pool(days,day=>fetchJSON(sourceUrl(l,day),signal),5);
+ }catch(e){
+  if(signal.aborted)throw e;
+  // Do not launch 30 more requests when ESPN blocks the client or the endpoint is invalid.
+  if(e.status!==400&&!e.monthCap)throw e;
+  firstError=e;
+ }
+ // Probe one date before committing to an entire daily fallback month.
+ const days=Array.from({length:daysInMonth(month)},(_,i)=>month+String(i+1).padStart(2,'0'));
+ const probe=days[Math.min(14,days.length-1)];let probed;
+ try{probed=await fetchJSON(sourceUrl(l,probe),signal)}catch(e){throw Error(`Month ${month} rejected; daily fallback also failed (${e.message})`)}
+ events.push(...probed.filter(e=>monthOf(e)===month));
+ const remaining=days.filter(day=>day!==probe);
+ const chunks=await pool(remaining,day=>fetchJSON(sourceUrl(l,day),signal),5);
  for(let i=0;i<chunks.length;i++){
-  if(chunks[i]?.error)failures.push(`${days[i]}: ${chunks[i].error.message}`);
+  if(chunks[i]?.error)failures.push(`${remaining[i]}: ${chunks[i].error.message}`);
   else events.push(...chunks[i].filter(e=>monthOf(e)===month));
  }
  if(signal.aborted)throw new DOMException('Aborted','AbortError');
- if(failures.length===days.length)throw Error(`Month ${month} failed (month: ${firstError?.message||'unknown'}; daily: ${failures[0]})`);
+ if(failures.length===remaining.length)throw Error(`Month ${month} failed (month: ${firstError?.message||'unknown'}; daily: ${failures[0]})`);
  const uniq=[...new Map(events.filter(e=>e?.id).map(e=>[String(e.id),e])).values()];
  const result={events:uniq,failures,t:Date.now(),dailyFallback:true};if(!failures.length)await cacheWrite(key,result);
  return result;
@@ -137,6 +164,8 @@ async function getSeason(l,y,{force=false,signal,onProgress=()=>{}}={}){
   else{raw.push(...result.events);failures.push(...(result.failures||[]));if(result.dailyFallback)fallbacks.push(months[i])}
  }
  const games=parseSchedule(raw,l,y);
+ // A prior complete snapshot is safer than a partly downloaded replacement.
+ if(failures.length&&cached&&!cached.failures?.length&&cached.games?.length)return {...cached,cache:true,stale:true,refreshFailures:failures};
  if(!games.length){if(cached&&!force)return {...cached,cache:true,stale:true};throw Error('No schedule games were retrieved. '+(failures.length?`Failed months: ${failures.slice(0,3).join(' | ')}`:'This season may not be published yet.'))}
  const obj={t:Date.now(),games,failures,rawCount:raw.length,fallbacks};if(!failures.length)await cacheWrite(key,obj);
  return obj;
@@ -155,7 +184,18 @@ function modelSeason(games,comparison,params){const {league,method}=params,cut=p
  for(const[id,own]of indexes.index){if(own.length<CFG[league].min)continue;const t=indexes.teams.get(id);if(!t)continue;const played=scoreSchedule(own,id,bases,cut,'played',method),remaining=scoreSchedule(own,id,bases,cut,'remaining',method),full=scoreSchedule(own,id,bases,cut,'full',method),main=({played,remaining,full})[params.window];rows.push({...t,record:through.get(id)||null,played,remaining,full,main,own})}
  return{rows,records:bases,through,indexes};}
 function scoreSort(a,b,order){const av=a.main.value,bv=b.main.value;const va=Number.isFinite(av),vb=Number.isFinite(bv);if(va!==vb)return va?-1:1;if(!va)return a.name.localeCompare(b.name);if(order==='name')return a.name.localeCompare(b.name);const n=order==='easy'?av-bv:bv-av;return n||a.name.localeCompare(b.name)}
-function rankRows(rows,order){const scored=[...rows].sort((a,b)=>scoreSort(a,b,order==='name'?'hard':order));let rank=0,previous=null,at=0;for(const r of scored){at++;if(Number.isFinite(r.main.value)){if(previous===null||Math.abs(r.main.value-previous)>1e-9)rank=at;previous=r.main.value;r.rank=rank}else r.rank='—'}return order==='name'?[...rows].sort((a,b)=>a.name.localeCompare(b.name)):scored}
+function rankRows(rows,order){
+ const direction=order==='easy'?'easy':'hard',scored=[...rows].sort((a,b)=>scoreSort(a,b,direction));
+ let rank=0,previous=null,at=0;
+ for(const r of scored){at++;if(Number.isFinite(r.main.value)){if(previous===null||Math.abs(r.main.value-previous)>1e-9)rank=at;previous=r.main.value;r.rank=rank}else r.rank='—'}
+ if(order==='name')return scored.sort((a,b)=>a.name.localeCompare(b.name));
+ const n=v=>Number.isFinite(v)?v:-Infinity;
+ if(order==='coverage')return scored.sort((a,b)=>n(b.main.coverage)-n(a.main.coverage)||scoreSort(a,b,'hard'));
+ if(order==='games')return scored.sort((a,b)=>b.main.games-a.main.games||scoreSort(a,b,'hard'));
+ if(order==='record')return scored.sort((a,b)=>n(recordPct(b.record))-n(recordPct(a.record))||scoreSort(a,b,'hard'));
+ if(order==='toughest')return scored.sort((a,b)=>n(b.remaining.toughest?.pct)-n(a.remaining.toughest?.pct)||scoreSort(a,b,'hard'));
+ return scored;
+}
 function recordBasisLabel(){const b=state.basis;return b==='cutoff'?'current-season records through cutoff':b==='latest'?'latest completed current-season records':'previous-season final records'}
 function currentCutoff(games,l,y){const c=CFG[l];if(!c.football)return{date:elem.date.value||seasonSpan(l,y)[1],week:null};const weeks=[...new Set(games.map(g=>g.week).filter(n=>n>=1))].sort((a,b)=>a-b),selected=elem.week.value,auto=selected==='auto'||!selected;
  const prev=selected;elem.week.innerHTML=weeks.map(w=>`<option value="${w}">Week ${w}</option>`).join('');if(!weeks.length)return{week:1,date:seasonSpan(l,y)[1]};let wanted=Number(prev);if(auto||!weeks.includes(wanted)){
@@ -170,12 +210,13 @@ async function load(force=false){const seq=++loadSeq;if(controller)controller.ab
   if(signal.aborted||seq!==loadSeq)return;
   let comparison=primary.games,prior=null;if(needed){setStatus('Loading '+CFG[l].name+' '+seasonName(l,y-1)+' opponent records…');progress(0,1);prior=await getSeason(l,y-1,{force,signal,onProgress:(d,n,src)=>{progress(d,n);setStatus(src==='cache'?'Loaded prior-season records from cache':`Prior-season months ${d} / ${n}…`)}});comparison=prior.games}
   if(signal.aborted||seq!==loadSeq)return;
-  state.games=primary.games;state.comparison=comparison;state.failed=[...primary.failures,...(prior?.failures||[])];state.cut=currentCutoff(primary.games,l,y);if(state.window==='remaining'&&primary.games.length&&primary.games.every(g=>g.complete||g.date<TODAY)){state.window='full';elem.window.value='full'}state.cutoff=autoText(state.cut);state.model=modelSeason(primary.games,comparison,{...state,cut:state.cut});state.rank=rankRows(state.model.rows,state.order);state.loaded=true;
+  state.games=primary.games;state.comparison=comparison;state.failed=[...(primary.failures||[]),...(primary.refreshFailures||[]),...(prior?.failures||[]),...(prior?.refreshFailures||[])];state.cut=currentCutoff(primary.games,l,y);if(state.window==='remaining'&&primary.games.length&&primary.games.every(g=>g.complete||g.date<TODAY)){state.window='full';elem.window.value='full'}state.cutoff=autoText(state.cut);state.model=modelSeason(primary.games,comparison,{...state,cut:state.cut});state.rank=rankRows(state.model.rows,state.order);state.loaded=true;
   render();progress(1,1);const g=primary.games.length,failed=state.failed.length;setStatus(`${CFG[l].name} ${seasonName(l,y)} · ${g.toLocaleString()} scheduled regular-season matchups indexed · ${state.cutoff}${primary.stale?' · cached fallback':''}${primary.fallbacks?.length?' · '+primary.fallbacks.length+' daily fallbacks':''}`);
-  if(failed)notice(`Incomplete ESPN coverage: ${failed} date range(s) failed. Rankings may be unreliable. Refresh to retry.`,true);
+  if(primary.stale||prior?.stale)notice(`ESPN refresh was incomplete; using the last complete cached schedule instead (${failed} failed request(s)). Rankings are from the cached snapshot.`,true);
+  else if(failed)notice(`Incomplete ESPN coverage: ${failed} request(s) failed. Rankings may be unreliable. Refresh to retry.`,true);
   else if(!state.model.rows.length)notice('No teams with enough published regular-season matchups are available yet. Select a previous season or refresh after schedules are published.');
   else if(state.rank.some(r=>r.main.games&&r.main.coverage<1))notice('Some opponents have no rated record for the selected record period. Check the “Rated” column, especially early in a season or when college opponents come from lower divisions.');
-  elem.coverage.textContent=primary.cache?'Cached':'ESPN data';
+  elem.coverage.textContent=primary.stale?'Stale cache':primary.cache?'Cached':'ESPN data';
  }catch(e){if(signal.aborted||seq!==loadSeq)return;setStatus('Unable to load schedule: '+e.message);notice('Unable to retrieve ESPN schedule: '+e.message+' · The app now tries month requests and individual days; verify ESPN access in your browser.',true);showEmpty('Data unavailable. No rankings have been fabricated.');progress(1,1)}finally{if(seq===loadSeq){elem.load.disabled=false;elem.refresh.disabled=false}}
 }
 function render(){if(!state.loaded)return;state.rank=rankRows(state.model.rows,state.order);const valid=state.rank.filter(r=>Number.isFinite(r.main.value)),hard=[...valid].sort((a,b)=>b.main.value-a.main.value)[0],easy=[...valid].sort((a,b)=>a.main.value-b.main.value)[0];
@@ -192,10 +233,10 @@ function renderRows(){const r=state.rank.filter(x=>!state.term||(x.name+' '+x.ab
 }
 function renderDetail(id){const x=state.model.rows.find(t=>t.id===id);if(!x)return;state.selected=id;elem.detail.hidden=false;elem.detailHeading.innerHTML=`<div class="detail-title">${logo(x)}<div><strong style="font-size:15px">${esc(x.name)}</strong><div class="hint">${esc(recordString(x.record))} · ${esc(state.cutoff)} · click game to open ESPN</div></div></div>`;
  elem.detailKpis.innerHTML=[['Ranked SOS',percent(x.main.value),`${x.main.covered} of ${x.main.games} games rated`],['Played SOS',percent(x.played.value),`${x.played.games} games`],['Remaining SOS',percent(x.remaining.value),`${x.remaining.games} games`],['Full schedule',percent(x.full.value),`${x.full.games} games`]].map(([k,v,d])=>`<div class="smallkpi"><span>${esc(k)}</span><b>${esc(v)}</b><i>${esc(d)}</i></div>`).join('');
- elem.detailSub.textContent=`Each row uses ${recordBasisLabel()}. “Past” means completed by the cutoff; unfinished games remain upcoming even if scheduled during that week. The entire ${seasonName(state.league,state.year)} regular season is shown below.`;
- elem.detailRows.innerHTML=x.own.map(g=>{const home=g.home.id===id,opp=home?g.away:g.home,r=state.model.records.get(opp.id),pct=recordPct(r),played=cutoffOK(g,state.cut)&&g.complete,score=g.complete?`${home?g.homeScore:g.awayScore}–${home?g.awayScore:g.homeScore}`:'—',wl=g.complete?(home?g.homeScore-g.awayScore:g.awayScore-g.homeScore):null,tag=g.complete?(wl>0?'W ':wl<0?'L ':'T '):'',date=state.cut.week!=null?'W'+g.week+' · '+g.date:g.date;
+ elem.detailSub.textContent=`Each row uses ${recordBasisLabel()}. “'Through cutoff' means completed by the cutoff. 'After cutoff' games occurred later and are included in the remaining schedule for a historical analysis; 'Scheduled' games have not finished. The entire ${seasonName(state.league,state.year)} regular season is shown below.`;
+ elem.detailRows.innerHTML=x.own.map(g=>{const home=g.home.id===id,opp=home?g.away:g.home,r=state.model.records.get(opp.id),pct=recordPct(r),played=cutoffOK(g,state.cut)&&g.complete,viewStatus=played?'Through cutoff':g.complete?'After cutoff':'Scheduled',score=g.complete?`${home?g.homeScore:g.awayScore}–${home?g.awayScore:g.homeScore}`:'—',wl=g.complete?(home?g.homeScore-g.awayScore:g.awayScore-g.homeScore):null,tag=g.complete?(wl>0?'W ':wl<0?'L ':'T '):'',date=state.cut.week!=null?'W'+g.week+' · '+g.date:g.date;
  const url='https://www.espn.com/'+CFG[state.league].play+'/game/_/gameId/'+encodeURIComponent(g.id);
- return `<tr><td>${esc(date)}</td><td><span class="opp">${logo(opp)}<b>${esc(opp.name)}</b></span></td><td>${home?'HOME':'AWAY'}</td><td><span class="pill ${played?'past':'future'}">${played?'Past':'Remaining'}</span></td><td>${esc(recordString(r))}</td><td class="${Number.isFinite(pct)?'pct':'minor'}">${percent(pct)}</td><td>${esc(tag+score)}</td><td><a href="${url}" target="_blank" rel="noopener">ESPN ↗</a></td></tr>`}).join('');
+ return `<tr><td>${esc(date)}</td><td><span class="opp">${logo(opp)}<b>${esc(opp.name)}</b></span></td><td>${home?'HOME':'AWAY'}</td><td><span class="pill ${played?'past':'future'}">${esc(viewStatus)}</span></td><td>${esc(recordString(r))}</td><td class="${Number.isFinite(pct)?'pct':'minor'}">${percent(pct)}</td><td>${esc(tag+score)}</td><td><a href="${url}" target="_blank" rel="noopener">ESPN ↗</a></td></tr>`}).join('');
  elem.rows.querySelectorAll('tr[data-id]').forEach(r=>r.classList.toggle('selected',r.dataset.id===id));}
 function downloadCSV(){if(!state.loaded)return;const cols=['rank','team','abbreviation','season','cutoff','basis','schedule_window','formula','team_record','sos','played_sos','remaining_sos','full_sos','rated_games','schedule_games','coverage','toughest_remaining'];const val=r=>[r.rank,r.name,r.abbr,seasonName(state.league,state.year),state.cutoff,state.basis,state.window,state.method,recordString(r.record),numeric(r.main.value),numeric(r.played.value),numeric(r.remaining.value),numeric(r.full.value),r.main.covered,r.main.games,Number.isFinite(r.main.coverage)?numeric(r.main.coverage):'',r.remaining.toughest?.name||''];const csv=[cols,...state.rank.map(val)].map(a=>a.map(v=>'"'+String(v??'').replaceAll('"','""')+'"').join(',')).join('\r\n');const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`sos-${state.league}-${state.year}-${state.window}-${state.basis}.csv`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000)}
 function applyControls(needsNetwork=false){if(needsNetwork){load();return}if(!state.loaded){return}const next=currentSelection();if(next.league!==state.league||next.year!==state.year||next.basis!==state.basis){load();return}
@@ -206,7 +247,7 @@ for(const id of ['league','season'])elem[id].addEventListener('change',()=>{if(i
 elem.week.addEventListener('change',selectionChanged);elem.date.addEventListener('change',selectionChanged);elem.window.addEventListener('change',selectionChanged);elem.method.addEventListener('change',selectionChanged);elem.basis.addEventListener('change',basisChanged);
 elem.order.addEventListener('change',()=>{state.order=elem.order.value;render()});elem.search.addEventListener('input',()=>{state.term=elem.search.value.trim().toLowerCase();if(state.loaded)renderRows()});elem.load.addEventListener('click',()=>load());elem.refresh.addEventListener('click',()=>load(true));elem.csv.addEventListener('click',downloadCSV);elem.closeDetail.addEventListener('click',()=>{state.selected=null;elem.detail.hidden=true;renderRows()});
 elem.rows.addEventListener('click',e=>{const row=e.target.closest('tr[data-id]');if(row)renderDetail(row.dataset.id)});elem.rows.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.closest('tr[data-id]')){e.preventDefault();renderDetail(e.target.closest('tr[data-id]').dataset.id)}});
-elem.tableWrap.addEventListener('click',e=>{const th=e.target.closest('th[data-sort]');if(!th)return;const k=th.dataset.sort;if(k==='team')elem.order.value='name';else if(k==='main'||k==='rank')elem.order.value=state.order==='hard'?'easy':'hard';else if(['played','remaining','full'].includes(k)){elem.window.value=k;selectionChanged();return}else if(k==='coverage'){elem.order.value='hard'}else return;state.order=elem.order.value;render()});
+elem.tableWrap.addEventListener('click',e=>{const th=e.target.closest('th[data-sort]');if(!th)return;const k=th.dataset.sort;if(k==='team')elem.order.value='name';else if(k==='main'||k==='rank')elem.order.value=state.order==='hard'?'easy':'hard';else if(['played','remaining','full'].includes(k)){elem.window.value=k;selectionChanged();return}else if(['coverage','games','record','toughest'].includes(k))elem.order.value=k;else return;state.order=elem.order.value;render()});
 // Make the internal scoring functions available for local non-production validation.
 if(new URLSearchParams(location.search).has('sos-debug'))window.__SOS_DEBUG__={parseEvent,parseSchedule,recordsFor,scoreSchedule,modelSeason,rankRows,scheduleRanges,currentSelection};
 initYears(false);load();
