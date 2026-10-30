@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b1018">
+<title>NFL Team Special Teams History</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1018;--panel:#141c29;--panel2:#1a2534;--edge:#29384a;--text:#f1f5f9;--muted:#a0adbd;--green:#6ee7b7;--red:#fb8d94;--blue:#92bfff;--gold:#f5ca75;--r:12px}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.48 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}button,select,input{font:inherit}a{color:var(--blue)}button,select,input{border:1px solid var(--edge);background:var(--panel2);color:var(--text);border-radius:8px}button{cursor:pointer;padding:9px 14px;font-weight:650}button:hover{border-color:#7a98bf}button:disabled{opacity:.55;cursor:default}button.primary{background:#c6dcfb;color:#122135;border-color:#c6dcfb}button.ghost{background:transparent}button.tiny{font-size:11px;padding:5px 9px}select,input{padding:9px 10px;min-height:40px}select:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-offset:2px}option{background:var(--panel)}
+.top{background:#101824;border-bottom:1px solid var(--edge);padding:17px clamp(14px,3vw,32px)}.head,.filters,.tabbar,.sectionhead,.footline{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.head{justify-content:space-between;gap:18px}.brand{display:flex;gap:12px;align-items:center}.brandlogo{display:grid;place-items:center;width:40px;height:40px;border:1px solid #3d5470;border-radius:10px;background:#1c2e42;font-size:24px}.brand h1{margin:0;font-size:21px;line-height:1.15;letter-spacing:-.5px}.muted{color:var(--muted)}.brand p,.small{margin:3px 0 0;color:var(--muted);font-size:12px}.links{display:flex;gap:14px;font-size:12px}.filters{margin-top:17px;gap:10px}.control{display:flex;flex-direction:column;gap:4px}.control label{color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}.control.team select{min-width:225px}.control.year select{min-width:110px}.spacer{flex:1}.main{max-width:1550px;margin:auto;padding:18px clamp(12px,2.5vw,30px) 50px}.teamline{display:flex;align-items:center;gap:12px;margin-bottom:14px}.team-logo{width:48px;height:48px;object-fit:contain}.teamline h2{margin:0;font-size:23px;letter-spacing:-.5px}.teamline .muted{font-size:12px}.status{padding:10px 13px;border:1px solid var(--edge);background:var(--panel);border-radius:8px;margin:0 0 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px}.status.error{border-color:#844552;color:#ffd4d8}.meter{width:125px;height:5px;border-radius:99px;background:#303d51;overflow:hidden}.meter>div{background:var(--blue);height:100%;width:0;transition:width .2s}.cards{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px;margin-bottom:14px}.card{border:1px solid var(--edge);background:var(--panel);border-radius:10px;padding:14px 15px;min-width:0}.card b{font-size:25px;line-height:1.1;font-variant-numeric:tabular-nums;display:block;white-space:nowrap}.card span{color:var(--muted);font-size:11px;letter-spacing:.35px;text-transform:uppercase;display:block;margin-top:8px}.tabs{display:flex;gap:5px;flex-wrap:wrap;border-bottom:1px solid var(--edge);margin-bottom:13px}.tabs button{border:0;border-bottom:3px solid transparent;border-radius:0;color:var(--muted);padding:11px 15px;background:transparent}.tabs button[aria-selected="true"]{border-bottom-color:var(--blue);color:var(--text)}.panel{border:1px solid var(--edge);border-radius:11px;background:var(--panel);overflow:hidden}.sectionhead{padding:13px 15px;border-bottom:1px solid var(--edge);justify-content:space-between}.sectionhead strong{font-size:16px;display:block}.sectionhead p{margin:2px 0 0;color:var(--muted);font-size:12px}.sectionhead .right{display:flex;flex-wrap:wrap;gap:7px;align-items:center}.tablewrap{overflow:auto;max-height:65vh;scrollbar-color:#617185 transparent}table{border-collapse:separate;border-spacing:0;width:100%;white-space:nowrap;font-size:12px;font-variant-numeric:tabular-nums}th{position:sticky;top:0;background:#202c3b;color:#c7d3e3;text-transform:uppercase;letter-spacing:.35px;font-size:10px;text-align:right;z-index:2;font-weight:750;padding:10px 12px;border-bottom:1px solid #3a4b61}td{text-align:right;padding:11px 12px;border-bottom:1px solid #273445}tr:hover td{background:#1b293a}th:first-child,td:first-child{text-align:left}tbody tr:last-child td{border-bottom:0}.player{display:flex;align-items:center;gap:9px;text-align:left}.portrait{width:35px;height:35px;object-fit:cover;border-radius:50%;background:#334255;flex:none}.player-name{font-weight:750;font-size:12px}.player-sub{font-size:10px;color:var(--muted)}.rank{font-weight:900;color:var(--muted);margin-right:7px}.number{font-size:14px;font-weight:750}.ok{color:var(--green)}.bad{color:var(--red)}.center{text-align:center}.empty{padding:44px 24px;color:var(--muted);text-align:center}.hint{padding:10px 14px;color:var(--muted);font-size:12px;border-top:1px solid var(--edge)}.link-button{background:none;border:0;color:var(--blue);padding:0;font-size:12px;font-weight:750}.link-button:hover{text-decoration:underline}.selected{background:#203650!important}.sticky-left{position:sticky;left:0;background:var(--panel);z-index:1;box-shadow:1px 0 0 var(--edge)}th.sticky-left{z-index:4;background:#202c3b}.matrixcell{padding:6px!important;text-align:center!important;min-width:108px}.tile{border:1px solid #40556d;border-radius:7px;padding:7px 9px;display:flex;gap:2px;flex-direction:column;align-items:center;background:#22364a}.tile:hover{background:#29425c}.tile b{font-size:14px}.tile small{font-size:10px;color:#b8c8db}.tile.emptytile{background:transparent;border-color:transparent}.bands td{text-align:center}.split{display:flex;align-items:center;gap:3px;justify-content:center}.made{color:var(--green);font-weight:800}.miss{color:var(--red);font-weight:800}.split .slash{color:#8a9bab}.cellmetric{font-size:10px;color:var(--muted)}.callout{margin-top:14px;border:1px solid #415370;padding:12px 14px;background:#172337;border-radius:9px;font-size:12px;color:#bcd0e9}.detail-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:end}.detail-controls .control select{min-width:150px}.detail-scroll{max-height:70vh}.chip{display:inline-block;padding:4px 8px;border:1px solid var(--edge);background:#202d3e;border-radius:99px;color:#c3d0e0;font-size:11px}.footer{font-size:11px;color:var(--muted);margin-top:14px;line-height:1.6}.spinner{display:inline-block;width:12px;height:12px;border:2px solid #516d8c;border-top-color:#dceaff;border-radius:50%;animation:spin .9s linear infinite;vertical-align:-2px;margin-right:5px}@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:1000px){.cards{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:600px){.brand h1{font-size:18px}.links{display:none}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.card{padding:11px}.card b{font-size:21px}.control.team{width:100%}.control.team select{width:100%}.tablewrap{max-height:65vh}.teamline h2{font-size:20px}.tabs button{padding:9px 10px;font-size:12px}.head{gap:8px}}
+</style>
+</head>
+<body>
+<header class="top">
+ <div class="head">
+  <div class="brand"><div class="brandlogo">🏈</div><div><h1>NFL Team Special Teams History</h1><p>Team-specific career leaders · season matrices · individual kicks</p></div></div>
+  <div class="links"><a href="https://github.com/sportomax1/sports/blob/main/kickers.html" target="_blank" rel="noopener">Original Kick Matrix</a><a href="https://github.com/sportomax1/sports/blob/main/special-teams-leaders.html" target="_blank" rel="noopener">Original Leaders</a><span class="chip">Team history</span></div>
+ </div>
+ <div class="filters">
+  <div class="control team"><label for="team">Franchise</label><select id="team"></select></div>
+  <div class="control"><label for="unit">Specialist</label><select id="unit"><option value="k">Kickers</option><option value="p">Punters</option></select></div>
+  <div class="control year"><label for="range">History range</label><select id="range"><option value="all">Available history · 2010+</option><option value="5">Last 5 seasons</option><option value="1">Selected season only</option></select></div>
+  <div class="control year"><label for="year">Focus season</label><select id="year"></select></div>
+  <div class="spacer"></div>
+  <button id="load" class="primary">Load data</button><button id="refresh" title="Re-fetch season data, ignoring saved cache">Refresh APIs</button>
+ </div>
+</header>
+<main class="main">
+ <div class="teamline"><img id="teamlogo" class="team-logo" alt="" src="https://a.espncdn.com/i/teamlogos/nfl/500/gb.png"><div><h2 id="teamtitle">Green Bay Packers · Kickers</h2><div id="teammeta" class="muted">Regular-season records · 2010 onward · team-only totals</div></div></div>
+ <div class="status" id="status" role="status"><span>Ready to load team history.</span><span class="meter"><div id="progress"></div></span></div>
+ <section class="cards" id="cards" aria-label="Summary metrics"></section>
+ <nav class="tabs" role="tablist" aria-label="Historical statistic views">
+  <button role="tab" id="tab-leaders" data-tab="leaders" aria-selected="true">Career leaderboard</button>
+  <button role="tab" id="tab-seasons" data-tab="seasons" aria-selected="false">Year × player matrix</button>
+  <button role="tab" id="tab-distance" data-tab="distance" aria-selected="false">Distance matrix</button>
+  <button role="tab" id="tab-attempts" data-tab="attempts" aria-selected="false">Individual attempts</button>
+ </nav>
+ <section id="view-leaders" class="panel" role="tabpanel" aria-labelledby="tab-leaders">
+  <div class="sectionhead"><div><strong>Team career leaderboard</strong><p>Each kicker's statistics while playing for the selected franchise, not full NFL career totals.</p></div><div class="right"><select id="sort" aria-label="Rank by"></select><input id="search" type="search" placeholder="Filter players" aria-label="Filter players"><button id="export-leaders" class="tiny">CSV</button></div></div>
+  <div class="tablewrap" id="leaders-table"><div class="empty">Load data to see the leaderboard.</div></div>
+  <div class="hint" id="leaders-note">Historical coverage is determined by available season statistics.</div>
+ </section>
+ <section id="view-seasons" class="panel" role="tabpanel" aria-labelledby="tab-seasons" hidden>
+  <div class="sectionhead"><div><strong>Season × specialist</strong><p>Each cell shows makes/attempts and percentage for that team's kicker in that season. Select a cell to inspect exact attempts.</p></div><div class="right"><button id="export-seasons" class="tiny">CSV</button></div></div>
+  <div class="tablewrap" id="seasons-table"><div class="empty">Load data to see the matrix.</div></div>
+  <div class="hint">Historical team assignment uses the selected franchise’s ESPN season roster. If a specialist played for multiple franchises in a season, Sleeper season totals may include kicks for both teams. Exact game-by-game attribution is available in the Individual Attempts view.</div>
+ </section>
+ <section id="view-distance" class="panel" role="tabpanel" aria-labelledby="tab-distance" hidden>
+  <div class="sectionhead"><div><strong>Season-by-season distance matrix</strong><p>Available field-goal makes / attempts by 10-yard bands. Missing source fields are shown as unavailable, not zero.</p></div><div class="right"><button id="export-distance" class="tiny">CSV</button></div></div>
+  <div class="tablewrap" id="distance-table"><div class="empty">Load data to see distance buckets.</div></div>
+  <div class="hint" id="distance-note">Exact attempt-by-attempt distances are available on the Individual attempts tab.</div>
+ </section>
+ <section id="view-attempts" class="panel" role="tabpanel" aria-labelledby="tab-attempts" hidden>
+  <div class="sectionhead"><div><strong>Individual attempts · selected season</strong><p>ESPN play-by-play. A single season is loaded on demand to avoid hundreds of historical API requests.</p></div><div class="right"><button id="export-attempts" class="tiny">CSV</button></div></div>
+  <div class="sectionhead detail-controls"><div class="control"><label for="detailview">Matrix layout</label><select id="detailview"><option value="buckets">Distance bands</option><option value="exact">Exact-yard grid</option><option value="list">Every attempt</option></select></div><div class="control"><label for="detailplayer">Kicker / punter</label><select id="detailplayer"><option value="all">All players</option></select></div><button id="load-attempts" class="primary">Load season's plays</button><span id="detailstatus" class="muted small">Choose a focus season at the top, then load exact attempts.</span></div>
+  <div class="tablewrap detail-scroll" id="attempts-table"><div class="empty">Select a season and click “Load season's plays.”</div></div>
+  <div class="hint">Play-by-play may omit, duplicate, or ambiguously attribute older attempts. Duplicates are collapsed by play identity; inspect ESPN game links for source details.</div>
+ </section>
+ <div class="footer" id="footnote">Data: <a href="https://api.sleeper.app/v1/players/nfl" target="_blank" rel="noopener">Sleeper player directory</a> and season stats; historical ESPN team rosters, game schedules and play-by-play. Historic aggregate coverage starts in 2010, so this is <strong>not an official franchise all-time leaderboard</strong>.</div>
+</main>
+<script>
+(()=>{'use strict';
+const TEAMS=[['ARI','Arizona Cardinals',22],['ATL','Atlanta Falcons',1],['BAL','Baltimore Ravens',33],['BUF','Buffalo Bills',2],['CAR','Carolina Panthers',29],['CHI','Chicago Bears',3],['CIN','Cincinnati Bengals',4],['CLE','Cleveland Browns',5],['DAL','Dallas Cowboys',6],['DEN','Denver Broncos',7],['DET','Detroit Lions',8],['GB','Green Bay Packers',9],['HOU','Houston Texans',34],['IND','Indianapolis Colts',11],['JAX','Jacksonville Jaguars',30],['KC','Kansas City Chiefs',12],['LAC','Los Angeles Chargers',24],['LAR','Los Angeles Rams',14],['LV','Las Vegas Raiders',13],['MIA','Miami Dolphins',15],['MIN','Minnesota Vikings',16],['NE','New England Patriots',17],['NO','New Orleans Saints',18],['NYG','New York Giants',19],['NYJ','New York Jets',20],['PHI','Philadelphia Eagles',21],['PIT','Pittsburgh Steelers',23],['SEA','Seattle Seahawks',26],['SF','San Francisco 49ers',25],['TB','Tampa Bay Buccaneers',27],['TEN','Tennessee Titans',10],['WAS','Washington Commanders',28]];
+const $=id=>document.getElementById(id), CUR=new Date().getFullYear(), FIRST=2010;
+const API='https://api.sleeper.app/v1/', ESPN='https://site.api.espn.com/apis/site/v2/sports/football/nfl';
+const E={team:$('team'),unit:$('unit'),range:$('range'),year:$('year'),load:$('load'),refresh:$('refresh'),status:$('status'),progress:$('progress'),cards:$('cards'),teamlogo:$('teamlogo'),teamtitle:$('teamtitle'),teammeta:$('teammeta'),sort:$('sort'),search:$('search'),leadersTable:$('leaders-table'),seasonsTable:$('seasons-table'),distanceTable:$('distance-table'),attemptsTable:$('attempts-table'),detailView:$('detailview'),detailPlayer:$('detailplayer'),detailStatus:$('detailstatus'),loadAttempts:$('load-attempts'),leadersNote:$('leaders-note'),distanceNote:$('distance-note')};
+let S={directory:null,seasons:[],years:[],failed:[],unknown:0,matchedByRoster:0,checkedRosters:0,emptyRosterYears:[],tab:'leaders',selectedPlayer:'',attempts:[],attemptsYear:null,attemptsTeam:null,detailFailed:0,busy:false,loadingAttempts:false,run:0,detailRun:0};
+const ALIAS={ARZ:'ARI',GNB:'GB',GBP:'GB',KAN:'KC',KCC:'KC',NWE:'NE',NOR:'NO',SFO:'SF',TAM:'TB',JAC:'JAX',STL:'LAR',LA:'LAR',SD:'LAC',SDG:'LAC',OAK:'LV',WSH:'WAS',WFT:'WAS',LVR:'LV'};
+const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+const normalize=s=>String(s??'').toLowerCase().replace(/[^a-z0-9]/g,'');
+const code=x=>{let k=String(x??'').toUpperCase().trim();return ALIAS[k]||k};
+const num=(o,names)=>{for(const k of names){if(o&&o[k]!==undefined&&o[k]!==null&&o[k]!==''&&Number.isFinite(Number(o[k])))return Number(o[k]);}return null};
+const count=(o,names)=>num(o,names)??0;
+const f=(v,d=0)=>v==null||!Number.isFinite(v)?'—':Number(v).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const pc=(a,b)=>b>0?100*a/b:null;
+const metricDisplay=(v,k)=>v==null?'—':['pct','puntAvg'].includes(k)?f(v,1)+(k==='pct'?'%':''):f(v);
+const currentTeam=()=>TEAMS.find(t=>t[0]===E.team.value)||TEAMS[11];
+const yearsWanted=()=>{const y=+E.year.value;if(E.range.value==='1')return [y];if(E.range.value==='5')return Array.from({length:5},(_,i)=>Math.min(y,CUR)-i).filter(z=>z>=FIRST);return Array.from({length:CUR-FIRST+1},(_,i)=>CUR-i)};
+const roleLabel=()=>E.unit.value==='k'?'Kickers':'Punters';
+function setStatus(message,bad=false,progress=0){E.status.className='status'+(bad?' error':'');E.status.firstElementChild.innerHTML=message;E.progress.style.width=Math.max(0,Math.min(100,progress))+'%';}
+function updateHeader(){const [id,name]=currentTeam();E.teamlogo.src='https://a.espncdn.com/i/teamlogos/nfl/500/'+id.toLowerCase()+'.png';E.teamtitle.textContent=name+' · '+roleLabel();const yrs=S.years.length?`${Math.min(...S.years)}–${Math.max(...S.years)}`:'2010+';E.teammeta.textContent=`Regular season · ${yrs} · franchise-only (where historical team is identified)`;}
+const fieldsK=[['fgm','Field goals made'],['fga','Field-goal attempts'],['pct','FG percentage'],['points','Kicking points'],['xpm','Extra points'],['fgLong','Longest FG']];
+const fieldsP=[['punts','Punts'],['puntYards','Punting yards'],['puntAvg','Gross average'],['puntLong','Longest punt']];
+function updateSort(){const keys=E.unit.value==='k'?fieldsK:fieldsP,old=E.sort.value;E.sort.innerHTML=keys.map(([k,v])=>`<option value="${k}">Rank: ${v}</option>`).join('');E.sort.value=keys.some(([k])=>k===old)?old:(E.unit.value==='k'?'fgm':'puntYards');}
+function init(){E.team.innerHTML=TEAMS.map(([id,n])=>`<option value="${id}">${escapeHtml(n)}</option>`).join('');E.team.value='GB';E.year.innerHTML=Array.from({length:CUR-FIRST+1},(_,i)=>`<option value="${CUR-i}">${CUR-i}</option>`).join('');E.year.value=String(CUR);updateSort();updateHeader();showCards();}
+function card(value,label){return `<div class="card"><b>${escapeHtml(value)}</b><span>${escapeHtml(label)}</span></div>`;}
+function showCards(){const rows=S.seasons,byId=new Map();for(const r of rows){if(!byId.has(r.id))byId.set(r.id,true)}let c;
+ if(E.unit.value==='k'){const a=rows.reduce((o,r)=>{o.fgm+=r.fgm;o.fga+=r.fga;o.xpm+=r.xpm;o.long=Math.max(o.long,r.fgLong);return o},{fgm:0,fga:0,xpm:0,long:0});c=[[f(a.fgm),'FG made'],[f(a.fga),'FG attempts'],[a.fga?f(pc(a.fgm,a.fga),1)+'%':'—','FG accuracy'],[f(a.xpm),'Extra points'],[f(byId.size),'Kickers'],[a.long?f(a.long)+' yd':'—','Longest FG']];}
+ else{const a=rows.reduce((o,r)=>{o.punts+=r.punts;o.yards+=r.puntYards??0;o.long=Math.max(o.long,r.puntLong);return o},{punts:0,yards:0,long:0});c=[[f(a.punts),'Punts'],[f(a.yards),'Punt yards'],[a.punts?f(a.yards/a.punts,1):'—','Gross average'],[a.long?f(a.long)+' yd':'—','Longest punt'],[f(byId.size),'Punters'],[f(S.years.length),'Seasons loaded']];}
+ E.cards.innerHTML=c.map(v=>card(...v)).join('');}
+function openDB(){return new Promise(resolve=>{if(!window.indexedDB){resolve(null);return}try{const request=indexedDB.open('team-special-teams-poc-v1',1);request.onupgradeneeded=()=>request.result.createObjectStore('api');request.onsuccess=()=>resolve(request.result);request.onerror=()=>resolve(null)}catch{resolve(null)}})}
+let DB=null;async function cacheGet(key){if(!DB)DB=await openDB();if(!DB)return null;return new Promise(resolve=>{try{const rq=DB.transaction('api','readonly').objectStore('api').get(key);rq.onsuccess=()=>resolve(rq.result||null);rq.onerror=()=>resolve(null)}catch{resolve(null)}})}
+async function cachePut(key,value){if(!DB)DB=await openDB();if(!DB)return;try{DB.transaction('api','readwrite').objectStore('api').put({at:Date.now(),value},key)}catch{}}
+async function fetchJSON(url){const c=new AbortController(),timeout=setTimeout(()=>c.abort(),23000);try{const response=await fetch(url,{signal:c.signal});if(!response.ok)throw Error('HTTP '+response.status);return await response.json()}finally{clearTimeout(timeout)}}
+async function cached(key,url,ttl,force=false){const old=await cacheGet(key);if(old&&!force&&Date.now()-old.at<ttl)return old.value;try{const result=await fetchJSON(url);await cachePut(key,result);return result}catch(err){if(old&&old.value)return old.value;throw err}}
+async function directory(){if(S.directory)return S.directory;S.directory=await cached('players',API+'players/nfl',7*86400000);return S.directory}
+function band(o,a,b){const suffixes=b===999?['50p','50_plus','50_99','50_69','50_59']:a===0?['0_19','1_19']: [a+'_'+b];
+ const mk=suffixes.flatMap(v=>['fgm_'+v,'fg_made_'+v]);const at=suffixes.flatMap(v=>['fga_'+v,'fg_att_'+v,'fg_attempts_'+v]);
+ let made=num(o,mk),attempts=num(o,at);
+ if(a===50){const m60=num(o,['fgm_60p','fgm_60_plus','fgm_60_69']),a60=num(o,['fga_60p','fga_60_plus','fga_60_69']);if(made!==null&&!Object.keys(o||{}).some(k=>['fgm_50p','fgm_50_plus','fgm_50_99','fgm_50_69'].includes(k))&&m60!==null)made+=m60;if(attempts!==null&&!Object.keys(o||{}).some(k=>['fga_50p','fga_50_plus','fga_50_99','fga_50_69'].includes(k))&&a60!==null)attempts+=a60;}
+ return{made,attempts};}
+function record(id,item,year){const info=S.directory?.[id]||{},st=item?.stats||item||{};const teamRaw=item?.team||item?.team_abbr||item?.player?.team||st.team||'';
+ const fg=count(st,['fgm','field_goals_made']),fa=count(st,['fga','field_goal_attempts']),xp=count(st,['xpm','extra_points_made']);
+ const punts=count(st,['punt','punts','punt_att','pt_att']), puntYards=num(st,['punt_yds','punt_yd','punting_yds','pt_yards','punting_yards']);
+ return{id:String(id),name:info.full_name||info.search_full_name||[info.first_name,info.last_name].filter(Boolean).join(' ')||item?.player_name||('Player '+id),team:code(teamRaw),teamKnown:!!teamRaw,year,head:info.headshot||'https://sleepercdn.com/content/nfl/players/thumb/'+encodeURIComponent(id)+'.jpg',espnId:info.espn_id||'',fgm:fg,fga:fa,pct:pc(fg,fa),xpm:xp,points:3*fg+xp,fgLong:count(st,['fgm_lng','fg_lng','fg_long']),punts,puntYards,puntAvg:punts&&puntYards!=null?puntYards/punts:null,puntLong:count(st,['punt_lng','punt_long','pt_lng']),bands:[band(st,0,19),band(st,20,29),band(st,30,39),band(st,40,49),band(st,50,999)]};}
+async function season(year,force){const data=await cached('stats-regular-'+year,API+'stats/nfl/regular/'+year,year===CUR?2*3600000:35*86400000,force);if(!data||typeof data!=='object'||!Object.keys(data).length)throw Error('No stats');
+ return Object.entries(data).filter(([id])=>!/^TEAM_/i.test(id)).map(([id,item])=>record(id,item,year)).filter(r=>r.fga||r.xpm||r.fgm||r.punts||r.puntYards);}
+// Historical team attribution: the Sleeper season-stat rows generally have no team.
+// Query the selected team's *historical ESPN roster once per year* rather than
+// fetching five league-wide Sleeper weekly-stat payloads per year (which also lack team).
+// Match ESPN athlete ID (preferred), then an exact normalized full name to the
+// Sleeper directory. Never use today's directory team as historical evidence.
+function rosterAthletes(payload){
+ const found=new Map(),visited=new WeakSet();
+ function visit(node,depth){
+  if(!node||typeof node!=='object'||depth>9||visited.has(node))return;
+  visited.add(node);
+  if(Array.isArray(node)){for(const x of node)visit(x,depth+1);return;}
+  const a=node.athlete&&typeof node.athlete==='object'?node.athlete:node;
+  const id=String(a.id??'');
+  const name=String(a.fullName||a.displayName||a.name||'').trim();
+  if(/^\d+$/.test(id)&&name&&(/athlete|player/i.test(JSON.stringify(Object.keys(node)))||a.position||a.jersey||a.headshot||a.uid))found.set(id,{id,name});
+  for(const [key,value] of Object.entries(node)){
+   if(!value||typeof value!=='object'||['statistics','stats','splits','events'].includes(key))continue;
+   visit(value,depth+1);
+  }
+ }
+ visit(payload,0);return [...found.values()];
+}
+const historicalRosterByYear=new Map();
+async function teamRoster(year,force=false){
+ const team=currentTeam(),key=team[0]+':'+year;
+ if(!force&&historicalRosterByYear.has(key))return historicalRosterByYear.get(key);
+ let raw=await cached('espn-team-roster-v2-'+key,`${ESPN}/teams/${team[2]}/roster?season=${year}`,year===CUR?6*3600000:75*86400000,force);
+ let players=rosterAthletes(raw);
+ // Avoid assigning current rosters to historical seasons when the API rejects season filters.
+ if(!players.length)throw Error('ESPN historical roster has no identifiable athletes for '+year);
+ historicalRosterByYear.set(key,players);
+ return players;
+}
+function joinHistoricalTeam(rows,athletes){
+ const espnIds=new Set(athletes.map(a=>a.id)),names=new Set(athletes.map(a=>normalize(a.name)));
+ let matched=0;
+ for(const r of rows){
+  if(r.teamKnown)continue;
+  if((r.espnId&&espnIds.has(String(r.espnId))) || names.has(normalize(r.name))){
+   r.team=E.team.value;r.teamKnown=true;r.historicalRosterMatch=true;matched++;
+  }
+ }
+ return matched;
+}
+async function resolveUnknownTeam(rows,year,force=false){
+ if(!rows.some(r=>!r.teamKnown))return {rows,matched:0,rosterOk:false};
+ const athletes=await teamRoster(year,force);
+ const matched=joinHistoricalTeam(rows,athletes);
+ return {rows,matched,rosterOk:true};
+}
+function activeRows(){return S.seasons.filter(r=>E.unit.value==='k'?(r.fga>0||r.xpm>0):(r.punts>0||r.puntYards>0));}
+function aggregate(){const groups=new Map();for(const r of activeRows()){
+ let a=groups.get(r.id);if(!a){a={id:r.id,name:r.name,head:r.head,years:[],fgm:0,fga:0,xpm:0,points:0,fgLong:0,punts:0,puntYards:0,puntKnown:false,puntLong:0};groups.set(r.id,a)}
+ a.name=r.name;a.head=r.head||a.head;a.years.push(r.year);a.fgm+=r.fgm;a.fga+=r.fga;a.xpm+=r.xpm;a.points+=r.points;a.fgLong=Math.max(a.fgLong,r.fgLong);a.punts+=r.punts;if(r.puntYards!=null){a.puntYards+=r.puntYards;a.puntKnown=true}a.puntLong=Math.max(a.puntLong,r.puntLong);
+ }
+ return [...groups.values()].map(a=>({...a,pct:pc(a.fgm,a.fga),puntYards:a.puntKnown?a.puntYards:null,puntAvg:a.punts&&a.puntKnown?a.puntYards/a.punts:null}));}
+function photo(r){const img=r.head||'https://sleepercdn.com/content/nfl/players/thumb/'+encodeURIComponent(r.id)+'.jpg';return `<img class="portrait" loading="lazy" src="${escapeHtml(img)}" alt="" onerror="this.style.opacity='.18'">`}
+function playerButton(r){return `<button class="link-button" data-player="${escapeHtml(r.id)}" title="Highlight player across all views">${escapeHtml(r.name)}</button>`}
+function renderLeaders(){const metric=E.sort.value,query=normalize(E.search.value),p=E.unit.value==='p';let arr=aggregate().filter(r=>!query||normalize(r.name).includes(query));arr.sort((a,b)=>(b[metric]??-1)-(a[metric]??-1)||a.name.localeCompare(b.name));const allKeys=p?['punts','puntYards','puntAvg','puntLong']:['fgm','fga','pct','xpm','points','fgLong'];
+ const labels={fgm:'FGM',fga:'FGA',pct:'FG%',xpm:'XPM',points:'Points',fgLong:'Long',punts:'Punts',puntYards:'Yards',puntAvg:'Gross avg',puntLong:'Long'};
+ let str='<table><thead><tr><th>#</th><th class="sticky-left">Player</th><th>Seasons</th>'+allKeys.map(k=>`<th>${labels[k]}</th>`).join('')+'<th>Drilldown</th></tr></thead><tbody>';
+ for(let i=0;i<arr.length;i++){const r=arr[i];str+=`<tr><td class="rank">${i+1}</td><td class="sticky-left ${S.selectedPlayer===r.id?'selected':''}"><div class="player">${photo(r)}<div><div class="player-name">${playerButton(r)}</div><div class="player-sub">${Math.min(...r.years)}–${Math.max(...r.years)} · ${r.years.length} season${r.years.length===1?'':'s'}</div></div></div></td><td>${r.years.length}</td>${allKeys.map(k=>`<td class="${k===metric?'number':''}">${metricDisplay(r[k],k)}${(k==='fgLong'||k==='puntLong')&&r[k]?' yd':''}</td>`).join('')}<td><button class="tiny ghost" data-player="${escapeHtml(r.id)}" data-go="seasons">Matrix</button></td></tr>`}
+ str+='</tbody></table>';E.leadersTable.innerHTML=arr.length?str:'<div class="empty">No team specialists match the current filters or loaded data.</div>';
+ E.leadersNote.textContent=`${arr.length} franchise specialists · ${S.years.length} years loaded · ${S.failed.length} failed seasons · ${S.matchedByRoster} historical roster matches · ${S.failed.length?S.failed.slice().sort().join(', ')+' unavailable season(s). ':''}Stats count toward this team only where team attribution is available; mixed-team seasons may include another team's attempts.`;
+}
+function renderSeasons(){const rows=activeRows(),players=aggregate().sort((a,b)=>b.fgm-a.fgm||b.punts-a.punts),ids=players.map(p=>p.id);const years=[...new Set(rows.map(r=>r.year))].sort((a,b)=>b-a);const by=new Map(rows.map(r=>[r.year+':'+r.id,r]));
+ if(!ids.length){E.seasonsTable.innerHTML='<div class="empty">No season-by-player data yet.</div>';return}
+ let html='<table><thead><tr><th class="sticky-left">Season</th>'+players.map(p=>`<th class="center">${escapeHtml(p.name)}</th>`).join('')+'</tr></thead><tbody>';
+ for(const year of years){html+=`<tr><td class="sticky-left"><b>${year}</b></td>`;for(const id of ids){const r=by.get(year+':'+id);if(!r){html+='<td class="matrixcell">·</td>';continue}const headline=E.unit.value==='k'?`${r.fgm}/${r.fga}`:f(r.punts)+' punts',note=E.unit.value==='k'?(r.fga?f(r.pct,1)+'%':'XP only'):(r.puntAvg!=null?f(r.puntAvg,1)+' avg':'—');html+=`<td class="matrixcell"><button class="tile" style="width:100%" data-go="attempts" data-year="${year}" data-player="${escapeHtml(r.id)}" title="Open ${year} attempts"><b>${headline}</b><small>${note}</small></button></td>`;}html+='</tr>'}
+ E.seasonsTable.innerHTML=html+'</tbody></table>';
+}
+function renderDistances(){if(E.unit.value==='p'){E.distanceTable.innerHTML='<div class="empty">Sleeper does not provide equivalent reliable punt-distance attempt buckets here. Use Individual attempts for exact punts by team and season.</div>';E.distanceNote.textContent='Punting historical aggregates are available in Career leaderboard and Year × player matrix.';return}
+ const arr=activeRows().sort((a,b)=>b.year-a.year||b.fgm-a.fgm),bandLabels=['0–19','20–29','30–39','40–49','50+'];if(!arr.length){E.distanceTable.innerHTML='<div class="empty">No seasons available.</div>';return}
+ let html='<table class="bands"><thead><tr><th>Year</th><th class="sticky-left">Kicker</th><th>FGM/FGA</th>'+bandLabels.map(l=>`<th>${l} yd</th>`).join('')+'<th>Kick log</th></tr></thead><tbody>';
+ for(const r of arr){html+=`<tr><td><b>${r.year}</b></td><td class="sticky-left">${playerButton(r)}</td><td><b>${r.fgm}/${r.fga}</b></td>${r.bands.map(b=>`<td>${b.made==null&&b.attempts==null?'<span class="muted">—</span>':`<div class="split"><span class="made">${b.made==null?'?':b.made}</span><span class="slash">/</span><span>${b.attempts==null?'?':b.attempts}</span></div><div class="cellmetric">${b.attempts?f(pc(b.made||0,b.attempts),0)+'%':''}</div>`}</td>`).join('')}<td><button class="tiny ghost" data-go="attempts" data-year="${r.year}" data-player="${escapeHtml(r.id)}">View</button></td></tr>`;}
+ E.distanceTable.innerHTML=html+'</tbody></table>';E.distanceNote.textContent='A dash means the stats API did not report that bucket. A ? indicates the made/attempted portion is missing. For exact kick distances, use the selected season’s ESPN attempts.';
+}
+function tabs(tab){S.tab=tab;document.querySelectorAll('[data-tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===tab)));for(const t of ['leaders','seasons','distance','attempts'])$('view-'+t).hidden=t!==tab;renderView();}
+function renderView(){updateHeader();showCards();if(S.tab==='leaders')renderLeaders();if(S.tab==='seasons')renderSeasons();if(S.tab==='distance')renderDistances();if(S.tab==='attempts'){detailPlayers();renderAttempts();}}
+async function load(force=false){
+ const id=++S.run;S.detailRun++;S.seasons=[];S.years=[];S.failed=[];S.unknown=0;S.matchedByRoster=0;S.checkedRosters=0;S.emptyRosterYears=[];S.attempts=[];S.attemptsYear=null;S.attemptsTeam=null;S.selectedPlayer='';S.busy=true;
+ E.load.disabled=E.refresh.disabled=true;E.detailStatus.textContent='Select a season, then load its plays.';
+ renderView();setStatus('<span class="spinner"></span>Loading specialist directory…');
+ try{
+  await directory();if(id!==S.run)return;
+  const years=yearsWanted();let next=0,done=0;
+  async function worker(){
+   while(next<years.length){
+    const year=years[next++];
+    try{
+     let yr=await season(year,force);if(id!==S.run)return;
+     let matched=0;
+     if(yr.some(r=>!r.teamKnown)){
+      const x=await resolveUnknownTeam(yr,year,force);matched=x.matched;
+      if(id!==S.run)return;
+      S.checkedRosters++;
+     }
+     const filtered=yr.filter(r=>r.team===E.team.value);
+     // A completely unmatched historical roster is a data-quality error, not a 0-FG season.
+     if(!filtered.length&&yr.length){
+      S.emptyRosterYears.push(year);
+      throw Error('No player matched the historical team roster');
+     }
+     S.matchedByRoster+=matched;
+     S.seasons.push(...filtered);S.years.push(year);
+    }catch(err){if(id!==S.run)return;S.failed.push(year)}
+    if(id!==S.run)return;
+    done++;renderView();
+    setStatus(`<span class="spinner"></span>Checking ${done}/${years.length} seasons · ${S.years.length} matched · ${S.failed.length} unavailable`,false,100*done/years.length);
+   }
+  }
+  await Promise.all(Array.from({length:Math.min(years.length,7)},worker));
+  if(id!==S.run)return;
+  S.busy=false;S.seasons.sort((a,b)=>b.year-a.year);renderView();
+  const have=S.years.length?`${Math.min(...S.years)}–${Math.max(...S.years)}`:'none';
+  const missing=S.failed.length?` · ${S.failed.length} unmatched/failed seasons (${S.failed.slice().sort().join(', ')})`:'';
+  if(S.seasons.length===0){
+   setStatus(`No team season stats could be attributed reliably. ESPN historical rosters or matching player IDs may be unavailable. ${missing}`,true,100);
+  }else{
+   setStatus(`${escapeHtml(E.team.options[E.team.selectedIndex].text)}: ${S.years.length} seasons (${have}) · ${activeRows().length} specialist-seasons · ${S.matchedByRoster} historical roster matches${missing}`,S.failed.length>0,100);
+  }
+ }catch(err){if(id!==S.run)return;S.busy=false;setStatus('Could not load season data: '+escapeHtml(err.message)+'. No example statistics were substituted.',true,0)}
+ finally{if(id===S.run){S.busy=false;E.load.disabled=E.refresh.disabled=false}}
+}
+function ctx(summary){const byId=new Map(),kickers=[];for(const b of summary?.boxscore?.players||[]){const team=b.team||{};for(const group of b.statistics||[]){const groupRole=/punt/i.test(group.name+' '+group.displayName)?'p':/kick|field.?goal/i.test(group.name+' '+group.displayName)?'k':'';for(const z of group.athletes||[]){const a=z.athlete||{},id=String(a.id||'');if(!id)continue;const row={id,name:a.displayName||a.fullName||'',teamId:String(team.id||''),team:code(team.abbreviation||''),position:a.position?.abbreviation||'',head:a.headshot?.href||''};byId.set(id,row);if((groupRole==='k'||row.position==='K'||row.position==='PK')&&row.teamId)kickers.push(row);}}}return{byId,kickers}}
+function playText(p){return[p?.shortText,p?.text,p?.description,p?.type?.text,p?.type?.abbreviation].filter(Boolean).join(' ')}
+function gamePlays(s){const values=[];for(const d of s?.drives?.previous||[])for(const p of d.plays||[])values.push(p);for(const p of s?.drives?.current?.plays||[])values.push(p);for(const p of s?.playByPlay?.plays||[])values.push(p);for(const p of s?.plays||[])values.push(p);for(const p of s?.scoringPlays||[])values.push(p);return values}
+function distance(t,role){const pats=role==='k'?[/\b(\d{1,2})\s*(?:yd|yard)s?\s+field\s+goal/i,/field\s+goal.*?\b(\d{1,2})\s*(?:yd|yard)/i]:[/\bpunts?\s+(\d{1,3})\s+yards?/i,/\bpunted\s+(\d{1,3})\s+yards?/i];for(const re of pats){const m=t.match(re);if(m)return +m[1]}return null}
+function made(t,p){if(/no good|miss(?:ed|es)?|blocked|failed/i.test(t))return false;if(/\bis good\b|\bgood\b|\bmade\b|\bmakes\b/i.test(t)||p?.scoringPlay===true)return true;return null}
+function extractAttempts(summary,event,year,team){const context=ctx(summary),out=[];const isP=E.unit.value==='p';const ourId=String(currentTeam()[2]);for(const p of gamePlays(summary)){const t=playText(p),eligible=isP?(/\bpunts?\b/i.test(t)||/PUNT/i.test(p?.type?.abbreviation||'')):(/field\s*goal/i.test(t)||String(p?.type?.abbreviation||'').toUpperCase()==='FG');if(!eligible||/no play|nullified/i.test(t))continue;
+ const d=distance(t,isP?'p':'k');if(d==null)continue;const good=isP?null:made(t,p);if(!isP&&good==null)continue;
+ const pid=String(p?.participants?.[0]?.athlete?.id||p?.participants?.[0]?.id||''),row=context.byId.get(pid)||null;
+ let teamId=String(row?.teamId||p?.team?.id||''),fullName=row?.name||'';if(!fullName){const pat=isP?/^([A-Z][\w.'-]+(?:\s+[A-Z][\w.'-]+)+)\s+punts?/i:/([A-Z][\w.'-]+(?:\s+[A-Z][\w.'-]+)+).*?\d{2}\s*(?:yd|yard)s?\s+field\s+goal/i;fullName=t.match(pat)?.[1]||'';}
+ if(!teamId&&fullName){const potential=[...context.byId.values()].find(x=>normalize(x.name)===normalize(fullName));if(potential)teamId=potential.teamId;}
+ if(!teamId&&context.kickers.length===1&&!isP){teamId=context.kickers[0].teamId;fullName ||=context.kickers[0].name;}
+ if(teamId!==ourId)continue;
+ const period=+(typeof p?.period==='object'?p.period?.number:p?.period||0),clock=typeof p?.clock==='string'?p.clock:p?.clock?.displayValue||p?.displayClock||'',sequence=String(p?.sequenceNumber||p?.id||'');
+ out.push({id:sequence,playerId:pid,playerName:fullName||'Unknown specialist',year,game:String(event.id),opponent:(event.competitions?.[0]?.competitors||[]).filter(c=>String(c.team?.id)!==ourId).map(c=>c.team?.abbreviation).join(''),date:event.date?.slice(0,10)||'',distance:d,made:good,period,clock,text:t});}
+ const dedup=new Map();for(const a of out){const key=a.game+':'+(a.period||'')+':'+(a.clock||'')+':'+a.distance+':'+(a.made?'M':'X')+':'+(a.playerId||normalize(a.playerName));const old=dedup.get(key);if(!old||a.playerName.length>old.playerName.length)dedup.set(key,a);}
+ return [...dedup.values()];}
+function detailPlayers(){const rows=aggregate();const current=E.detailPlayer.value;E.detailPlayer.innerHTML='<option value="all">All players</option>'+rows.sort((a,b)=>a.name.localeCompare(b.name)).map(r=>`<option value="${escapeHtml(r.id)}">${escapeHtml(r.name)}</option>`).join('');if(rows.some(r=>r.id===current))E.detailPlayer.value=current;else if(rows.some(r=>r.id===S.selectedPlayer))E.detailPlayer.value=S.selectedPlayer;}
+async function loadAttempts(){const id=++S.detailRun,year=+E.year.value,team=E.team.value;S.detailFailed=0;S.attempts=[];S.attemptsYear=null;S.attemptsTeam=null;S.loadingAttempts=true;E.loadAttempts.disabled=true;E.attemptsTable.innerHTML='<div class="empty">Loading team game schedule…</div>';
+ try{const j=await cached('schedule-'+team+'-'+year,`${ESPN}/teams/${currentTeam()[2]}/schedule?season=${year}&seasontype=2`,12*3600000);if(id!==S.detailRun)return;
+ let games=(j.events||[]).filter(x=>x.id&&(+x.season?.type===2||!x.season?.type));if(!games.length)throw Error('No team games returned for the selected season');
+ let next=0,done=0,failed=0;const attempts=[];async function worker(){while(next<games.length){const event=games[next++];try{const summary=await cached('espn-summary-'+event.id,`${ESPN}/summary?event=${event.id}`,14*86400000);if(id!==S.detailRun)return;attempts.push(...extractAttempts(summary,event,year,team));}catch{failed++}if(id!==S.detailRun)return;done++;E.detailStatus.textContent=`${done}/${games.length} games · ${attempts.length} matched ${E.unit.value==='p'?'punts':'FG attempts'} · ${failed} failed`;}}
+ await Promise.all(Array.from({length:Math.min(4,games.length)},worker));if(id!==S.detailRun)return;S.attempts=attempts.sort((a,b)=>a.distance-b.distance);S.attemptsYear=year;S.attemptsTeam=team;S.detailFailed=failed;S.loadingAttempts=false;detailPlayers();renderAttempts();E.detailStatus.textContent=`${games.length-failed}/${games.length} games · ${attempts.length} identified attempts${failed?' · incomplete: '+failed+' failed':''}`;
+ }catch(e){if(id!==S.detailRun)return;E.attemptsTable.innerHTML=`<div class="empty">Unable to fetch game-level plays: ${escapeHtml(e.message)}. Try another season.</div>`;E.detailStatus.textContent='ESPN game data unavailable';}finally{if(id===S.detailRun){S.loadingAttempts=false;E.loadAttempts.disabled=false}}}
+function filteredAttempts(){let a=S.attempts;if(E.detailPlayer.value!=='all'){const sel=aggregate().find(x=>x.id===E.detailPlayer.value),name=sel?.name||'',matches=a.filter(x=>String(x.playerId)===String(E.detailPlayer.value)||normalize(x.playerName)===normalize(name));a=matches;}return a;}
+function cell(a){if(!a.length)return '·';if(E.unit.value==='p'){return `<div class="tile"><b>${a.length} punts</b><small>avg ${f(a.reduce((s,x)=>s+x.distance,0)/a.length,1)} yd</small></div>`;}
+ const good=a.filter(x=>x.made).length;return `<div class="tile"><div class="split"><span class="made">✓${good}</span><span class="bad">✕${a.length-good}</span></div><small>${f(100*good/a.length,0)}%</small></div>`;}
+function renderAttempts(){if(S.loadingAttempts)return;if(S.attemptsYear!==+E.year.value||S.attemptsTeam!==E.team.value){E.attemptsTable.innerHTML='<div class="empty">This season has not been loaded. Click “Load season’s plays.”</div>';return}
+ const a=filteredAttempts();if(!a.length){E.attemptsTable.innerHTML='<div class="empty">No matching attempts found in the returned ESPN game summaries. Try another player or season.</div>';return}const players=[...new Set(a.map(x=>x.playerName))].sort(),view=E.detailView.value;let html='';
+ if(view==='list'){html='<table><thead><tr><th>Player</th><th>Week / date</th><th>Opponent</th><th>Distance</th><th>Result</th><th>Game</th></tr></thead><tbody>'+a.slice().sort((x,y)=>x.date.localeCompare(y.date)).map(x=>`<tr><td>${escapeHtml(x.playerName)}</td><td>${escapeHtml(x.date)}</td><td>${escapeHtml(x.opponent)}</td><td><b>${x.distance} yd</b></td><td class="${x.made?'ok':'bad'}">${E.unit.value==='p'?'Punt':x.made?'Made':'Missed / blocked'}</td><td><a href="https://www.espn.com/nfl/game/_/gameId/${escapeHtml(x.game)}" target="_blank" rel="noopener">View</a></td></tr>`).join('')+'</tbody></table>';
+ }else{const bins=view==='buckets'?(E.unit.value==='p'?[20,30,40,50,60,70,80]:[0,10,20,30,40,50,60,70]):Array.from({length:Math.max(...a.map(x=>x.distance))-Math.min(...a.map(x=>x.distance))+1},(_,i)=>Math.min(...a.map(x=>x.distance))+i);
+ const bandText=n=>view==='buckets'?`${n}–${n+9}`:String(n);html='<table><thead><tr><th class="sticky-left">Player</th><th>Attempts</th>'+bins.map(x=>`<th class="center">${bandText(x)} yd</th>`).join('')+'</tr></thead><tbody>';
+ for(const name of players){const selected=a.filter(x=>x.playerName===name);html+=`<tr><td class="sticky-left"><b>${escapeHtml(name)}</b></td><td>${selected.length}</td>`;for(const n of bins){const match=selected.filter(x=>view==='buckets'?x.distance>=n&&x.distance<n+10:x.distance===n);html+=`<td class="matrixcell" title="${escapeHtml(match.map(x=>`${x.distance}yd ${x.made?'made':'miss'} vs ${x.opponent}`).join('\n'))}">${cell(match)}</td>`;}html+='</tr>'}html+='</tbody></table>';}
+ E.attemptsTable.innerHTML=html;}
+function saveCSV(view){let headers,rows=[];
+ const q=x=>'"'+String(x??'').replace(/"/g,'""')+'"';
+ if(view==='leaders'){headers=['Player','Seasons','FGM','FGA','FG Pct','XPM','Points','Long FG','Punts','Punting yards','Gross avg','Long punt'];rows=aggregate().map(x=>[x.name,x.years.slice().sort().join('/'),x.fgm,x.fga,x.pct,x.xpm,x.points,x.fgLong,x.punts,x.puntYards,x.puntAvg,x.puntLong]);}
+ else if(view==='seasons'){headers=['Year','Player','Team','FGM','FGA','FG Pct','XPM','Points','Long FG','Punts','Punting yards','Gross avg','Long punt'];rows=activeRows().map(x=>[x.year,x.name,E.team.value,x.fgm,x.fga,x.pct,x.xpm,x.points,x.fgLong,x.punts,x.puntYards,x.puntAvg,x.puntLong]);}
+ else if(view==='distance'){headers=['Year','Player','Team','FGM','FGA',...['0-19','20-29','30-39','40-49','50+'].flatMap(x=>['Made '+x,'Attempts '+x])];rows=activeRows().map(x=>[x.year,x.name,E.team.value,x.fgm,x.fga,...x.bands.flatMap(b=>[b.made,b.attempts])]);}
+ else{headers=['Year','Player','Opponent','Date','Distance','Made','Game ID','ESPN URL','Play text'];rows=filteredAttempts().map(x=>[x.year,x.playerName,x.opponent,x.date,x.distance,x.made,x.game,'https://www.espn.com/nfl/game/_/gameId/'+x.game,x.text]);}
+ const blob=new Blob([[headers,...rows].map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='nfl-'+E.team.value+'-'+E.unit.value+'-'+view+'-'+E.year.value+'.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function choosePlayer(id,tab,year){S.selectedPlayer=String(id);if(year){E.year.value=String(year);S.attemptsYear=null;}if(tab==='attempts'){tabs('attempts');E.detailPlayer.value=String(id);E.detailStatus.textContent='Choose “Load season’s plays” for '+E.year.value+'.';}else if(tab){tabs(tab)}else renderView();}
+E.team.addEventListener('change',()=>{S.run++;S.detailRun++;S.seasons=[];S.years=[];S.failed=[];S.attempts=[];S.attemptsYear=null;S.attemptsTeam=null;S.selectedPlayer='';updateHeader();renderView();load(false)});
+E.unit.addEventListener('change',()=>{S.detailRun++;S.attempts=[];S.attemptsYear=null;updateSort();renderView();if(S.seasons.length===0&&!S.busy)load(false)});
+E.range.addEventListener('change',()=>load(false));
+E.year.addEventListener('change',()=>{S.detailRun++;S.attemptsYear=null;if(E.range.value!=='all')load(false);else if(S.tab==='attempts')renderAttempts();});
+E.load.addEventListener('click',()=>load(false));E.refresh.addEventListener('click',()=>{S.directory=null;historicalRosterByYear.clear();load(true)});E.sort.addEventListener('change',renderLeaders);E.search.addEventListener('input',renderLeaders);
+document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>tabs(b.dataset.tab)));
+for(const view of ['leaders','seasons','distance','attempts'])$('export-'+view).addEventListener('click',()=>saveCSV(view));
+for(const wrap of [E.leadersTable,E.seasonsTable,E.distanceTable])wrap.addEventListener('click',ev=>{const b=ev.target.closest('button[data-player]');if(b)choosePlayer(b.dataset.player,b.dataset.go,b.dataset.year)});
+E.detailView.addEventListener('change',renderAttempts);E.detailPlayer.addEventListener('change',renderAttempts);E.loadAttempts.addEventListener('click',loadAttempts);
+init();load(false);
+})();
+</script>
+</body>
+</html>
