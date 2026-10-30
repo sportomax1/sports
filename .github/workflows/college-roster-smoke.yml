@@ -1,0 +1,23 @@
+name: College Movement ESPN API smoke test
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/college-roster-smoke.yml'
+      - 'college-roster-engine.js'
+      - 'college-movement.html'
+      - 'scripts/test-college-roster.mjs'
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test ESPN season-index and athlete-profile endpoints
+        run: node scripts/test-college-roster.mjs
