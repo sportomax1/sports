@@ -1,57 +1,43 @@
-# College Movement Lab — setup and data contract
+# College Movement Lab — ESPN historical roster engine
 
-**Files:** `college-movement.html` · `api/college-movement.js` · `scripts/build-college-movement.mjs` · `.github/workflows/college-movement.yml`.
+Open: https://sportomax1.github.io/sports/college-movement.html
 
-This dashboard compares college football and **men's college basketball** transfer portal history (2021+) and corresponding NFL/NBA draft picks. It has two access levels:
+**No credentials, API keys, GitHub Actions jobs, or Vercel project are required.** The page runs as a static application and fetches historical ESPN roster membership in the browser.
 
-| Mode | Host | Data visible | Configuration |
-|---|---|---|---|
-| Public aggregate dashboard | Static host (GitHub Pages or Vercel) | Yearly portal counts, known destinations, departures/arrivals by school, school-to-school transfer totals, aggregate college draft counts | CFBD + CBBD GitHub Actions secrets; run snapshot job |
-| Private player analytics | Vercel host with serverless functions | Individual portal entries, named destinations, player candidate timeline, draft-pick directory, team roster comparisons | Provider secrets + `DASHBOARD_ACCESS_TOKEN` on Vercel; user unlocks the page |
+## Features
 
-**No API keys or raw player-level snapshots should be checked into the public GitHub repository.** The snapshot builder writes only *derived aggregate counts* to `data/college-movement/summaries/...`. Private player records are served from an authenticated backend for owner use and are not cached as a public feed.
+- College football and men's college basketball.
+- School selector with up to **four** programs scanned per comparison.
+- Season range up to **six consecutive seasons** (default: current calendar year and previous two years).
+- Unique ESPN athlete IDs, new roster appearances, departures, returning players, and season snapshots.
+- **Observed school switches** when the same ESPN athlete ID occurs on two selected school rosters in different years.
+- Year-by-year changes, team turnover, school-to-school movement paths, player history dialogs, and CSV exports.
+- Local browser caching of player profiles and roster indexes. Existing cache persists on refresh.
 
-## 1. Obtain API keys
+## ESPN API endpoints
 
-- Request a CFBD API key: https://collegefootballdata.com/
-- Request a CBBD API key: https://collegebasketballdata.com/
-- Review their current API quotas, endpoints, and terms: https://collegefootballdata.com/terms and https://collegebasketballdata.com/terms. Both APIs share a quota pool.
+Historical team-season roster indexes are loaded from:
 
-## 2. Activate the public trends on GitHub Pages
+```
+https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/{YYYY}/teams/{teamId}/athletes?limit=200
+https://sports.core.api.espn.com/v2/sports/basketball/leagues/mens-college-basketball/seasons/{YYYY}/teams/{teamId}/athletes?limit=200
+```
 
-1. Open `https://github.com/sportomax1/sports/settings/secrets/actions`.
-2. Under **Repository secrets**, configure `CFBD_API_KEY` and `CBBD_API_KEY`, each with the matching provider token.
-3. Open `https://github.com/sportomax1/sports/actions/workflows/college-movement.yml`.
-4. Select **Run workflow** and enable **history** for initial 2021-through-current backfill.
-5. Confirm a successful workflow and inspect `data/college-movement/manifest.json` and `data/college-movement/summaries/football/YYYY.json` (and basketball).
-6. Visit `college-movement.html` on the host that publishes this repository.
+These endpoints return athlete IDs (often via `$ref`). The page resolves each ID using the corresponding league athlete endpoint to obtain the athlete name, headshot, and position. For team selectors it uses ESPN's team listing or the repository's existing `data/campus-directory/men.json`.
 
-The workflow runs every Monday at 12:45 UTC for current/previous-cycle updates. Missing years should be treated as **unavailable**, not as zero. Github Actions may have to be enabled in repository Settings. Partial/missing snapshots are identified as incomplete coverage.
+**Important:** Do not use `site.api.espn.com/.../teams/{teamId}/roster?season=YYYY` for past seasons; that endpoint can ignore the season parameter and return the current roster. The engine explicitly avoids that silent error.
 
-## 3. Optional: enable private player-level detail
+## Interpretations and limitations
 
-This requires a **Vercel project connected to this GitHub repository**, not only a GitHub Pages deployment.
+- ESPN season-roster membership is observed data; it is not an official transfer portal transaction record.
+- A player switching between selected teams in different years is labelled **roster-inferred** and is not a verified portal entrant or completed transfer transaction.
+- Another transfer destination may exist outside the scanned schools. Scanning only one school still supports retention, newcomer, and exit comparisons, but **cannot** establish destinations.
+- A roster departure does **not** prove a transfer, graduation, draft declaration, undrafted signing, or entry to any professional league. Early departures and NFL/NBA draft selections need separate sources and are intentionally **not counted** here.
+- Comparisons require **both** adjacent team seasons to load completely; missing rosters are not counted as empty.
+- Year is the football season-start year and the basketball season-ending year.
+- ESPN endpoints are unofficial and may occasionally fail, change, block CORS, or throttle. A CORS fallback is attempted when necessary.
+- The browser may make hundreds of requests per multi-year comparison because historical roster indexes generally expose ID references, not embedded player names. Load fewer schools or years for faster results. Cached data speeds up repeats.
 
-1. In Vercel's project **Environment Variables**, set `CFBD_API_KEY`, `CBBD_API_KEY`, and `DASHBOARD_ACCESS_TOKEN`.
-2. Generate a unique random access token of at least 24 characters; avoid a reused password.
-3. Set the environment variables for Production (and Preview only if needed), redeploy, and ensure Vercel's API route `/api/college-movement?type=status` responds (metadata only).
-4. On your deployed `college-movement.html`, select **Unlock private player data** and enter the **dashboard access token** (NOT the provider keys). It is kept in in-memory JavaScript state only, not local storage, URL query, cookies, or GitHub.
-5. Click **Lock player data** when finished. For strongest privacy, use Vercel Deployment Protection or other authentication in addition to this access token.
+## Former optional implementation
 
-The backend returns HTTP 401 for private reads without the access token. Do not distribute the private token or embed it in any public-facing page. No connected Vercel project was detected in the current account during development, so the private deployment is **not** currently activated.
-
-## Data definitions and limitations
-
-- **Portal entries:** Player records in the provider's portal dataset, **not** completed transfers.
-- **Known destinations:** Entries that list a destination school; these are not confirmed enrollments by themselves.
-- **Departures:** Number of portal entries from a school. Not all roster departures.
-- **Arrivals:** Number of entries listing the school as destination.
-- **Net listed:** Recorded incoming minus recorded outgoing entries; not roster growth.
-- **Roster retention:** Matched athletes on consecutive team roster snapshots in private mode. Missing IDs and name changes can affect comparisons.
-- **Going pro:** NFL/NBA **draft selections**, not all players who declared or signed professionally. **Early departure status** requires validated class-year, eligibility, or declaration evidence, which is not currently provided by this dashboard.
-- **Player path modal:** Cross-season exact-name matches are candidate matches, not identity-verified when player identifiers differ.
-- **Current season and current portal cycles** can be incomplete. Basketball rosters use season-ending years while draft and portal cycle years follow separate calendars.
-- **Scope:** Men's college basketball through CBBD. The existing `campus-roster-timeline.html` handles women's basketball roster history separately.
-- **Provider source and terms:** https://api.collegefootballdata.com/data-availability · https://api.collegebasketballdata.com/data-availability · https://collegefootballdata.com/terms.
-
-No provider observations have been added as sample or invented records. Real values appear only after keys are configured and data has been successfully retrieved.
+`api/college-movement.js`, `scripts/build-college-movement.mjs`, and `.github/workflows/college-movement.yml` were created for the original CFBD/CBBD-key approach, which is **not used by the current dashboard**. The legacy workflow is manual-only and optional; it requires provider API credentials and is **not necessary** to use the ESPN dashboard.
