@@ -53,7 +53,12 @@ function decoratePaths(){
   const match=Array.from(select.options).find(o=>o.value&&o.textContent.trim()===txt);
   if(match){
    row.classList.add('path-school');
-   row.insertBefore(makeMark(match.value,match.textContent,'sm'),row.children[1]||null);
+   const textNode=Array.from(row.childNodes).find(n=>n.nodeType===3);
+   if(textNode){
+    textNode.textContent=' · ';
+    row.appendChild(makeMark(match.value,match.textContent,'sm'));
+    const name=document.createElement('span');name.className='path-team-name';name.textContent=txt;row.appendChild(name);
+   }else row.appendChild(makeMark(match.value,match.textContent,'sm'));
   }
   row.dataset.schoolLogo='true';
  }
