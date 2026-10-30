@@ -19,6 +19,23 @@
 .tablewrap{overflow:auto;max-height:590px}.table{width:100%;border-collapse:collapse;white-space:nowrap;font-size:12px}.table th{position:sticky;top:0;z-index:1;background:#1c2d41;text-align:left;color:#afc3d8;font-size:10px;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #48617b}.table td,.table th{padding:10px 12px;border-bottom:1px solid #273b50}.table tbody tr:hover{background:#1e2c3d}.table td.small{font-size:10px;color:var(--muted)}.table .muted{color:var(--muted)}.table .good{color:#85dfb1}.table .pending{color:#f7c97e}.table .click{border:none;background:transparent;padding:0;color:#c6dcfc;font-weight:850;text-decoration:underline;text-underline-offset:3px;text-decoration-color:#526980;cursor:pointer}.empty{text-align:center;color:var(--muted);padding:33px 15px}.tag{font-size:10px;border:1px solid #436081;background:#21354e;border-radius:6px;padding:3px 6px}.tag.pro{border-color:#8d7042;background:#48391f;color:#ffdc92}
 .comparison{padding:14px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.comp{border:1px solid var(--line);background:var(--pane2);padding:12px;border-radius:9px}.comp strong{display:block;font-size:23px}.comp small{color:var(--muted)}.comparetools{padding:12px 14px;display:flex;align-items:end;gap:10px;flex-wrap:wrap}.foot{margin-top:13px;color:var(--muted);font-size:11px;line-height:1.65}.foot a{margin-right:8px}dialog{width:min(670px,calc(100vw - 24px));color:var(--text);background:var(--pane);border:1px solid #546b85;border-radius:13px;padding:18px;box-shadow:0 20px 70px #000b}dialog::backdrop{background:#000b}dialog h2{font-size:22px;margin:0 0 6px}.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.close{margin-left:auto;border:1px solid var(--line);background:#23374c;border-radius:8px;padding:6px 10px;color:var(--text)}.path{margin:12px 0;padding:9px;border:1px solid var(--line);border-radius:8px;background:#0c1623}.path-item{padding:9px 5px;border-bottom:1px solid var(--line)}.path-item:last-child{border:0}.path-item small{color:var(--muted)}
 @media(max-width:950px){.charts{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(3,1fr)}.rankrow{grid-template-columns:180px 1fr 50px}}@media(max-width:600px){.shell{padding:11px}.hero{gap:7px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi strong{font-size:24px}.comparison{grid-template-columns:1fr 1fr}.field.small{flex:1;min-width:90px}.rankrow{grid-template-columns:112px 1fr 36px}.tabs{overflow:auto;flex-wrap:nowrap}.tab{white-space:nowrap;padding:10px 9px}}
+
+/* Reuse ESPN school identity visuals from the nationwide view. */
+.field.school{position:relative}.field.school select{padding-left:47px}
+.school-inline-preview{position:absolute;left:7px;bottom:5px;display:inline-flex;align-items:center;pointer-events:none}
+.team-mark{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;width:26px;height:26px;flex:0 0 auto;padding:2px;border:1px solid #42546b;border-radius:7px;background:#eef2f8;color:#223447;overflow:hidden}
+.team-mark img{max-width:100%;max-height:100%;width:100%;height:100%;object-fit:contain}
+.team-mark-fallback{display:none;font-size:9px;font-weight:900}
+.team-mark.missing img{display:none}.team-mark.missing .team-mark-fallback{display:block}
+.team-mark--sm{width:29px;height:29px}
+.team-logo-cell{display:inline-flex;gap:8px;align-items:center;white-space:nowrap}
+.table td.team-logo-cell{display:table-cell}
+.table td.team-logo-cell .team-mark{margin-right:8px}
+.rankrow .name.team-logo-cell{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.path-item.team-logo-cell{display:flex;align-items:center}
+.team-chip-fallback{display:inline-grid;place-items:center;border-radius:5px;background:#e8edf4;color:#1e3248;height:19px;width:19px;font-size:8px;font-weight:900}
+@media(max-width:520px){.team-logo-cell{gap:5px}.team-mark--xs{width:23px;height:23px}.field.school select{padding-left:43px}}
+
 </style></head>
 <body><main class="shell">
 <header class="hero"><a class="back" href="./college-movement.html">← Nationwide tracker</a><div><div class="eyebrow">College football + men's basketball</div><h1>Live School Compare</h1><p>Pick up to four schools • live ESPN roster comparisons</p></div><div class="grow"></div><a class="chip" href="./campus-roster-timeline.html">Basketball roster timeline ↗</a><span class="chip" id="keyStatus">ESPN API · no key required</span></header>
@@ -26,7 +43,7 @@
  <label class="field"><span>Sport</span><select id="sport"><option value="football">🏈 College football</option><option value="basketball">🏀 Men's basketball</option></select></label>
  <label class="field small"><span>From cycle</span><select id="fromYear"></select></label>
  <label class="field small"><span>Through cycle</span><select id="toYear"></select></label>
- <label class="field school"><span>School to scan</span><select id="team" aria-label="Choose school to include"></select></label><button class="action outline" id="addTeam" type="button">+ Add school</button>
+ <label class="field school"><span>School to scan</span><select id="team" aria-label="Choose school to include"></select><span id="liveSchoolPreview" class="school-inline-preview" aria-hidden="true"></span></label><button class="action outline" id="addTeam" type="button">+ Add school</button>
  <label class="field search"><span>Filter results</span><input id="search" type="search" placeholder="Player, school, season…"></label>
  <button class="action" id="load">↻ Load rosters</button><button class="action outline" id="csv">Export CSV</button>
 </section>
@@ -55,4 +72,5 @@
 </main>
 
 <dialog id="playerDialog"><div class="row"><h2 id="dialogTitle"></h2><button class="close" id="dismiss">Close ✕</button></div><div id="dialogBody"></div></dialog>
-<script src="./college-roster-engine.js" defer></script></body></html>
+<script src="./college-roster-engine.js" defer></script>
+<script src="./college-live-logos.js" defer></script></body></html>
