@@ -20,6 +20,54 @@
 .comparison{padding:14px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.comp{border:1px solid var(--line);background:var(--pane2);padding:12px;border-radius:9px}.comp strong{display:block;font-size:23px}.comp small{color:var(--muted)}.comparetools{padding:12px 14px;display:flex;align-items:end;gap:10px;flex-wrap:wrap}.foot{margin-top:13px;color:var(--muted);font-size:11px;line-height:1.65}.foot a{margin-right:8px}dialog{width:min(670px,calc(100vw - 24px));color:var(--text);background:var(--pane);border:1px solid #546b85;border-radius:13px;padding:18px;box-shadow:0 20px 70px #000b}dialog::backdrop{background:#000b}dialog h2{font-size:22px;margin:0 0 6px}.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.close{margin-left:auto;border:1px solid var(--line);background:#23374c;border-radius:8px;padding:6px 10px;color:var(--text)}.path{margin:12px 0;padding:9px;border:1px solid var(--line);border-radius:8px;background:#0c1623}.path-item{padding:9px 5px;border-bottom:1px solid var(--line)}.path-item:last-child{border:0}.path-item small{color:var(--muted)}
 @media(max-width:950px){.charts{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(3,1fr)}.rankrow{grid-template-columns:180px 1fr 50px}}@media(max-width:600px){.shell{padding:11px}.hero{gap:7px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi strong{font-size:24px}.comparison{grid-template-columns:1fr 1fr}.field.small{flex:1;min-width:90px}.rankrow{grid-template-columns:112px 1fr 36px}.tabs{overflow:auto;flex-wrap:nowrap}.tab{white-space:nowrap;padding:10px 9px}}
 .rankrow{width:100%;border:none;color:var(--text);background:transparent;text-align:left;cursor:pointer}.rankrow:hover{background:#1d3046;border-radius:5px}.smallnote{font-size:11px;color:var(--muted)}.toolbar .field.school{flex:1.2;min-width:200px;max-width:none}.panel .subtabs{padding:9px 13px}.tab:focus-visible{outline:2px solid var(--gold)}.kpi:nth-child(1){border-top:2px solid var(--blue)}.kpi:nth-child(5){border-top:2px solid var(--green)}.foot{padding-bottom:14px}.foot strong{color:#c7d9e9}button.personLink{text-align:left}@media(min-width:1000px){.shell{max-width:1690px}.charts{grid-template-columns:1.7fr 1fr}.tablewrap{max-height:62vh}}@media(max-width:650px){.hero h1{font-size:25px}.toolbar .field.school{flex-basis:100%}.toolbar .field.search{flex-basis:100%}.kpis{gap:7px}.kpi{min-height:89px;padding:10px}.rankrow{grid-template-columns:115px 1fr 42px}}
+
+/* Consistent school-logo treatment: header, picker, rankings, tables, modal. */
+.team-mark{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;flex:0 0 auto;width:28px;height:28px;padding:3px;border:1px solid #41546c;border-radius:8px;background:#ecf1f8;color:#253750;overflow:hidden}
+.team-mark img{width:100%;height:100%;display:block;object-fit:contain}
+.team-mark-fallback{display:none;font-size:9px;font-weight:950;letter-spacing:-.04em;line-height:1}
+.team-mark.missing img{display:none}
+.team-mark.missing .team-mark-fallback{display:grid;place-items:center}
+.team-mark--xs{width:24px;height:24px;border-radius:7px;padding:2px}
+.team-mark--sm{width:30px;height:30px}
+.team-mark--lg{width:45px;height:45px;padding:5px;border-radius:11px}
+.team-mark--lg .team-mark-fallback{font-size:14px}
+.team-mark--xs .team-mark-fallback{font-size:8px}
+.team-cell{display:inline-flex;align-items:center;gap:9px;min-width:0;vertical-align:middle}
+.team-cell-name{display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:min(24vw,270px)}
+.team-link{display:inline-flex!important;gap:8px;align-items:center;white-space:nowrap;text-align:left!important;max-width:100%;text-decoration:none!important}
+.team-link .team-cell-name{text-decoration:underline;text-decoration-color:#526980;text-underline-offset:3px}
+.school-picker{position:relative;width:100%}
+.native-picker{position:absolute!important;left:-9999px!important;width:1px!important;height:1px!important;overflow:hidden!important;opacity:0!important;pointer-events:none!important}
+.school-trigger{display:flex;width:100%;align-items:center;gap:9px;min-height:40px;padding:5px 9px;text-align:left;color:var(--text);border:1px solid #425671;border-radius:9px;background:#0c1624}
+.school-trigger[aria-expanded=true]{border-color:#eac06b;box-shadow:0 0 0 1px #eac06b55}
+.school-picked-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.picker-selected-mark{display:grid;place-items:center;flex:0 0 30px;color:var(--blue);font-size:22px}
+.picker-chevron{font-size:19px;color:var(--muted)}
+.school-menu{position:absolute;z-index:30;top:calc(100% + 5px);left:0;right:0;min-width:min(360px,90vw);border-radius:12px;border:1px solid #536a87;background:#111e2c;box-shadow:0 20px 48px #000b;padding:9px}
+.school-menu[hidden]{display:none}
+.picker-search-label{display:block;font-size:10px;color:var(--muted);font-weight:800;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px}
+.school-menu input{width:100%;border:1px solid #566880;border-radius:7px;background:#081420;color:#f7fbff;min-height:38px;padding:8px 10px}
+#teamPickerList{max-height:min(330px,54vh);overflow:auto;margin-top:7px;overscroll-behavior:contain}
+.school-option{display:flex;align-items:center;gap:9px;width:100%;border:0;border-radius:8px;background:none;color:var(--text);text-align:left;padding:6px 8px;min-height:40px}
+.school-option:hover,.school-option:focus-visible,.school-option[aria-selected=true]{background:#2a4057}
+.school-option-name{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.school-option-check{color:var(--green);font-size:14px}
+.picker-count{padding:7px 4px 0;color:var(--muted);font-size:10px}
+.school-spotlight{display:flex;gap:12px;align-items:center;padding:12px 15px;border:1px solid var(--line);border-radius:12px;background:linear-gradient(110deg,#1e3247,#121c2a);margin-top:10px}
+.school-spotlight[hidden]{display:none}
+.school-spotlight-title{font-size:16px;font-weight:850}
+.school-spotlight-desc{font-size:11px;color:var(--muted)}
+.school-spotlight .school-spotlight-info{min-width:0;flex:1}
+.chart-school-mark{display:inline-flex;align-items:center}
+.chart-school-mark[hidden]{display:none}
+.rankrow{grid-template-columns:minmax(160px,1.45fr) minmax(35px,1fr) 40px}
+.rankrow .name{display:inline-flex;align-items:center;gap:7px;min-width:0;overflow:hidden}
+.rankrow .rank-school-label{white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+.path-school{display:inline-flex;align-items:center;gap:9px}
+.path-school .path-team-name{font-weight:750}
+@media(max-width:780px){.team-cell-name{max-width:190px}.rankrow{grid-template-columns:minmax(148px,1.4fr) minmax(30px,.8fr) 36px}.school-menu{min-width:100%}}
+@media(max-width:480px){.team-cell-name{max-width:130px}.rankrow{grid-template-columns:134px minmax(26px,1fr) 35px}.team-mark--xs{width:22px;height:22px}.school-trigger{min-height:41px}}
+
 </style></head>
 <body><main class="shell">
 <header class="hero"><a class="back" href="./index.html">← Tools</a><div><div class="eyebrow">College football + men's basketball</div><h1>College Movement Lab</h1><p>Nationwide roster turnover • school-to-school movements • retention • all available ESPN teams</p></div><div class="grow"></div><a class="chip" href="./college-movement-live.html">Live school comparison ↗</a><span class="chip" id="keyStatus">ESPN national snapshots · no key</span></header>
@@ -27,11 +75,25 @@
  <label class="field"><span>Sport</span><select id="sport"><option value="football">🏈 College football</option><option value="basketball">🏀 Men's basketball</option></select></label>
  <label class="field small"><span>From season</span><select id="fromYear"></select></label>
  <label class="field small"><span>Through season</span><select id="toYear"></select></label>
- <label class="field school"><span>School scope</span><select id="team" aria-label="Filter all teams or one school"><option value="">All ESPN-listed schools</option></select></label>
+ <div class="field school"><label id="schoolPickerLabel" for="teamPickerTrigger"><span>School scope</span></label>
+  <div class="school-picker" id="schoolPicker">
+    <select id="team" class="native-picker" aria-label="School scope" tabindex="-1"><option value="">All ESPN-listed schools</option></select>
+    <button id="teamPickerTrigger" class="school-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="teamPickerList" aria-labelledby="schoolPickerLabel teamPickerText">
+      <span id="teamPickerMark" class="picker-selected-mark">◎</span><span id="teamPickerText" class="school-picked-name">All ESPN-listed schools</span><span class="picker-chevron" aria-hidden="true">⌄</span>
+    </button>
+    <div id="teamPickerPanel" class="school-menu" hidden>
+      <label for="teamPickerSearch" class="picker-search-label">Search all schools</label>
+      <input id="teamPickerSearch" type="search" placeholder="Type a school name…" autocomplete="off" aria-controls="teamPickerList" />
+      <div id="teamPickerList" role="listbox" aria-label="Schools with ESPN logos"></div>
+      <div id="teamPickerCount" class="picker-count"></div>
+    </div>
+  </div>
+ </div>
  <label class="field search"><span>Search results</span><input id="search" type="search" placeholder="Search team, season, player ID/name…"></label>
  <button class="action" id="load">↻ Load index</button><button class="action outline" id="csv">Export CSV</button>
 </section>
 
+<div id="schoolSpotlight" class="school-spotlight" hidden aria-live="polite"></div>
 <div class="notice" id="notice" hidden role="alert"></div><div class="statusline"><span id="loaded">Loading historical ESPN roster indexes…</span><span id="coverage">All school coverage shown per season · missing rosters excluded</span></div>
 <section class="kpis" aria-label="Summary statistics">
  <div class="kpi"><small>Observed switches</small><strong id="kEntries">—</strong><span>Distinct ESPN athlete IDs</span></div>
@@ -41,7 +103,7 @@
  <div class="kpi"><small>Retention</small><strong id="kDraft">—</strong><span>Team-season observations</span></div>
 </section>
 <section class="charts" aria-label="Historical analysis">
- <div class="panel"><div class="panelhead"><h2>Historical roster movement</h2><p>Roster newcomers vs. observed switches</p></div><div id="trend" class="chart"></div><div class="legend"><span><i class="dot blue"></i>Portal entries</span><span><i class="dot green"></i>Listed destinations</span><span>Portal cycle year · partial years remain partial</span></div></div>
+ <div class="panel"><div class="panelhead"><div id="chartSchoolMark" class="chart-school-mark" hidden></div><h2>Historical roster movement</h2><p>Roster newcomers vs. observed switches</p></div><div id="trend" class="chart"></div><div class="legend"><span><i class="dot blue"></i>Portal entries</span><span><i class="dot green"></i>Listed destinations</span><span>Portal cycle year · partial years remain partial</span></div></div>
  <div class="panel"><div class="panelhead"><h2>Most roster movement</h2><p>Observed cross-school moves among comparable teams</p></div><div id="rank" class="ranklist"></div></div>
 </section>
 <nav class="tabs" role="tablist" aria-label="Views">
