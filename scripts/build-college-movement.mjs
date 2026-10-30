@@ -1,61 +1,82 @@
 #!/usr/bin/env node
-/* Build static College Movement Lab snapshots from CFBD + CBBD.
- * Uses the same normalization and validation as api/college-movement.js.
+/* College Movement Lab: publish DERIVED aggregate metrics only.
+ * The CFBD/CBBD terms prohibit publishing raw or substantially equivalent datasets.
+ * No player-level API records or API keys are written to this public repository.
  * Run: node scripts/build-college-movement.mjs [--history]
- * Required secrets: CFBD_API_KEY / CBBD_API_KEY.
- * By default: previous + current portal cycles, last two drafts. --history: 2021–current.
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import {randomBytes} from 'node:crypto';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
 const handler=require('../api/college-movement.js');
 const root=path.resolve('data/college-movement');
-const history=process.argv.includes('--history') || !(await fs.stat(path.resolve('data/college-movement/manifest.json')).then(()=>true).catch(()=>false));
+const manifestPath=path.join(root,'manifest.json');
+const previous=await fs.readFile(manifestPath,'utf8').then(JSON.parse).catch(()=>({snapshots:[]}));
+const history=process.argv.includes('--history')||!previous.snapshots?.length;
 const thisYear=new Date().getUTCFullYear();
-const sports=['football','basketball'];
 const available={football:!!process.env.CFBD_API_KEY,basketball:!!process.env.CBBD_API_KEY};
-let total=0,errors=[],saved=[];
+// Temporary access credential exists only in this process; never written to disk.
+const access=randomBytes(32).toString('hex');
+process.env.DASHBOARD_ACCESS_TOKEN=access;
 async function get(sport,type,year){
- let status=200, payload=null;
- const res={
-  setHeader(){return this;},
-  status(code){status=code;return this;},
-  json(data){payload=data;return this;}
- };
- await handler({method:'GET',query:{sport,type,year:String(year)}},res);
- if(status!==200||!payload||!Array.isArray(payload.records))throw Error((payload&&payload.error)||('HTTP '+status));
- return payload;
+ let status=200,payload=null;
+ const res={setHeader(){return this},status(code){status=code;return this},json(data){payload=data;return this}};
+ await handler({method:'GET',headers:{'x-dashboard-access':access},query:{sport,type,year:String(year)}},res);
+ if(status!==200||!payload||!Array.isArray(payload.records))throw Error(payload?.error||('HTTP '+status));
+ return payload.records;
 }
-for(const sport of sports){
- if(!available[sport]){console.log('Skipping '+sport+': API key not configured');continue;}
- for(const type of ['portal','draft']){
-  const start=history?2021:Math.max(2021,thisYear-1),end=thisYear;
-  const directory=path.join(root,sport,type);
-  await fs.mkdir(directory,{recursive:true});
-  for(let year=start;year<=end;year++){
+function counts(rows,field){
+ const m=new Map();
+ for(const r of rows){const key=String(r[field]||'').trim();if(key)m.set(key,(m.get(key)||0)+1);}
+ return [...m.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
+}
+function derive(sport,year,portal,draft){
+ const routeMap=new Map();
+ for(const r of portal){
+   if(!r.origin||!r.destination||r.origin===r.destination)continue;
+   const k=JSON.stringify([r.origin,r.destination]);
+   routeMap.set(k,(routeMap.get(k)||0)+1);
+ }
+ const routes=[...routeMap].map(([k,count])=>{const [origin,destination]=JSON.parse(k);return {origin,destination,count};})
+   .sort((a,b)=>b.count-a.count||a.origin.localeCompare(b.origin));
+ return {sport,year,portalEntries:portal.length,knownDestinations:portal.filter(r=>r.destination).length,
+  draftPicks:draft.length,originCounts:counts(portal,'origin'),
+  destinationCounts:counts(portal,'destination'),
+  draftCollegeCounts:counts(draft,'college'),routes,
+  note:'Derived aggregate counts only. No player-level records are published.'};
+}
+let errors=[],snapshots=new Map((previous.snapshots||[]).map(x=>[x.sport+':'+x.year,x]));
+let success=0;
+for(const sport of ['football','basketball']){
+ if(!available[sport]){console.log('Skipped '+sport+': missing key');continue;}
+ const start=history?2021:Math.max(2021,thisYear-1);
+ const directory=path.join(root,'summaries',sport);
+ await fs.mkdir(directory,{recursive:true});
+ for(let year=start;year<=thisYear;year++){
+  try{
+   const portal=await get(sport,'portal',year);
+   const draft=await get(sport,'draft',year);
+   const derived=derive(sport,year,portal,draft);
    const dest=path.join(directory,year+'.json');
-   try{
-    const result=await get(sport,type,year);
-    // Preserve previous bytes when record content is unchanged so scheduled jobs don't create noise.
-    const output={sport,type,year,count:result.records.length,source:result.source,records:result.records};
-    const prior=await fs.readFile(dest,'utf8').catch(()=>null);
-    const next=JSON.stringify(output);
-    if(prior?.trimEnd()!==next)await fs.writeFile(dest,next+'\n');
-    saved.push({sport,type,year,count:result.records.length});
-    total++;
-    console.log(sport,type,year,result.records.length,'records');
-   }catch(e){errors.push(sport+' '+type+' '+year+': '+e.message);console.error('FAILED',errors[errors.length-1]);}
-   // Avoid bursts into a shared account quota.
-   await new Promise(resolve=>setTimeout(resolve,350));
-  }
+   const next=JSON.stringify(derived);
+   const prior=await fs.readFile(dest,'utf8').catch(()=>null);
+   if(prior?.trimEnd()!==next)await fs.writeFile(dest,next+'\n');
+   snapshots.set(sport+':'+year,{sport,year,portalEntries:derived.portalEntries,draftPicks:derived.draftPicks});
+   success++;
+   console.log(sport,year,derived.portalEntries+' portal entries',derived.draftPicks+' draft picks');
+  }catch(e){errors.push(sport+' '+year+': '+e.message);console.error(errors[errors.length-1]);}
+  await new Promise(resolve=>setTimeout(resolve,400));
  }
 }
-if(total){
- const manifest={generatedAt:new Date().toISOString(),available,snapshots:saved,errors};
+if(success){
  await fs.mkdir(root,{recursive:true});
- await fs.writeFile(path.join(root,'manifest.json'),JSON.stringify(manifest,null,2)+'\n');
+ await fs.writeFile(manifestPath,JSON.stringify({
+  generatedAt:new Date().toISOString(),
+  kind:'derived-aggregate-only',
+  snapshots:[...snapshots.values()].sort((a,b)=>a.sport.localeCompare(b.sport)||a.year-b.year),
+  errors
+ },null,2)+'\n');
 }
-console.log('Saved '+total+' snapshots, '+errors.length+' errors');
-if(!total){console.error('No snapshots produced. Check GitHub Actions secrets and provider access.');process.exitCode=1;}
-else if(errors.length)process.exitCode=1;
+console.log(success+' aggregate seasons saved; '+errors.length+' errors');
+if(!success||errors.length)process.exitCode=1;
