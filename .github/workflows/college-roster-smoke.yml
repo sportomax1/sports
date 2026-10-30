@@ -9,6 +9,7 @@ on:
       - 'college-movement.html'
       - 'scripts/test-college-roster.mjs'
       - 'scripts/test-national-college.mjs'
+      - 'scripts/test-national-page.mjs'
       - 'college-national-engine.js'
       - 'scripts/build-national-college-rosters.mjs'
       - 'scripts/build-college-player-index.mjs'
@@ -31,5 +32,7 @@ jobs:
           node --check scripts/build-college-player-index.mjs
       - name: Test national roster inference and real data quality
         run: node scripts/test-national-college.mjs
+      - name: Test national dashboard UI against real snapshots
+        run: node scripts/test-national-page.mjs
       - name: Test ESPN season-index and athlete-profile endpoints
         run: node scripts/test-college-roster.mjs
