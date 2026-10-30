@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/national-college-rosters.yml'
       - 'scripts/build-national-college-rosters.mjs'
+      - 'scripts/build-college-player-index.mjs'
   schedule:
     - cron: '35 13 * * 2'
 permissions:
@@ -62,3 +63,38 @@ jobs:
           done
           echo "Failed to publish roster index"
           exit 1
+
+  player_names:
+    needs: refresh
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Get all published season shards
+        run: |
+          git fetch origin main
+          git reset --hard origin/main
+      - name: Build cross-school athlete name index
+        run: node scripts/build-college-player-index.mjs
+      - name: Publish compact player name index
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/college-rosters/profiles/
+          if ! git diff --cached --quiet; then
+            git commit -m "Refresh ESPN college movement player directory"
+            for attempt in 1 2 3 4 5 6; do
+              git fetch origin main
+              if ! git rebase origin/main; then git rebase --abort; exit 1; fi
+              if git push origin HEAD:main; then exit 0; fi
+              sleep $((attempt * 2))
+            done
+            exit 1
+          fi
