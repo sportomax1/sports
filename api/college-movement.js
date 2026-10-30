@@ -26,8 +26,9 @@ function normalize(type, sport, raw, year, requestedTeam) {
  if(type==='draft') return raw.map((r,i)=>({
    id:String(val(r,'collegeAthleteId','athleteId','athlete_id')||[sport,year,i].join('-')),
    year:numeric(val(r,'year'))||year,player:name(r),
-   college:school(val(r,'collegeTeam','college_team','sourceTeamName','source_team_name'))||
-     [val(r,'sourceTeamLocation','source_team_location'),val(r,'sourceTeamName','source_team_name')].filter(Boolean).join(' '),
+   college:sport==='football'?
+     school(val(r,'collegeTeam','college_team')):
+     school(val(r,'sourceTeamLocation','source_team_location'))||school(val(r,'sourceTeamName','source_team_name')),
    proTeam:school(val(r,'nflTeam','nfl_team','draftTeam','draft_team')),
    round:numeric(val(r,'round')),pick:numeric(val(r,'overall')),position:val(r,'position')||'',
    source:sport==='football'?'CFBD':'CBBD'
