@@ -47,7 +47,7 @@ const doc={
  },
  addEventListener(){ }
 };
-const ctx={document,console,queueMicrotask,MutationObserver:class {constructor(fn){this.fn=fn}observe(){}},Event,encodeURIComponent};
+const ctx={document:doc,console,queueMicrotask,MutationObserver:class {constructor(fn){this.fn=fn}observe(){}},Event,encodeURIComponent};
 vm.runInNewContext(src,ctx,{timeout:5000});
 await new Promise(resolve=>setTimeout(resolve,10));
 assert.equal(tableButton.dataset.logoEnhanced,'true','Transfer table school buttons get badges');
