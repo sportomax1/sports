@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0c111b">
-<title>College Movement Lab | Sports Tools</title>
+<title>College Movement Lab — ESPN Historical Roster Tracker</title>
 <style>
 :root{color-scheme:dark;--bg:#0b1019;--pane:#121c2a;--pane2:#192639;--line:#314157;--text:#edf3fb;--muted:#a2b1c4;--gold:#f2c263;--blue:#73a8e6;--green:#59c597;--red:#e78c92}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(155deg,#17263a 0%,#0b1019 32%,#0a1018 100%) fixed;color:var(--text);font:13px/1.46 system-ui,-apple-system,Segoe UI,sans-serif}button,input,select{font:inherit}button{cursor:pointer}a{color:#c3dbff}a:hover{text-decoration:underline}
@@ -21,341 +21,38 @@
 @media(max-width:950px){.charts{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(3,1fr)}.rankrow{grid-template-columns:180px 1fr 50px}}@media(max-width:600px){.shell{padding:11px}.hero{gap:7px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi strong{font-size:24px}.comparison{grid-template-columns:1fr 1fr}.field.small{flex:1;min-width:90px}.rankrow{grid-template-columns:112px 1fr 36px}.tabs{overflow:auto;flex-wrap:nowrap}.tab{white-space:nowrap;padding:10px 9px}}
 </style></head>
 <body><main class="shell">
-<header class="hero"><a class="back" href="./index.html">← Tools</a><div><div class="eyebrow">College football + men's basketball</div><h1>College Movement Lab</h1><p>Transfer portal • historical pipelines • roster retention • NFL / NBA draft</p></div><div class="grow"></div><a class="chip" href="./campus-roster-timeline.html">Basketball roster timeline ↗</a><span class="chip" id="keyStatus">Checking data…</span><button class="action outline" id="unlock" type="button" hidden>Unlock private player data</button><button class="action outline" id="lock" type="button" hidden>Lock player data</button></header>
+<header class="hero"><a class="back" href="./index.html">← Tools</a><div><div class="eyebrow">College football + men's basketball</div><h1>College Movement Lab</h1><p>Historical rosters • observed school changes • retention • departures • ESPN API</p></div><div class="grow"></div><a class="chip" href="./campus-roster-timeline.html">Basketball roster timeline ↗</a><span class="chip" id="keyStatus">ESPN API · no key required</span></header>
 <section class="toolbar" aria-label="Dataset controls">
  <label class="field"><span>Sport</span><select id="sport"><option value="football">🏈 College football</option><option value="basketball">🏀 Men's basketball</option></select></label>
  <label class="field small"><span>From cycle</span><select id="fromYear"></select></label>
  <label class="field small"><span>Through cycle</span><select id="toYear"></select></label>
- <label class="field school"><span>School (inbound + outbound)</span><select id="team"><option value="">All schools</option></select></label>
- <label class="field search"><span>Player / school search</span><input id="search" type="search" placeholder="Search names, teams, positions…"></label>
- <button class="action" id="load">↻ Load data</button><button class="action outline" id="csv">Export CSV</button>
+ <label class="field school"><span>School to scan</span><select id="team" aria-label="Choose school to include"></select></label><button class="action outline" id="addTeam" type="button">+ Add school</button>
+ <label class="field search"><span>Filter results</span><input id="search" type="search" placeholder="Player, school, season…"></label>
+ <button class="action" id="load">↻ Load rosters</button><button class="action outline" id="csv">Export CSV</button>
 </section>
-<div class="notice" id="notice" hidden role="alert"></div><div class="statusline"><span id="loaded">No data loaded</span><span id="coverage">Portal records start in 2021 • Draft records may extend further</span></div>
+<div id="teamChips" style="display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:9px 1px 4px" aria-label="Schools in comparison"></div>
+<div class="notice" id="notice" hidden role="alert"></div><div class="statusline"><span id="loaded">Choose schools and load ESPN historical rosters</span><span id="coverage">Historical team-season rosters · no verified portal status</span></div>
 <section class="kpis" aria-label="Summary statistics">
- <div class="kpi"><small>Portal entries</small><strong id="kEntries">—</strong><span>Known player entries</span></div>
- <div class="kpi"><small>Known destinations</small><strong id="kLanded">—</strong><span>Transfers with a listed destination</span></div>
- <div class="kpi"><small>Destination unknown</small><strong id="kOpen">—</strong><span>Not necessarily still in portal</span></div>
- <div class="kpi"><small>Schools involved</small><strong id="kSchools">—</strong><span>Distinct origin / destination names</span></div>
- <div class="kpi"><small>Draft picks</small><strong id="kDraft">—</strong><span>Drafted, not all pro departures</span></div>
+ <div class="kpi"><small>Players observed</small><strong id="kEntries">—</strong><span>Distinct ESPN athlete IDs</span></div>
+ <div class="kpi"><small>School switches observed</small><strong id="kLanded">—</strong><span>Moves seen between scanned schools</span></div>
+ <div class="kpi"><small>Roster newcomers</small><strong id="kOpen">—</strong><span>New relative to prior roster</span></div>
+ <div class="kpi"><small>Roster departures</small><strong id="kSchools">—</strong><span>No longer listed at scanned school</span></div>
+ <div class="kpi"><small>Roster snapshots</small><strong id="kDraft">—</strong><span>Team-season observations</span></div>
 </section>
 <section class="charts" aria-label="Historical analysis">
- <div class="panel"><div class="panelhead"><h2>Portal activity by year</h2><p>Entries vs. known destination records</p></div><div id="trend" class="chart"></div><div class="legend"><span><i class="dot blue"></i>Portal entries</span><span><i class="dot green"></i>Listed destinations</span><span>Portal cycle year · partial years remain partial</span></div></div>
- <div class="panel"><div class="panelhead"><h2>Biggest transfer sources</h2><p>Schools losing portal entrants in the selected data</p></div><div id="rank" class="ranklist"></div></div>
+ <div class="panel"><div class="panelhead"><h2>Year-over-year roster movement</h2><p>Entrants vs. observed school switches</p></div><div id="trend" class="chart"></div><div class="legend"><span><i class="dot blue"></i>Portal entries</span><span><i class="dot green"></i>Listed destinations</span><span>Portal cycle year · partial years remain partial</span></div></div>
+ <div class="panel"><div class="panelhead"><h2>New roster appearances by school</h2><p>Only complete adjacent roster snapshots</p></div><div id="rank" class="ranklist"></div></div>
 </section>
 <nav class="tabs" role="tablist" aria-label="Views">
-<button class="tab" type="button" role="tab" aria-selected="true" data-tab="moves">Transfer directory</button>
-<button class="tab" type="button" role="tab" aria-selected="false" data-tab="teams">Team leaderboard</button>
+<button class="tab" type="button" role="tab" aria-selected="true" data-tab="moves">Player movements</button>
+<button class="tab" type="button" role="tab" aria-selected="false" data-tab="teams">Team turnover</button>
 <button class="tab" type="button" role="tab" aria-selected="false" data-tab="routes">School pipelines</button>
-<button class="tab" type="button" role="tab" aria-selected="false" data-tab="draft">Going pro</button>
-<button class="tab" type="button" role="tab" aria-selected="false" data-tab="retention">Roster turnover</button>
+<button class="tab" type="button" role="tab" aria-selected="false" data-tab="draft">Roster exits / Pro?</button>
+<button class="tab" type="button" role="tab" aria-selected="false" data-tab="retention">Season roster grid</button>
 </nav>
-<section class="panel" id="results" aria-live="polite"><div class="subtabs"><strong id="viewTitle">Portal entries</strong><p id="viewDescription">Only documented portal entries, not all roster departures.</p><div class="grow"></div><select id="moveFilter" aria-label="Destination status"><option value="all">All destinations</option><option value="placed">Destination known</option><option value="unknown">Destination unknown</option></select><select id="rowLimit" aria-label="Rows to show"><option>100</option><option selected>250</option><option>500</option><option>1000</option></select></div><div id="tabContent"></div></section>
-<footer class="foot">Sources: <a href="https://api.collegefootballdata.com/data-availability" target="_blank" rel="noopener">CollegeFootballData</a> <a href="https://api.collegebasketballdata.com/data-availability" target="_blank" rel="noopener">CollegeBasketballData</a> <a href="https://github.com/sportomax1/sports/blob/main/api/college-movement.js" target="_blank" rel="noopener">Server API</a>.
- Definitions: a portal entry is not necessarily a completed transfer; known destination means a destination is listed in the provider's data. Undrafted professionals, eligibility exits, graduations, and early declarations are not established by draft picks alone. A roster disappearance is not proof of transfer or pro status. Some 2026 or 2027 data may be incomplete. Historical school names may not be standardized.</footer>
+<section class="panel" id="results" aria-live="polite"><div class="subtabs"><strong id="viewTitle">Observed school switches</strong><p id="viewDescription">Season-roster comparisons are inferred movements, not confirmed portal transactions.</p><div class="grow"></div><select id="moveFilter" aria-label="Destination status"><option value="all">All destinations</option><option value="placed">Destination known</option><option value="unknown">Destination unknown</option></select><select id="rowLimit" aria-label="Rows to show"><option>100</option><option selected>250</option><option>500</option><option>1000</option></select></div><div id="tabContent"></div></section>
+<footer class="foot">Data source: <a href="https://www.espn.com/" target="_blank" rel="noopener">ESPN</a> historical season-roster indexes. The application matches stable ESPN athlete IDs across scanned team-season memberships; a switch between two selected schools is <b>roster-observed</b>, not independently verified transfer-portal participation. Departing a roster does not prove the athlete transferred, graduated, declared for the NFL/NBA draft, or played professionally. Unscanned schools and missing seasons are unknown, not zeros. Historical roster indexes can be incomplete and these ESPN APIs are unofficial and subject to change. <a href="./campus-roster-timeline.html">Basketball roster timeline</a></footer>
 </main>
-<dialog id="authDialog"><div class="row"><h2>Private player data</h2><button class="close" id="closeAuth" type="button">Close ✕</button></div><p style="color:var(--muted)">Enter the access token configured privately in Vercel as DASHBOARD_ACCESS_TOKEN. It is held only in this page’s memory. Do not share this token publicly.</p><label class="field"><span>Access token</span><input id="accessInput" type="password" autocomplete="off" placeholder="Private dashboard token"></label><div class="row" style="margin-top:12px"><button class="action" id="connectPrivate" type="button">Connect privately</button><span id="authError" style="color:var(--red)" role="alert"></span></div></dialog>
+
 <dialog id="playerDialog"><div class="row"><h2 id="dialogTitle"></h2><button class="close" id="dismiss">Close ✕</button></div><div id="dialogBody"></div></dialog>
-<script>
-(function(){
-'use strict';
-const $=id=>document.getElementById(id),yearNow=new Date().getFullYear(),min=2021,max=Math.min(2030,yearNow+1);
-let sport='football',portal=[],draft=[],summaries=[],tab='moves',loadedYears=[],failures=[],rosterView=null,requestId=0,accessToken='',liveAvailable=false,apiMode='snapshot';
-const cache=new Map(); const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const fmt=x=>Number(x).toLocaleString('en-US'),key=x=>String(x||'').toLowerCase().trim().replace(/\s+/g,' ');
-const byId=(a,b)=>key(a).localeCompare(key(b)),uniq=arr=>[...new Set(arr.filter(Boolean))],num=x=>Number.isFinite(+x)?+x:0;
-const last=Math.min(yearNow,max),first=Math.max(min,last-3);
-for(let y=max;y>=min;y--) { $('fromYear').add(new Option(y,y,y===first,y===first));$('toYear').add(new Option(y,y,y===last,y===last));}
-function notice(message,isError){const n=$('notice');n.hidden=!message;n.classList.toggle('error',!!isError);n.textContent=message||''}
-async function api(type,year,team){
- if(apiMode!=='live'||!accessToken)throw Error('Private Vercel API access is required.');
- const params=new URLSearchParams({sport,type,year:String(year)});if(team)params.set('team',team);
- const response=await fetch('./api/college-movement?'+params.toString(),{
-  headers:{Accept:'application/json','X-Dashboard-Access':accessToken},cache:'no-store'
- });
- const body=await response.json().catch(()=>({}));
- if(!response.ok)throw Error(body.error||('API HTTP '+response.status));
- if(!Array.isArray(body.records))throw Error('Unexpected private API response');
- return body.records;
-}
-async function status(){
- liveAvailable=false;
- try{
-  const r=await fetch('./api/college-movement?type=status',{headers:{Accept:'application/json'}});
-  if(r.ok){const d=await r.json();liveAvailable=!!(d.secured&&d.available?.[sport]);}
- }catch(_){}
- $('unlock').hidden=!liveAvailable||!!accessToken;
- $('lock').hidden=!accessToken;
- if(liveAvailable&&accessToken){
-  apiMode='live';$('keyStatus').textContent='✓ Private player data unlocked';notice('',false);return;
- }
- apiMode='snapshot';
- try{
-  const r=await fetch('./data/college-movement/manifest.json',{cache:'no-store'});
-  if(r.ok){const manifest=await r.json();
-   if((manifest.snapshots||[]).some(x=>x.sport===sport)){
-    $('keyStatus').textContent='✓ Aggregate data · '+String(manifest.generatedAt||'').slice(0,10);
-    notice('Showing published, aggregate-only trends. Player-level details require private API access. Snapshot coverage varies by year.',false);return;
-   }
-  }
- }catch(_){}
- $('keyStatus').textContent=liveAvailable?'Private API is locked':'Data not configured';
- notice('No public aggregate snapshots are available for '+sport+'. Add CFBD_API_KEY and CBBD_API_KEY in GitHub Actions repository secrets, then run the College Movement Lab Data workflow. Player-level access also requires a private Vercel deployment and DASHBOARD_ACCESS_TOKEN.',true);
-}
-async function one(type,year,team){
- const c=[sport,type,year,team||''].join(':');if(cache.has(c))return cache.get(c);
- const rows=await api(type,year,team);cache.set(c,rows);return rows;
-}
-async function load(){
- const id=++requestId;sport=$('sport').value;let from=+$('fromYear').value,to=+$('toYear').value;
- if(from>to){const tmp=from;from=to;to=tmp;$('fromYear').value=from;$('toYear').value=to;}
- if(to-from>14){notice('Limit historical comparisons to 15 years at a time.',true);return;}
- portal=[];draft=[];summaries=[];failures=[];loadedYears=[];rosterView=null;
- const years=Array.from({length:to-from+1},(_,i)=>from+i);
- $('load').disabled=true;$('load').textContent='Loading…';$('loaded').textContent='Loading '+years.length+' seasons…';
- try{
-  if(apiMode==='snapshot'){
-   const fetched=await Promise.all(years.map(async year=>{
-    try{
-     const r=await fetch('./data/college-movement/summaries/'+sport+'/'+year+'.json');
-     if(!r.ok)throw Error('Aggregate snapshot not published');
-     const d=await r.json();
-     if(d.sport!==sport||d.year!==year||!Array.isArray(d.originCounts)||!Array.isArray(d.routes))throw Error('Invalid aggregate snapshot');
-     return d;
-    }catch(e){return {year,error:e.message};}
-   }));
-   if(id!==requestId)return;
-   summaries=fetched.filter(x=>!x.error);
-   failures=fetched.filter(x=>x.error).map(x=>x.year+': '+x.error);
-  }else{
-   const jobs=years.flatMap(year=>[{year,type:'portal'},{year,type:'draft'}]);let cursor=0;
-   async function worker(){
-    while(cursor<jobs.length){
-     const job=jobs[cursor++];
-     try{
-      const records=await one(job.type,job.year);
-      if(id!==requestId)return;
-      if(job.type==='portal')portal.push(...records);else draft.push(...records);
-     }catch(e){failures.push(job.type+' '+job.year+': '+e.message);}
-     if(id===requestId)$('loaded').textContent=cursor+' / '+jobs.length+' source requests completed';
-    }
-   }
-   await Promise.all(Array.from({length:Math.min(3,jobs.length)},worker));
-   if(id!==requestId)return;
-  }
-  loadedYears=years;updateTeams();render();
-  const valid=apiMode==='snapshot'?summaries.length:years.length*2-failures.length;
-  $('loaded').textContent=apiMode==='snapshot'?
-   summaries.length+' aggregate season(s) loaded · '+failures.length+' missing':
-   fmt(portal.length)+' portal entries · '+fmt(draft.length)+' draft picks'+(failures.length?' · incomplete coverage':'');
-  if(!valid)notice('No verified data loaded. '+(apiMode==='snapshot'?'Run the GitHub Actions data-refresh workflow after adding your private provider API secrets.':'Check the private API keys, token, quotas, and provider responses.'),true);
-  else if(failures.length)notice('Partial coverage: '+failures.length+' request(s) unavailable. Missing seasons are excluded, not counted as zero. '+failures.slice(0,2).join(' · '),true);
-  else if(apiMode==='live')notice('',false);
- }finally{
-  if(id===requestId){$('load').disabled=false;$('load').textContent='↻ Load data';}
- }
-}
-function updateTeams(){
- const current=$('team').value,schools=uniq(portal.flatMap(r=>[r.origin,r.destination]).concat(draft.map(r=>r.college)).concat(summaries.flatMap(s=>[...(s.originCounts||[]).map(a=>a[0]),...(s.destinationCounts||[]).map(a=>a[0]),...(s.draftCollegeCounts||[]).map(a=>a[0])]))).sort(byId);
- $('team').replaceChildren(new Option('All schools',''));for(const s of schools)$('team').add(new Option(s,s));if(schools.includes(current))$('team').value=current;
-}
-function filtered(){
- const team=$('team').value,q=key($('search').value),state=$('moveFilter').value;
- const p=portal.filter(r=>(!team||key(r.origin)===key(team)||key(r.destination)===key(team))&&(!q||key([r.player,r.origin,r.destination,r.position,r.year].join(' ')).includes(q))&&(state==='all'||(state==='placed'?!!r.destination:!r.destination)));
- const d=draft.filter(r=>(!team||key(r.college)===key(team))&&(!q||key([r.player,r.college,r.proTeam,r.year].join(' ')).includes(q)));
- return {p,d};
-}
-function kpis(p,d){
- const schools=uniq(p.flatMap(r=>[r.origin,r.destination]));
- [['kEntries',p.length],['kLanded',p.filter(r=>r.destination).length],['kOpen',p.filter(r=>!r.destination).length],['kSchools',schools.length],['kDraft',d.length]].forEach(([id,n])=>$(id).textContent=fmt(n));
-}
-function renderTrend(p){
- const years=loadedYears.length?loadedYears:Array.from({length:Math.max(0,+$('toYear').value-+$('fromYear').value+1)},(_,i)=>+$('fromYear').value+i);
- let stats=years.map(y=>({year:y,total:p.filter(x=>x.year===y).length,placed:p.filter(x=>x.year===y&&x.destination).length}));
- const peak=Math.max(1,...stats.map(x=>x.total));
- $('trend').innerHTML=stats.map(x=>'<div class="bar-group"><div class="bars"><div class="bar portals" title="'+escape(x.year+': '+x.total+' portal entries')+'" style="height:'+Math.max(x.total?2:0,100*x.total/peak)+'%"></div><div class="bar committed" title="'+escape(x.year+': '+x.placed+' known destinations')+'" style="height:'+Math.max(x.placed?2:0,100*x.placed/peak)+'%"></div></div><em>'+fmt(x.total)+'</em><small>'+x.year+'</small></div>').join('');
-}
-function counts(p,prop){const m=new Map();for(const r of p){const k=r[prop];if(k)m.set(k,(m.get(k)||0)+1)}return [...m].sort((a,b)=>b[1]-a[1]||byId(a[0],b[0]));}
-function rank(p){let stats=counts(p,'origin').slice(0,12),peak=Math.max(1,stats[0]?.[1]||1);$('rank').innerHTML=stats.length?stats.map(([team,n])=>'<div class="rankrow"><span class="name" title="'+escape(team)+'">'+escape(team)+'</span><div class="track"><i style="width:'+(100*n/peak)+'%"></i></div><b>'+fmt(n)+'</b></div>').join(''):'<div class="empty">No portal entries for these filters.</div>'}
-function render(){
- if(apiMode==='snapshot'){renderAggregate();return;}
- const {p,d}=filtered();kpis(p,d);renderTrend(p);rank(p);
- document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===tab)));
- $('moveFilter').hidden=tab!=='moves';$('rowLimit').hidden=tab==='retention';
- if(tab==='moves')showMoves(p);
- if(tab==='teams')showTeams(p,d);
- if(tab==='routes')showRoutes(p);
- if(tab==='draft')showDraft(d);
- if(tab==='retention')showRoster();
-}
-function aggregateLookup(pairs,team){return (pairs||[]).reduce((n,p)=>n+(key(p[0])===key(team)?num(p[1]):0),0);}
-function sumAggregates(field){
- const map=new Map();
- for(const s of summaries)for(const pair of (s[field]||[])){
-  const school=pair[0],n=num(pair[1]);map.set(school,(map.get(school)||0)+n);
- }
- return map;
-}
-function renderAggregate(){
- const team=$('team').value;
- const q=key($('search').value);
- const origins=sumAggregates('originCounts'),dest=sumAggregates('destinationCounts'),draftSchools=sumAggregates('draftCollegeCounts');
- const teams=uniq([...origins.keys(),...dest.keys(),...draftSchools.keys()]);
- const total=team?origins.get(team)||0:summaries.reduce((n,s)=>n+num(s.portalEntries),0);
- const known=team?dest.get(team)||0:summaries.reduce((n,s)=>n+num(s.knownDestinations),0);
- const unknown=team?known-total:summaries.reduce((n,s)=>n+num(s.portalEntries)-num(s.knownDestinations),0);
- const drafted=team?draftSchools.get(team)||0:summaries.reduce((n,s)=>n+num(s.draftPicks),0);
- const connected=team?uniq(summaries.flatMap(s=>(s.routes||[]).filter(r=>r.origin===team||r.destination===team).flatMap(r=>[r.origin,r.destination])).filter(t=>t!==team)).length:teams.length;
- [['kEntries',total],['kLanded',known],['kOpen',unknown],['kSchools',connected],['kDraft',drafted]].forEach(([id,n])=>$(id).textContent=summaries.length?fmt(n):'—');
- const labels=team?['Portal departures','Listed arrivals','Net arrivals − exits','Connected schools','Draft selections']:['Portal entries','Known destinations','Destination unknown','Schools involved','Draft picks'];
- ['kEntries','kLanded','kOpen','kSchools','kDraft'].forEach((id,i)=>$(id).parentElement.querySelector('small').textContent=labels[i]);
- const yearly=summaries.slice().sort((a,b)=>a.year-b.year).map(s=>({
-  year:s.year,
-  total:team?aggregateLookup(s.originCounts,team):num(s.portalEntries),
-  placed:team?aggregateLookup(s.destinationCounts,team):num(s.knownDestinations),
-  picks:team?aggregateLookup(s.draftCollegeCounts,team):num(s.draftPicks)
- }));
- const peak=Math.max(1,...yearly.flatMap(x=>[x.total,x.placed]));
- $('trend').innerHTML=yearly.map(x=>'<div class="bar-group"><div class="bars"><div class="bar portals" title="'+escape(x.year+': '+x.total+' '+(team?'departures':'entries'))+'" style="height:'+(100*x.total/peak)+'%"></div><div class="bar committed" title="'+escape(x.year+': '+x.placed+' '+(team?'arrivals':'destinations'))+'" style="height:'+(100*x.placed/peak)+'%"></div></div><em>'+fmt(x.total)+'</em><small>'+x.year+'</small></div>').join('')||'<div class="empty">No aggregate trend data available.</div>';
- document.querySelector('.legend').innerHTML=team?'<span><i class="dot blue"></i>Portal departures</span><span><i class="dot green"></i>Listed arrivals</span><span>Yearly counts; missing years omitted</span>':'<span><i class="dot blue"></i>Portal entries</span><span><i class="dot green"></i>Listed destinations</span><span>Yearly counts; missing years omitted</span>';
- const top=[...origins].filter(([s])=>(!team||s===team)&&(!q||key(s).includes(q))).sort((a,b)=>b[1]-a[1]).slice(0,12), topPeak=Math.max(1,top[0]?.[1]||1);
- $('rank').innerHTML=top.map(([school,n])=>'<div class="rankrow"><span class="name" title="'+escape(school)+'">'+escape(school)+'</span><div class="track"><i style="width:'+(100*n/topPeak)+'%"></i></div><b>'+fmt(n)+'</b></div>').join('')||'<div class="empty">No published school counts match.</div>';
- document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===tab)));
- $('moveFilter').hidden=true;$('rowLimit').hidden=false;
- if(tab==='moves'){
-  $('viewTitle').textContent='Year-over-year portal trends';$('viewDescription').textContent='Aggregate portal entries and listed destinations. Individual player histories require private access.';
-  $('tabContent').innerHTML=table(['Cycle','Portal departures','Listed destinations','Destination missing','Draft picks'],yearly.slice().reverse().map(x=>[escape(x.year),fmt(x.total),fmt(x.placed),team?'—':fmt(Math.max(0,x.total-x.placed)),fmt(x.picks)]),'Run the data refresh workflow to publish aggregate seasons.');
- }else if(tab==='teams'){
-  $('viewTitle').textContent='Team transfer leaderboard';$('viewDescription').textContent='Derived public totals, not complete roster turnover. Search filters rows.';
-  const rows=teams.filter(s=>(!team||s===team)&&(!q||key(s).includes(q))).map(t=>({t,o:origins.get(t)||0,i:dest.get(t)||0,d:draftSchools.get(t)||0})).sort((a,b)=>b.o+b.i-a.o-a.i||byId(a.t,b.t));
-  $('tabContent').innerHTML=table(['School','Known arrivals','Portal departures','Net listed','Draft picks'],rows.map(x=>[escape(x.t),fmt(x.i),fmt(x.o),(x.i-x.o>0?'+':'')+fmt(x.i-x.o),fmt(x.d)]),'No aggregate school counts.');
- }else if(tab==='routes'){
-  $('viewTitle').textContent='School-to-school pipelines';$('viewDescription').textContent='Derived counts only; no player identities are published.';
-  const paths=new Map();
-  for(const s of summaries)for(const r of (s.routes||[])){const k=JSON.stringify([r.origin,r.destination]);paths.set(k,(paths.get(k)||0)+num(r.count));}
-  const rows=[...paths].map(([k,count])=>({pair:JSON.parse(k),count})).filter(r=>(!team||r.pair.includes(team))&&(!q||key(r.pair.join(' ')).includes(q))).sort((a,b)=>b.count-a.count);
-  $('tabContent').innerHTML=table(['From','To','Verified portal destinations'],rows.map(r=>[escape(r.pair[0]),escape(r.pair[1]),fmt(r.count)]),'No recorded school pipelines match.');
- }else if(tab==='draft'){
-  $('viewTitle').textContent='Going pro · drafted players';$('viewDescription').textContent='Aggregate '+(sport==='football'?'NFL':'NBA')+' draft selections, not a count of all early departures.';
-  const rows=[...draftSchools].filter(([t])=>(!team||t===team)&&(!q||key(t).includes(q))).sort((a,b)=>b[1]-a[1]);
-  $('tabContent').innerHTML=table(['College','Draft selections'],rows.map(([t,n])=>[escape(t),fmt(n)]),'No recorded draft counts match.');
- }else{
-  $('viewTitle').textContent='Roster turnover requires private data';$('viewDescription').textContent='Comparing individual player rosters cannot be reliably performed from public aggregate portal counts.';
-  $('tabContent').innerHTML='<div class="empty">Unlock the private player API to compare roster changes.'+(sport==='basketball'?' Or <a href="./campus-roster-timeline.html">open the existing basketball roster timeline</a>.':'')+'</div>';
- }
-}
-function table(headers,rows,empty){
- if(!rows.length)return '<div class="empty">'+escape(empty||'No matching records available.')+'</div>';
- const limit=+$('rowLimit').value,subset=rows.slice(0,limit);
- return '<div class="tablewrap"><table class="table"><thead><tr>'+headers.map(h=>'<th scope="col">'+escape(h)+'</th>').join('')+'</tr></thead><tbody>'+subset.map(cells=>'<tr>'+cells.map(c=>'<td>'+c+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'+(rows.length>limit?'<div class="subtabs">Showing '+fmt(limit)+' of '+fmt(rows.length)+' records. Increase the row limit or export all filtered records.</div>':'');
-}
-function playerLink(player){return '<button class="click" data-player="'+escape(encodeURIComponent(player))+'">'+escape(player)+'</button>'}
-function showMoves(p){
- $('viewTitle').textContent='Portal directory · '+fmt(p.length);$('viewDescription').textContent='Reported source and destination; blank destination is unknown, not proof of an open portal status.';
- const rows=p.slice().sort((a,b)=>b.year-a.year||byId(a.player,b.player)).map(r=>[escape(r.year),playerLink(r.player),escape(r.position||'—'),escape(r.origin||'—'),r.destination?'<span class="good">'+escape(r.destination)+'</span>':'<span class="pending">Unknown</span>',escape(r.date?String(r.date).slice(0,10):'—'),escape(r.stars==null?'—':r.stars+' ★')]);
- $('tabContent').innerHTML=table(['Cycle','Player','Pos','From','To','Date','Rating'],rows,'No transfer entries match. Try fewer filters or verify API keys.');
-}
-function showTeams(p,d){
- $('viewTitle').textContent='Team transfer leaderboard';$('viewDescription').textContent='Net movement counts only recorded portal destinations and departures, not complete roster change.';
- const origins=new Map(counts(p,'origin')),dest=new Map(counts(p,'destination')),drafts=new Map(counts(d,'college'));
- const teams=uniq([...origins.keys(),...dest.keys(),...drafts.keys()]);
- const rows=teams.map(t=>({team:t,out:origins.get(t)||0,in:dest.get(t)||0,drafted:drafts.get(t)||0}))
- .sort((a,b)=>b.in+b.out-a.in-a.out||byId(a.team,b.team));
- $('tabContent').innerHTML=table(['School','Transfers in','Portal departures','Net confirmed','Draft picks'],rows.map(x=>[escape(x.team),'<span class="good">'+fmt(x.in)+'</span>',fmt(x.out),(x.in-x.out>0?'+':'')+fmt(x.in-x.out),fmt(x.drafted)]),'No team data for selection.');
-}
-function showRoutes(p){
- $('viewTitle').textContent='School-to-school pipelines';$('viewDescription').textContent='Counts only entries where both schools are recorded; no destination inferred.';
- const m=new Map();for(const r of p){if(!r.origin||!r.destination||key(r.origin)===key(r.destination))continue;const k=r.origin+' ⟶ '+r.destination;let o=m.get(k);if(!o)m.set(k,o={from:r.origin,to:r.destination,n:0,players:[]});o.n++;o.players.push(r.player);}
- const rows=[...m.values()].sort((a,b)=>b.n-a.n||byId(a.from,b.from));
- $('tabContent').innerHTML=table(['From school','To school','Transfers','Players'],rows.map(r=>[escape(r.from),escape(r.to),'<strong>'+fmt(r.n)+'</strong>',escape(r.players.slice(0,4).join(', '))+(r.players.length>4?'…':'')]),'No confirmed school-to-school paths for this selection.');
-}
-function showDraft(d){
- $('viewTitle').textContent=(sport==='football'?'NFL':'NBA')+' draft picks · '+fmt(d.length);
- $('viewDescription').textContent='Drafted players only; declaring early, being undrafted, and actual pro contracts require separate verified sources.';
- const rows=d.slice().sort((a,b)=>b.year-a.year||(a.pick||999)-(b.pick||999)).map(r=>[escape(r.year),playerLink(r.player),escape(r.college||'—'),escape(r.proTeam||'—'),escape(r.round??'—'),escape(r.pick??'—'),'<span class="tag pro">Drafted</span>']);
- $('tabContent').innerHTML=table(['Draft year','Player','College','Pro team','Round','Overall pick','Verified'],rows,'No draft picks match the filters.');
-}
-function showRoster(){
- $('viewTitle').textContent='Roster comparison';$('viewDescription').textContent='Consecutive season snapshots; entrances and exits are not necessarily transfers.';
- let team=$('team').value,year=+$('toYear').value;
- let ui='<div class="comparetools"><label class="field school"><span>Selected school</span><input id="compareTeam" value="'+escape(team)+'" placeholder="e.g. Colorado, Duke"></label><label class="field small"><span>Comparison year</span><input id="compareYear" type="number" min="2004" max="'+(yearNow+1)+'" value="'+year+'"></label><button id="compare" class="action">Compare rosters</button><span style="color:var(--muted);font-size:11px">Compares '+(year-1)+' → '+year+' for the selected team</span></div><div id="compareResults"></div>';
- $('tabContent').innerHTML=ui;
- if(rosterView&&key(rosterView.team)===key(team)&&rosterView.year===year)drawRoster(rosterView);
-}
-function identity(p){return p.id ? 'id:'+p.id : 'name:'+key(p.player)}
-function drawRoster(view){
- const a=new Map(view.previous.map(p=>[identity(p),p])),b=new Map(view.current.map(p=>[identity(p),p]));
- const returning=view.current.filter(p=>a.has(identity(p)));
- const entering=view.current.filter(p=>!a.has(identity(p)));
- const exiting=view.previous.filter(p=>!b.has(identity(p)));
- let html='<div class="comparison"><div class="comp"><strong>'+fmt(view.previous.length)+'</strong><small>'+(view.year-1)+' roster</small></div><div class="comp"><strong>'+fmt(view.current.length)+'</strong><small>'+view.year+' roster</small></div><div class="comp"><strong>'+fmt(returning.length)+'</strong><small>Matched returners ('+(view.previous.length?Math.round(returning.length/view.previous.length*100)+'%':'N/A')+')</small></div><div class="comp"><strong>'+fmt(entering.length)+' / '+fmt(exiting.length)+'</strong><small>New / disappeared</small></div></div>';
- html+='<div class="subtabs">Matching uses provider athlete IDs where available; names otherwise. Players whose IDs changed may be counted as movement. Empty seasons are not comparable.</div>';
- html+=table(['Roster status','Player','Position','Year'],entering.map(p=>['<span class="good">New roster appearance</span>',escape(p.player),escape(p.position),escape(view.year)]).concat(exiting.map(p=>['<span class="pending">No longer listed</span>',escape(p.player),escape(p.position),escape(view.year-1)])),'No unmatched players.');
- $('compareResults').innerHTML=html;
-}
-async function compare(){
- const team=($('compareTeam')?.value||'').trim(),year=Number($('compareYear')?.value);
- if(!team){notice('Choose or enter a school first.',true);return;}
- if(!Number.isInteger(year)||year<2005||year>yearNow+1){notice('Choose a valid comparison season from 2005 onward.',true);return;}
- const btn=$('compare');btn.disabled=true;btn.textContent='Comparing…';
- try{const [previous,current]=await Promise.all([one('roster',year-1,team),one('roster',year,team)]);
- if(!previous.length||!current.length)throw Error('At least one season returned no roster records. No turnover percentage can be inferred.');
- rosterView={previous,current,team,year};drawRoster(rosterView);notice('',false);
- }catch(e){notice('Roster comparison: '+e.message,true);}finally{btn.disabled=false;btn.textContent='Compare rosters'}
-}
-function playerDetail(n){
- const name=decodeURIComponent(n);$('dialogTitle').textContent=name;
- const moves=portal.filter(r=>key(r.player)===key(name)).sort((a,b)=>a.year-b.year);
- const picks=draft.filter(r=>key(r.player)===key(name)).sort((a,b)=>a.year-b.year);
- let content='<div style="color:var(--muted);font-size:11px">Candidate history by exact normalized name. Same-name athletes may be different people; this is not identity-verified across seasons.</div><div class="path">';
- for(const m of moves)content+='<div class="path-item"><b>'+escape(m.year)+' portal</b> · '+escape(m.origin||'Unknown origin')+' → '+escape(m.destination||'Destination not listed')+'<br><small>'+escape(m.position||'')+'</small></div>';
- for(const p of picks)content+='<div class="path-item"><b>'+escape(p.year)+' '+(sport==='football'?'NFL':'NBA')+' draft</b> · '+escape(p.college)+' → '+escape(p.proTeam||'Unknown pro team')+'<br><small>Round '+escape(p.round??'—')+', overall pick '+escape(p.pick??'—')+'</small></div>';
- content+='</div><div style="color:var(--muted);font-size:11px">No evidence here that draft selection followed an early declaration. Roster-history coverage may be incomplete.</div>';
- $('dialogBody').innerHTML=content;$('playerDialog').showModal();
-}
-function exportAggregateCsv(){
- let cols=['Year','Portal entries','Known destinations','Draft picks'],rows=summaries.map(s=>[s.year,s.portalEntries,s.knownDestinations,s.draftPicks]);
- if(tab==='teams'){const o=sumAggregates('originCounts'),i=sumAggregates('destinationCounts'),d=sumAggregates('draftCollegeCounts');cols=['School','Portal departures','Listed arrivals','Draft picks'];rows=uniq([...o.keys(),...i.keys(),...d.keys()]).map(t=>[t,o.get(t)||0,i.get(t)||0,d.get(t)||0]);}
- else if(tab==='routes'){cols=['Year','Origin','Destination','Count'];rows=summaries.flatMap(s=>s.routes.map(r=>[s.year,r.origin,r.destination,r.count]));}
- else if(tab==='draft'){cols=['Year','School','Draft picks'];rows=summaries.flatMap(s=>s.draftCollegeCounts.map(([t,n])=>[s.year,t,n]));}
- downloadCsv(cols,rows);
-}
-function downloadCsv(cols,rows){
- const csv=[cols,...rows].map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
- const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='college-'+sport+'-'+tab+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),250);
-}
-function exportCsv(){
- if(apiMode==='snapshot'){exportAggregateCsv();return;}
- let rows=[],cols=[];
- const {p,d}=filtered();
- if(tab==='moves'){cols=['Year','Player','Position','Origin','Destination','Transfer date','Stars'];rows=p.slice(0,250).map(r=>[r.year,r.player,r.position,r.origin,r.destination,r.date,r.stars]);if(p.length>250)notice('Private export is limited to 250 filtered player records. Use school or name filters to narrow the report.',false);}
- else if(tab==='draft'){cols=['Year','Player','College','Pro Team','Round','Overall Pick'];rows=d.slice(0,250).map(r=>[r.year,r.player,r.college,r.proTeam,r.round,r.pick]);if(d.length>250)notice('Private export is limited to 250 filtered player records. Use school or name filters to narrow the report.',false);}
- else if(tab==='teams'){cols=['School','Inbound','Outbound'];const o=new Map(counts(p,'origin')),i=new Map(counts(p,'destination'));rows=uniq([...o.keys(),...i.keys()]).map(t=>[t,i.get(t)||0,o.get(t)||0]);}
- else if(tab==='routes'){cols=['Origin','Destination','Count'];const routes=new Map();for(const r of p){if(!r.origin||!r.destination)continue;const k=JSON.stringify([r.origin,r.destination]);routes.set(k,(routes.get(k)||0)+1)}rows=[...routes].map(([k,n])=>[...JSON.parse(k),n]);}
- else {notice('Export roster comparisons from the existing roster timeline tool.',false);return;}
- downloadCsv(cols,rows);
-}
-$('load').addEventListener('click',load);$('sport').addEventListener('change',()=>{sport=$('sport').value;cache.clear();status().then(load)});
-$('team').addEventListener('change',()=>{rosterView=null;render()});$('search').addEventListener('input',render);$('moveFilter').addEventListener('change',render);$('rowLimit').addEventListener('change',render);
-document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{tab=b.dataset.tab;render()}));
-$('tabContent').addEventListener('click',e=>{const p=e.target.closest('[data-player]');if(p)playerDetail(p.dataset.player);if(e.target.id==='compare')compare()});
-$('dismiss').addEventListener('click',()=>$('playerDialog').close());$('csv').addEventListener('click',exportCsv);
-$('unlock').addEventListener('click',()=>{$('authError').textContent='';$('authDialog').showModal()});
-$('closeAuth').addEventListener('click',()=>$('authDialog').close());
-$('lock').addEventListener('click',()=>{accessToken='';cache.clear();portal=[];draft=[];status().then(load)});
-$('connectPrivate').addEventListener('click',async()=>{
- const token=$('accessInput').value.trim();
- if(token.length<24){$('authError').textContent='Enter your private token (24+ characters).';return;}
- const button=$('connectPrivate');button.disabled=true;button.textContent='Verifying…';
- accessToken=token;apiMode='live';
- try{
-  const year=+$('toYear').value;
-  await api('portal',year);
-  $('accessInput').value='';$('authDialog').close();cache.clear();
-  await status();await load();
- }catch(e){accessToken='';apiMode='snapshot';$('authError').textContent='Private access failed: '+e.message;await status();}
- finally{button.disabled=false;button.textContent='Connect privately';}
-});
-const searchParams=new URLSearchParams(location.search);if(['football','basketball'].includes(searchParams.get('sport')))$('sport').value=searchParams.get('sport');
-sport=$('sport').value;status().then(load);
-})();
-</script></body></html>
+<script src="./college-roster-engine.js" defer></script></body></html>
