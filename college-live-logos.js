@@ -44,7 +44,15 @@ function update(){
  for(const row of document.querySelectorAll('#playerDialog .path-item:not([data-logo-enhanced])')){
   const value=row.textContent.split('·').slice(1).join('·').trim(),team=byName.get(value);
   row.dataset.logoEnhanced='true';
-  if(team){row.classList.add('team-logo-cell');row.insertBefore(mark(team.value,team.textContent,'sm'),row.childNodes[1]||null);}
+  if(team){
+   row.classList.add('team-logo-cell');
+   const textNode=Array.from(row.childNodes).find(n=>n.nodeType===3);
+   if(textNode){
+    textNode.textContent=' · ';
+    row.appendChild(mark(team.value,team.textContent,'sm'));
+    const label=document.createElement('span');label.className='path-team-name';label.textContent=value;row.appendChild(label);
+   }else row.appendChild(mark(team.value,team.textContent,'sm'));
+  }
  }
  for(const chip of document.querySelectorAll('#teamChips .tag img:not([data-logo-enhanced])')){
   chip.dataset.logoEnhanced='true';
