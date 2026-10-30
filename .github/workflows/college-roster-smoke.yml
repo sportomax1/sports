@@ -8,6 +8,10 @@ on:
       - 'college-roster-engine.js'
       - 'college-movement.html'
       - 'scripts/test-college-roster.mjs'
+      - 'scripts/test-national-college.mjs'
+      - 'college-national-engine.js'
+      - 'scripts/build-national-college-rosters.mjs'
+      - 'scripts/build-college-player-index.mjs'
 permissions:
   contents: read
 jobs:
@@ -19,5 +23,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Validate all college dashboard JavaScript
+        run: |
+          node --check college-national-engine.js
+          node --check college-roster-engine.js
+          node --check scripts/build-national-college-rosters.mjs
+          node --check scripts/build-college-player-index.mjs
+      - name: Test national roster inference and real data quality
+        run: node scripts/test-national-college.mjs
       - name: Test ESPN season-index and athlete-profile endpoints
         run: node scripts/test-college-roster.mjs
