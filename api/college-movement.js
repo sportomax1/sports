@@ -29,11 +29,14 @@ function normalize(type, sport, raw, year, requestedTeam) {
    year:numeric(val(r,'year'))||year,player:name(r),
    college:sport==='football'?
      school(val(r,'collegeTeam','college_team')):
-     school(val(r,'sourceTeamLocation','source_team_location'))||school(val(r,'sourceTeamName','source_team_name')),
+     (val(r,'sourceTeamCollegeId','source_team_college_id')!==null ||
+      /college|ncaa/i.test(String(val(r,'sourceTeamLeagueAffiliation','source_team_league_affiliation')||'')))?
+      school(val(r,'sourceTeamLocation','source_team_location'))||school(val(r,'sourceTeamName','source_team_name')):
+      '',
    proTeam:school(val(r,'nflTeam','nfl_team','draftTeam','draft_team')),
    round:numeric(val(r,'round')),pick:numeric(val(r,'overall')),position:val(r,'position')||'',
    source:sport==='football'?'CFBD':'CBBD'
- })).filter(r=>r.player);
+ })).filter(r=>r.player&&r.college);
  let players=[];
  if(sport==='basketball'){
    for(const teamBlock of raw) {
