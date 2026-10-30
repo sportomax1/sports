@@ -1,0 +1,64 @@
+name: National College Rosters · ESPN
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/national-college-rosters.yml'
+      - 'scripts/build-national-college-rosters.mjs'
+  schedule:
+    - cron: '35 13 * * 2'
+permissions:
+  contents: write
+concurrency:
+  group: national-college-rosters
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        sport: [football, basketball]
+        season: [2024, 2025, 2026]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify league school directory
+        run: node scripts/build-national-college-rosters.mjs ${{ matrix.sport }} ${{ matrix.season }} --directory-only
+      - name: Build full season roster ID index
+        run: node scripts/build-national-college-rosters.mjs ${{ matrix.sport }} ${{ matrix.season }}
+      - name: Commit checked index
+        shell: bash
+        run: |
+          set -euo pipefail
+          file="data/college-rosters/${{ matrix.sport }}/${{ matrix.season }}.json"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$file"
+          if git diff --cached --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          git commit -m "Refresh ESPN ${{ matrix.sport }} ${{ matrix.season }} roster index"
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            git fetch origin main
+            if ! git rebase origin/main; then
+              git rebase --abort || true
+              echo "Rebase conflict on $file"
+              exit 1
+            fi
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Concurrent snapshot push; retry $attempt"
+            sleep $((attempt * 2))
+          done
+          echo "Failed to publish roster index"
+          exit 1
