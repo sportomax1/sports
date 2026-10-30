@@ -28,15 +28,21 @@ const document={
  createElement(name){return new Element(name)}
 };
 class Option{constructor(label,value){this.label=label;this.value=String(value)}}
-const years=[2024,2025,2026],snapshots={};
-for(const year of years){
- const path='data/college-rosters/football/'+year+'.json';
- try{snapshots[year]=JSON.parse(await readFile(path,'utf8'))}
- catch(e){throw Error('UI integration requires committed national snapshot: '+path)}
+const years=[2024,2025,2026],snapshots={football:{},basketball:{}},profiles={};
+for(const sport of ['football','basketball']){
+ for(const year of years){
+  const path='data/college-rosters/'+sport+'/'+year+'.json';
+  try{snapshots[sport][year]=JSON.parse(await readFile(path,'utf8'))}
+  catch(e){throw Error('UI integration requires committed national snapshot: '+path)}
+ }
+ profiles[sport]=JSON.parse(await readFile('data/college-rosters/profiles/'+sport+'.json','utf8'));
 }
 const fetch=async url=>{
- const year=Number(String(url).match(/\/(\d{4})\.json/)?.[1]);
- const payload=String(url).includes('data/college-rosters/football')?snapshots[year]:null;
+ const name=String(url);
+ const year=Number(name.match(/\/(\d{4})\.json/)?.[1]);
+ const sport=name.includes('/football/')?'football':name.includes('/basketball/')?'basketball':null;
+ const profileSport=name.includes('/profiles/football')?'football':name.includes('/profiles/basketball')?'basketball':null;
+ const payload=profileSport?profiles[profileSport]:sport?snapshots[sport][year]:null;
  return{ok:!!payload,status:payload?200:404,json:async()=>payload};
 };
 const ss=new Map(),sessionStorage={getItem:k=>ss.get(k)||null,setItem:(k,v)=>ss.set(k,v)};
@@ -58,4 +64,12 @@ for(const tab of ['teams','routes','draft','retention','coverage']){
 get('team').value=get('team').options.find(x=>x.value==='38')?.value||get('team').options[1].value;
 listeners.get('team:change')();
 assert(get('coverage').textContent.includes('ESPN-listed schools'),'School scope must retain national coverage');
-console.log('PASS national UI integration: loaded all schools, charts/KPIs, six views, and school filtering');
+assert.match(get('loaded').textContent,/names/,'Names should be preloaded for nationwide searching');
+get('sport').value='basketball';
+listeners.get('sport:change')();
+await new Promise(resolve=>setTimeout(resolve,700));
+assert.match(get('loaded').textContent,/observed school switches/,'Basketball also loads national movement records');
+assert(get('team').options.length>300,'Basketball all-schools selector expected');
+assert(get('tabContent').innerHTML.length>150,'Basketball table has records');
+assert.notEqual(get('kEntries').textContent,'—');
+console.log('PASS national UI integration: both sports, historical charts, all-schools dropdown, names, six views, and school filtering');
