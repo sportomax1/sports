@@ -11,7 +11,7 @@ import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
 const handler=require('../api/college-movement.js');
 const root=path.resolve('data/college-movement');
-const history=process.argv.includes('--history');
+const history=process.argv.includes('--history') || !(await fs.stat(path.resolve('data/college-movement/manifest.json')).then(()=>true).catch(()=>false));
 const thisYear=new Date().getUTCFullYear();
 const sports=['football','basketball'];
 const available={football:!!process.env.CFBD_API_KEY,basketball:!!process.env.CBBD_API_KEY};
@@ -41,7 +41,7 @@ for(const sport of sports){
     const output={sport,type,year,count:result.records.length,source:result.source,records:result.records};
     const prior=await fs.readFile(dest,'utf8').catch(()=>null);
     const next=JSON.stringify(output);
-    if(prior!==next)await fs.writeFile(dest,next+'\n');
+    if(prior?.trimEnd()!==next)await fs.writeFile(dest,next+'\n');
     saved.push({sport,type,year,count:result.records.length});
     total++;
     console.log(sport,type,year,result.records.length,'records');
