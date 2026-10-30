@@ -9,7 +9,7 @@ const E={
  basketball:{sport:'basketball',league:'mens-college-basketball',label:"Men's basketball",default:'150',fallback:[['150','Duke Blue Devils'],['2305','Kansas Jayhawks'],['96','Kentucky Wildcats'],['153','North Carolina Tar Heels'],['41','UConn Huskies'],['38','Colorado Buffaloes'],['26','UCLA Bruins']]}
 };
 const currentYear=new Date().getFullYear();
-const state={sport:'football',yearStart:Math.max(2022,currentYear-2),yearEnd:currentYear,teams:[],selected:[],rosters:new Map(),profiles:{},loading:false,run:0,transport:'direct',failures:[],progress:0,planned:0,view:'moves',rows:[],draftRows:[],person:null};
+const state={sport:'football',yearStart:Math.max(2022,currentYear-2),yearEnd:currentYear,teams:[],selected:[],rosters:new Map(),profiles:{},loading:false,run:0,transport:{},failures:[],progress:0,planned:0,view:'moves',rows:[],draftRows:[],person:null};
 const rosterCachePrefix='cm_espn_roster_v3_',profilePrefix='cm_espn_profile_v3_';
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=n=>Number(n||0).toLocaleString('en-US');
@@ -40,13 +40,14 @@ async function direct(url){
  }finally{clearTimeout(tm)}
 }
 async function getJSON(url){
- if(state.transport==='proxy'){
+ const host=new URL(url).hostname;
+ if(state.transport[host]==='proxy'){
   try{return await direct('https://api.allorigins.win/raw?url='+encodeURIComponent(url))}
   catch(e){throw Error('ESPN access unavailable (proxy): '+e.message)}
  }
  try{return await direct(url)}catch(e){
   if(e.status===404||e.status===400||e.status===429)throw e;
-  try{const json=await direct('https://api.allorigins.win/raw?url='+encodeURIComponent(url));state.transport='proxy';return json}
+  try{const json=await direct('https://api.allorigins.win/raw?url='+encodeURIComponent(url));state.transport[host]='proxy';return json}
   catch(e2){throw Error('ESPN and cross-origin fallback failed: '+e.message+'; '+e2.message)}
  }
 }
@@ -318,7 +319,7 @@ function csv(){
  const url=URL.createObjectURL(new Blob(['\ufeff'+text],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='college-roster-movement-'+state.sport+'-'+state.view+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),300);
 }
 async function changeSport(){
- state.run++;state.loading=false;state.sport=$('sport').value;state.selected=[];state.rosters.clear();state.profiles={};state.teams=[];state.transport='direct';state.failures=[];
+ state.run++;state.loading=false;state.sport=$('sport').value;state.selected=[];state.rosters.clear();state.profiles={};state.teams=[];state.transport={};state.failures=[];
  $('load').disabled=false;$('load').textContent='↻ Load rosters';
  message('',false);await loadTeams();render();
 }
