@@ -4,8 +4,8 @@
 const ROOT=document.getElementById("games"),CAL=document.getElementById("calendar");
 if(!ROOT||!CAL)return;
 const ENDPOINTS=["https://inv.nadeko.net","https://invidious.tiekoetter.com","https://invidious.nerdvpn.de","https://yt.chocolatemoo53.com"];
-const results=new Map(),revealed=new Set(),queued=new Set(),tasks=[];
-let active=0,frame=0,observer=null;
+const results=new Map(),revealed=new Set(),suppressed=new Set(),queued=new Set(),tasks=[];
+let active=0,frame=0,observer=null,lastDate=CAL.value;
 function clean(s){return String(s||"").trim()}
 function html(s){return clean(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function info(card){
@@ -52,7 +52,7 @@ async function lookup(i){
  const fallback={status:available?"empty":"error"};
  cacheWrite(i,fallback);return fallback;
 }
-function isShown(i){return revealed.has(i.key)||i.card.classList.contains("revealed")}
+function isShown(i){return !suppressed.has(i.key)&&(revealed.has(i.key)||i.card.classList.contains("revealed"))}
 function searchLink(i){return "https://www.youtube.com/results?search_query="+encodeURIComponent(i.query)}
 function render(i){
  const el=i.card.querySelector(".hr-video");
@@ -98,6 +98,7 @@ function queue(i){
  results.set(i.key,{status:"loading"});queued.add(i.key);tasks.push(i);pump();
 }
 function process(){
+ if(CAL.value!==lastDate){lastDate=CAL.value;revealed.clear();suppressed.clear()}
  if(observer)observer.disconnect();
  observer=typeof IntersectionObserver==="function"?new IntersectionObserver(entries=>{
   entries.forEach(e=>{
@@ -117,13 +118,13 @@ function process(){
    card.appendChild(tile);
   }
   tile.querySelector(".hr-search").href=searchLink(i);
-  tile.querySelector(".hr-reveal").onclick=()=>{if(revealed.has(i.key))revealed.delete(i.key);else if(card.classList.contains("revealed")){revealed.delete(i.key);card.querySelector("[data-reveal]")?.click();return}else revealed.add(i.key);render(i)};
+  tile.querySelector(".hr-reveal").onclick=()=>{if(isShown(i)){revealed.delete(i.key);suppressed.add(i.key)}else{suppressed.delete(i.key);revealed.add(i.key)}render(i)};
   render(i);
   if(observer)observer.observe(tile);else if(n++<10)queue(i);
  }
 }
 const mutation=new MutationObserver(()=>{if(frame)return;frame=requestAnimationFrame(()=>{frame=0;process()})});
 mutation.observe(ROOT,{childList:true,subtree:false});
-document.getElementById("spoilerBtn")?.addEventListener("click",()=>{requestAnimationFrame(process)});
+document.getElementById("spoilerBtn")?.addEventListener("click",()=>{if(!document.getElementById("spoilerBtn")?.classList.contains("off")){revealed.clear();suppressed.clear()}requestAnimationFrame(process)});
 process();
 })();
