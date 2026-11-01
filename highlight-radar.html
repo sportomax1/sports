@@ -90,6 +90,37 @@
 .spoiler-explain{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin:12px 0}.detail-box{min-width:0;padding:12px;border:1px solid #354657;border-radius:12px;background:#121c28}.detail-box h4{font-size:12px;margin:0 0 8px}.detail-box p{font-size:11px;color:var(--muted);margin:8px 0 0}.factor{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #2c3947;padding:5px 0;font-size:11px}.factor:last-child{border:0}.factor span{color:#bdc8d5}.factor b{font-variant-numeric:tabular-nums}.factor-total{font-weight:900;border-top:1px solid #53606d;margin-top:5px;padding-top:8px;display:flex;justify-content:space-between}
 .period-wrap{overflow-x:auto}.period-table{border-collapse:collapse;width:100%;font-size:10px;white-space:nowrap;text-align:right}.period-table td,.period-table th{border-bottom:1px solid #2d3d4c;padding:6px 8px}.period-table td:first-child,.period-table th:first-child{text-align:left}
 @media(max-width:760px){.spoiler-panel{padding-top:11px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.spoiler-explain{grid-template-columns:1fr;gap:8px}.spoiler-scoreboard{gap:6px;padding:8px}.spoiler-team{gap:4px}.spoiler-team img{width:23px;height:23px}.spoiler-team b{font-size:10px}.spoiler-scoreboard .final-score{font-size:20px}.game-actions .btn.reveal{flex:1}}
+
+/* Video preview lives alongside the matchup on wide screens. */
+.hr-video{grid-column:3;grid-row:1;align-self:center;min-width:0;padding:0;border:0;grid-template-columns:99px minmax(0,1fr);gap:8px}
+.hr-thumb{width:99px;aspect-ratio:16/9;border-radius:7px}
+.hr-kicker{display:none}
+.hr-meta strong{font-size:10px;-webkit-line-clamp:1;line-height:1.25}
+.hr-meta small{font-size:9px;margin-top:2px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+.hr-locked{gap:1px;font-size:9px;padding:3px}
+.hr-locked span,.hr-play{font-size:11px;padding:2px 8px;border-radius:5px}
+.hr-video-actions{gap:3px;margin-top:3px}
+.hr-video-actions button,.hr-video-actions a{min-height:24px;padding:3px 5px;font-size:9px;white-space:nowrap;border-radius:5px}
+.game:has(.hr-video) .game-actions [data-video]{display:none}
+@media(max-width:1000px) and (min-width:761px){
+ .hr-video{grid-template-columns:84px minmax(0,1fr);gap:5px}
+ .hr-thumb{width:84px}
+ .hr-meta strong,.hr-video-actions button,.hr-video-actions a{font-size:9px}
+ .hr-video-actions button,.hr-video-actions a{padding:2px 4px}
+}
+@media(max-width:760px){
+ .hr-video{grid-column:1/-1;grid-row:2;grid-template-columns:74px minmax(0,1fr);gap:7px;padding-top:5px;border-top:1px solid #394655;align-self:center}
+ .hr-thumb{width:74px;aspect-ratio:16/9;border-radius:6px}
+ .hr-video-info{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:5px;align-items:center}
+ .hr-meta{min-width:0;grid-column:1;grid-row:1}
+ .hr-meta strong{font-size:10px;-webkit-line-clamp:1}
+ .hr-meta small{font-size:9px;margin-top:1px}
+ .hr-video-actions{grid-column:2;grid-row:1;margin:0;justify-content:end}
+ .hr-video-actions button,.hr-video-actions a{min-height:28px;font-size:9px;padding:4px 5px}
+ .hr-video-actions .hr-search{display:none}
+ .hr-video-actions .hr-watch{display:none}
+ .game:has(.hr-video) .game-actions [data-video]{display:block}
+}
 </style>
 </head>
 <body>
