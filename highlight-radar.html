@@ -38,7 +38,7 @@
 </head>
 <body>
 <main class="shell">
-<header class="head"><div><div class="eyebrow">Sportomax Sports · All six leagues</div><h1>Highlight Radar</h1><p>Find the games worth watching without learning who won. Performance grades are calculated privately from game data, never from YouTube titles.</p></div><div class="head-actions"><button class="btn shield" id="spoilerBtn" type="button" aria-pressed="true">🔒 All spoilers hidden</button><a class="home" href="./index.html">Sports home</a></div></header>
+<header class="head"><div><div class="eyebrow">Sportomax Sports · All six leagues</div><h1>Highlight Radar</h1><p>Find the games worth watching without learning who won. Performance grades are calculated privately from game data, never from YouTube titles.</p></div><div class="head-actions"><button class="btn shield" id="spoilerBtn" type="button" aria-pressed="true">🔒 Reveal all spoilers</button><a class="home" href="./index.html">Sports home</a></div></header>
 <section class="controls" aria-label="Date and game filters">
 <div class="date-switch" id="dateSwitch"><button class="iconbtn" id="prevDay" type="button" aria-label="Previous day">‹</button><div class="date-center"><div><strong id="dateTitle"></strong><small id="dateSub"></small></div><input type="date" id="calendar" aria-label="Choose game day"></div><button class="iconbtn" id="nextDay" type="button" aria-label="Next day">›</button><button class="btn" id="today" type="button">Today</button></div>
 <div class="right-controls"><label class="visually-hidden" for="sort">Sort games</label><select class="field" id="sort"><option value="best">Best to watch</option><option value="potential">Matchup potential</option><option value="time">Start time</option><option value="rally">Biggest comeback</option><option value="scoring">High scoring</option></select><label class="visually-hidden" for="tier">Minimum rating</label><select class="field" id="tier"><option value="0">All ratings</option><option value="75">Top picks (75+)</option><option value="55">Watchable (55+)</option></select><input class="field search" id="search" type="search" placeholder="Filter teams..." aria-label="Filter teams"><button class="btn" id="refresh" type="button">↻ Refresh</button></div>
@@ -182,7 +182,7 @@ function card(g,i){
  var status=g.stage==="final"?"Completed":g.stage==="live"?"Live · potential only":"Scheduled · potential only";
  var reasons=c.type==="potential"?[g.postseason?"Postseason matchup":"Pregame matchup",g.potential>=65?"Strong matchup outlook":"Early estimate"]:shown?c.tags:["Game specifics hidden · reveal to inspect"];
  var key=gameKey(g);
- var reveal='<button type="button" class="btn small reveal '+(shown?"open":"")+'" data-reveal="'+esc(key)+'" aria-expanded="'+shown+'" aria-label="'+(shown?"Hide":"Reveal")+" details for "+esc(teamName(g.away))+" versus "+esc(teamName(g.home))+'">'+(shown?"🔒 Hide details":"🔓 Reveal details")+'</button>';
+ var reveal='<button type="button" class="btn small reveal '+(shown?"open":"")+'" data-reveal="'+esc(key)+'" aria-expanded="'+shown+'" aria-label="'+(shown?"Hide":"Reveal")+" details for "+esc(teamName(g.away))+" versus "+esc(teamName(g.home))+'">'+(shown?"🔒 Hide spoilers":"🔓 Reveal spoilers")+'</button>';
  return '<article class="game '+(c.score>=80?"strong":"")+(shown?" revealed":"")+'"><div class="grade"><strong>'+esc(c.grade)+'</strong><small>'+c.score+'/100</small>'+gradeBlocks(c.score)+'</div>'
  +'<div class="match"><div class="gamehead"><span class="league-tag">'+esc(g.league.label)+'</span><span>•</span><span>'+esc(clock(g.time))+'</span><span>•</span><span>'+esc(status)+'</span></div>'
  +'<div class="matchup"><span class="team">'+img(g.away)+'<b>'+esc(teamName(g.away))+'</b></span><span class="versus">vs</span><span class="team">'+img(g.home)+'<b>'+esc(teamName(g.home))+'</b></span></div>'
@@ -200,7 +200,7 @@ function move(n){go(shiftDate(STATE.date,n))}
 function youtube(g){var query=teamName(g.away)+" vs "+teamName(g.home)+" "+dateObj(STATE.date).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})+" "+g.league.label+" full game highlights official";var url="https://www.youtube.com/results?search_query="+encodeURIComponent(query);if(window.confirm("YouTube search results may reveal the winner or final score in titles and thumbnails. Open highlights search anyway?")){var link=document.createElement("a");link.href=url;link.target="_blank";link.rel="noopener noreferrer";document.body.appendChild(link);link.click();link.remove()}}
 $("prevDay").addEventListener("click",function(){move(-1)});$("nextDay").addEventListener("click",function(){move(1)});$("today").addEventListener("click",function(){go(dayString(new Date()))});$("calendar").addEventListener("change",function(){go(this.value)});$("refresh").addEventListener("click",function(){load(true)});$("sort").addEventListener("change",render);$("tier").addEventListener("change",render);$("search").addEventListener("input",render);
 function syncSpoilerBtn(){
- var b=$("spoilerBtn");b.textContent=STATE.showScores?"🔓 Hide all spoilers":"🔒 All spoilers hidden";
+ var b=$("spoilerBtn");b.textContent=STATE.showScores?"🔓 Hide all spoilers":"🔒 Reveal all spoilers";
  b.classList.toggle("off",STATE.showScores);b.setAttribute("aria-pressed",String(!STATE.showScores));
 }
 $("spoilerBtn").addEventListener("click",function(){
