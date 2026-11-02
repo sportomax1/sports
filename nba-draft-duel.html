@@ -15,10 +15,10 @@ function positionList(p){p=String(p||'').toUpperCase();return p==='G'||p==='GUAR
 function valueOf(obj,names){for(const n of names){let v=obj?.[n];if(v!==undefined&&v!==null&&v!==''&&Number.isFinite(Number(v)))return Number(v)}return null}
 function seasonAthlete(x,t,y){
  const a=x.athlete||x.player||x, team=x.team||a.team||x.athleteTeam||{};
- const teamid=String(team.id||team.$ref?.match(/teams\\/(\\d+)/)?.[1]||x.teamId||x.athlete_team_id||'');
+ const teamid=String(team.id||team.$ref?.split('/teams/')[1]?.split('/')[0]||x.teamId||x.athlete_team_id||'');
  const teamabbr=String(team.abbreviation||x.teamAbbreviation||x.athlete_team_abbreviation||'').toUpperCase();
  if(teamid&&teamid!==String(TEAM_IDS[t[0]])||teamabbr&&teamabbr!==t[0]&&!(t[0]==='NJ'&&teamabbr==='BKN')&&!(t[0]==='SEA'&&teamabbr==='OKC'))return null;
- const id=a.id||x.athleteId||a.$ref?.match(/athletes\\/(\\d+)/)?.[1];if(!id)return null;
+ const id=a.id||x.athleteId||a.$ref?.split('/athletes/')[1]?.split('/')[0];if(!id)return null;
  const p=positionList(a.position?.abbreviation||a.position?.name||x.position?.abbreviation||x.position||'');
  const source=x.stats||x.statistics||x, v={...source};
  const cats=x.categories||x.splits?.categories||[];
