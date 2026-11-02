@@ -11,35 +11,60 @@ function stats(d){let o={};for(let c of d.categories||[]){if(Array.isArray(c.lab
 function num(o,keys){for(let k of keys)if(Number.isFinite(o[k]))return o[k];return null}
 const TEAM_IDS={ATL:1,BOS:2,BKN:17,NJ:17,CHA:30,CHI:4,CLE:5,DAL:6,DEN:7,DET:8,GS:9,HOU:10,IND:11,LAC:12,LAL:13,MEM:29,VAN:29,MIA:14,MIL:15,MIN:16,NO:3,NY:18,OKC:25,SEA:25,ORL:19,PHI:20,PHX:21,POR:22,SAC:23,SA:24,TOR:28,UTAH:26,WSH:27};
 async function resolveRef(ref){if(!ref)return null;try{return await json(ref)}catch{return null}}
+function positionList(p){p=String(p||'').toUpperCase();return p==='G'||p==='GUARD'?['PG','SG']:p==='F'||p==='FORWARD'?['SF','PF']:p==='G-F'||p==='GF'?['SG','SF']:p==='F-C'||p==='FC'?['PF','C']:p==='CENTER'?['C']:POS.includes(p)?[p]:[]}
+function valueOf(obj,names){for(const n of names){let v=obj?.[n];if(v!==undefined&&v!==null&&v!==''&&Number.isFinite(Number(v)))return Number(v)}return null}
+function seasonAthlete(x,t,y){
+ const a=x.athlete||x.player||x, team=x.team||a.team||x.athleteTeam||{};
+ const teamid=String(team.id||team.$ref?.match(/teams\\/(\\d+)/)?.[1]||x.teamId||x.athlete_team_id||'');
+ const teamabbr=String(team.abbreviation||x.teamAbbreviation||x.athlete_team_abbreviation||'').toUpperCase();
+ if(teamid&&teamid!==String(TEAM_IDS[t[0]])||teamabbr&&teamabbr!==t[0]&&!(t[0]==='NJ'&&teamabbr==='BKN')&&!(t[0]==='SEA'&&teamabbr==='OKC'))return null;
+ const id=a.id||x.athleteId||a.$ref?.match(/athletes\\/(\\d+)/)?.[1];if(!id)return null;
+ const p=positionList(a.position?.abbreviation||a.position?.name||x.position?.abbreviation||x.position||'');
+ const source=x.stats||x.statistics||x, v={...source};
+ const cats=x.categories||x.splits?.categories||[];
+ for(const cat of cats){let labels=cat.labels||cat.names||[], vals=cat.averages||cat.stats||[];labels.forEach((k,i)=>{let n=Number(vals[i]);if(Number.isFinite(n))v[String(k).toLowerCase().replace(/[^a-z0-9]/g,'')]=n})}
+ const ppg=valueOf(v,['avgPoints','avg_points','avgpoints','pointsPerGame','ppg','PTS','pts']),rpg=valueOf(v,['avgRebounds','avg_rebounds','avgrebounds','reboundsPerGame','rpg','REB','reb']),apg=valueOf(v,['avgAssists','avg_assists','avgassists','assistsPerGame','apg','AST','ast']);
+ return {id:String(id),name:a.displayName||a.fullName||a.name||x.name||'Player '+id,year:y,team:t[1],abbr:t[0],headshot:a.headshot?.href||'',positions:p.length?p:['PG','SG','SF','PF','C'],ppg:ppg??0,rpg:rpg??0,apg:apg??0,spg:valueOf(v,['avgSteals','avg_steals','stl','STL'])??0,bpg:valueOf(v,['avgBlocks','avg_blocks','blk','BLK'])??0,verified:ppg!==null&&rpg!==null&&apg!==null};
+}
 async function roster(t,y){
- let key=t[0]+y;if(cache.has(key))return cache.get(key);
- let tid=TEAM_IDS[t[0]],base='https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/'+y;
- let raw=[];
- // Historical lookup must use the season-scoped Core collection first.
- try{let d=await json(base+'/teams/'+tid+'/athletes?limit=100');let refs=(d.items||[]).map(x=>x.$ref).filter(Boolean);raw=(await Promise.all(refs.map(resolveRef))).filter(Boolean)}catch{}
- // Never substitute today's roster for an old season: ESPN site roster ignores season.
- if(!raw.length&&y>=2026){try{let d=await json('https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/'+tid+'/roster');raw=(d.athletes||[]).flatMap(x=>x.items||[x])}catch{}}
- if(!raw.length)throw Error('ESPN did not supply a verified '+season(y)+' historical roster');
- let players=(await Promise.all(raw.filter(x=>x.id&&(x.displayName||x.fullName)).map(async x=>{
-  try{
-   let d=await json('https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/athletes/'+x.id+'/stats?season='+y+'&seasontype=2');
-   let v=stats(d),ppg=num(v,['avgpoints','pointspergame','ppg','pts']),rpg=num(v,['avgrebounds','reboundspergame','rpg','reb']),apg=num(v,['avgassists','assistspergame','apg','ast']);
-   // ESPN athlete stats frequently use per-game averages in category splits.
-   if([ppg,rpg,apg].some(n=>n===null)){
-     let categories=d.categories||d.splits?.categories||[];
-     for(let cat of categories){let names=cat.labels||cat.names||[], vals=cat.averages||cat.stats||[];
-       names.forEach((name,i)=>{let k=String(name).toLowerCase().replace(/[^a-z0-9]/g,''),n=Number(vals[i]);if(Number.isFinite(n))v[k]=n})}
-     ppg=ppg??num(v,['pts','points','avgpoints']);rpg=rpg??num(v,['reb','rebounds','avgrebounds']);apg=apg??num(v,['ast','assists','avgassists']);
-   }
-   if([ppg,rpg,apg].some(n=>n===null))return{id:String(x.id),name:x.displayName||x.fullName,year:y,team:t[1],abbr:t[0],headshot:x.headshot?.href||'',positions:POS.includes((x.position?.abbreviation||'').toUpperCase())?[(x.position?.abbreviation||'').toUpperCase()]:['PG','SG','SF','PF','C'],ppg:0,rpg:0,apg:0,spg:0,bpg:0,verified:false};
-   let p=(x.position?.abbreviation||x.position?.name||'').toUpperCase();
-   let positions=p==='G'||p==='GUARD'?['PG','SG']:p==='F'||p==='FORWARD'?['SF','PF']:p==='GF'?['SG','SF']:p==='FC'?['PF','C']:p==='CENTER'?['C']:POS.includes(p)?[p]:[];
-   if(!positions.length)return null;
-   return{id:String(x.id),name:x.displayName||x.fullName,year:y,team:t[1],abbr:t[0],headshot:x.headshot?.href||'',positions,verified:true,ppg,rpg,apg,spg:num(v,['stl','spg','avgsteals'])||0,bpg:num(v,['blk','bpg','avgblocks'])||0}
-  }catch{return null}
- }))).filter(Boolean);
- if(!players.length)throw Error('ESPN roster loaded, but athlete details could not be parsed');
- cache.set(key,players);return players
+ const key=t[0]+y;if(cache.has(key))return cache.get(key);
+ const tid=TEAM_IDS[t[0]],base='https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/'+y;
+ let found=[],errors=[];
+ // First request: season-wide ESPN stats, including the athlete's actual season team.
+ // This is intentionally NOT the site roster endpoint (which ignores historical season).
+ const url='https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/statistics/byathlete?season='+y+'&seasontype=2&limit=1000';
+ try{
+  const d=await json(url);const list=d.athletes||d.items||d.players||[];
+  const rows=Array.isArray(list)?list:Object.values(list);
+  for(const x of rows){const p=seasonAthlete(x,t,y);if(p&&((x.team||x.athlete?.team||x.teamId||x.teamAbbreviation)||false))found.push(p)}
+ }catch(e){errors.push('ESPN season stats: '+e.message)}
+ // Second request: ESPN season-specific Core team athlete membership.
+ if(!found.length)try{
+  let d=await json(base+'/teams/'+tid+'/athletes?limit=100');
+  let refs=(d.items||[]).map(x=>x.$ref).filter(Boolean);
+  if(!refs.length)throw Error('empty team-athlete index');
+  // Controlled batches avoid ESPN throttling on 20+ parallel requests.
+  for(let i=0;i<refs.length;i+=5){
+   const group=await Promise.all(refs.slice(i,i+5).map(resolveRef));
+   for(const a of group){if(!a)continue;const p=seasonAthlete(a,t,y);if(p)found.push(p)}
+  }
+ }catch(e){errors.push('ESPN historical team index: '+e.message)}
+ if(!found.length)throw Error('No historical roster for '+season(y)+' '+t[1]+'. '+errors.join(' | '));
+ // Fetch missing season averages in controlled batches. Never use another season's stats.
+ for(let i=0;i<found.length;i+=4){
+  await Promise.all(found.slice(i,i+4).map(async p=>{
+   if(p.verified)return;
+   try{
+    const d=await json('https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/athletes/'+p.id+'/stats?season='+y+'&seasontype=2');
+    const v=stats(d);const categories=d.categories||d.splits?.categories||[];
+    for(const cat of categories){let labels=cat.labels||cat.names||[],vals=cat.averages||cat.stats||[];labels.forEach((k,j)=>{let n=Number(vals[j]);if(Number.isFinite(n))v[String(k).toLowerCase().replace(/[^a-z0-9]/g,'')]=n})}
+    const pp=num(v,['avgpoints','pointspergame','ppg']),rr=num(v,['avgrebounds','reboundspergame','rpg']),aa=num(v,['avgassists','assistspergame','apg']);
+    if([pp,rr,aa].every(n=>n!==null)){Object.assign(p,{ppg:pp,rpg:rr,apg:aa,spg:num(v,['avgsteals','spg'])||0,bpg:num(v,['avgblocks','bpg'])||0,verified:true})}
+   }catch{}
+  }))
+ }
+ const unique=[...new Map(found.map(p=>[p.id,p])).values()];
+ cache.set(key,unique);return unique
 }
 function render(){let q=$('search').value.toLowerCase(),f=$('filter').value,p=s.roster.filter(x=>x.name.toLowerCase().includes(q)&&(!f||x.positions.includes(f)));$('pool').innerHTML=p.length?p.map(x=>{let already=s.drafts.some(d=>Object.values(d).some(v=>v.id===x.id&&v.year===x.year));let available=already||x.verified===false?[]:x.positions.filter(z=>!s.drafts[s.turn][z]);return '<div class="athlete '+(!available.length?'unavailable':'')+'"><img class="face" src="'+face(x)+'" onerror="this.onerror=null;this.src=\'https://a.espncdn.com/i/headshots/nba/players/full/'+x.id+'.png\'" alt="'+esc(x.name)+'"><div class="details"><strong>'+esc(x.name)+'</strong><p>'+esc(x.team)+' · '+season(x.year)+' · '+x.positions.join('/')+'</p><div class="stats">'+[['PTS',x.ppg],['REB',x.rpg],['AST',x.apg],['STL',x.spg],['BLK',x.bpg]].map(([k,v])=>'<span>'+v.toFixed(1)+'<small>'+k+'</small></span>').join('')+'</div><div class="row"><select id="p'+x.id+'">'+available.map(z=>'<option>'+z+'</option>').join('')+'</select><button class="primary" data-id="'+x.id+'" '+(!available.length?'disabled':'')+'>Draft</button>'+(available.length?'':'<small>All eligible positions filled</small>')+'</div></div></div>'}).join(''):'<p>No eligible players. Try another spin or position.</p>';document.querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>draft(b.dataset.id,$('p'+b.dataset.id).value))}
 async function spin(re=false){if(s.busy||s.done||(!re&&s.lottery)||re&&(!s.lottery||!s.rerolls[s.turn]))return;if(re)s.rerolls[s.turn]--;s.busy=true;controls();let y=rnd(1990,2026),ts=teams.map(t=>historical(t,y)).filter(Boolean),t=ts[rnd(0,ts.length-1)];s.lottery={y,t};s.roster=[];$('year').textContent=season(y);$('team').textContent=t[0];$('yw').classList.add('spinning');$('tw').classList.add('spinning');$('teamlogo').src=logo(t[0]);$('teamlogo').style.display='block';await new Promise(resolve=>setTimeout(resolve,850));$('yw').classList.remove('spinning');$('tw').classList.remove('spinning');$('pooltitle').innerHTML='<div class="teamhero"><img src="'+logo(t[0])+'" alt=""><div><small>YOUR RANDOM FRANCHISE</small><h2>'+esc(t[1])+'</h2><small>'+season(y)+'</small></div></div>';$('pool').innerHTML='<p>Loading historical statistics…</p>';$('status').textContent='Fetching ESPN roster';try{s.roster=await roster(t,y);render();$('status').textContent=s.roster.filter(x=>x.verified).length+' draftable players · '+s.roster.length+' rostered'}catch(e){$('pool').innerHTML='<p>Historical data unavailable: '+esc(e.message)+'. Re-spin to try again.</p>';s.lottery=null;$('status').textContent='Data unavailable. Spin again without losing a re-spin.'}finally{s.busy=false;controls()}}
