@@ -21,7 +21,7 @@ function seasonAthlete(x,t,y){
  const id=a.id||x.athleteId||a.$ref?.split('/athletes/')[1]?.split('/')[0];if(!id)return null;
  const p=positionList(a.position?.abbreviation||a.position?.name||x.position?.abbreviation||x.position||'');
  const source=x.stats||x.statistics||x, v={...source};
- const cats=x.categories||x.splits?.categories||[];
+ const cats=x.categories||x.statCategories||x.splits?.categories||[];
  for(const cat of cats){let labels=cat.labels||cat.names||[], vals=cat.averages||cat.stats||[];labels.forEach((k,i)=>{let n=Number(vals[i]);if(Number.isFinite(n))v[String(k).toLowerCase().replace(/[^a-z0-9]/g,'')]=n})}
  const ppg=valueOf(v,['avgPoints','avg_points','avgpoints','pointsPerGame','ppg','PTS','pts']),rpg=valueOf(v,['avgRebounds','avg_rebounds','avgrebounds','reboundsPerGame','rpg','REB','reb']),apg=valueOf(v,['avgAssists','avg_assists','avgassists','assistsPerGame','apg','AST','ast']);
  return {id:String(id),name:a.displayName||a.fullName||a.name||x.name||'Player '+id,year:y,team:t[1],abbr:t[0],headshot:a.headshot?.href||'',positions:p.length?p:['PG','SG','SF','PF','C'],ppg:ppg??0,rpg:rpg??0,apg:apg??0,spg:valueOf(v,['avgSteals','avg_steals','stl','STL'])??0,bpg:valueOf(v,['avgBlocks','avg_blocks','blk','BLK'])??0,verified:ppg!==null&&rpg!==null&&apg!==null};
@@ -38,25 +38,39 @@ async function roster(t,y){
   const rows=Array.isArray(list)?list:Object.values(list);
   for(const x of rows){const p=seasonAthlete(x,t,y);if(p&&((x.team||x.athlete?.team||x.teamId||x.teamAbbreviation)||false))found.push(p)}
  }catch(e){errors.push('ESPN season stats: '+e.message)}
- // Second request: ESPN season-specific Core team athlete membership.
+ // ESPN Core provides the authoritative season membership as athlete refs.
  if(!found.length)try{
-  let d=await json(base+'/teams/'+tid+'/athletes?limit=100');
-  let refs=(d.items||[]).map(x=>x.$ref).filter(Boolean);
-  if(!refs.length)throw Error('empty team-athlete index');
-  // Controlled batches avoid ESPN throttling on 20+ parallel requests.
-  for(let i=0;i<refs.length;i+=5){
-   const group=await Promise.all(refs.slice(i,i+5).map(resolveRef));
-   for(const a of group){if(!a)continue;const p=seasonAthlete(a,t,y);if(p)found.push(p)}
+  const d=await json(base+'/teams/'+tid+'/athletes?limit=200&lang=en&region=us');
+  const refs=(d.items||[]).map(x=>x.$ref).filter(Boolean);
+  if(!refs.length)throw Error('empty athlete index');
+  $('status').textContent='Found '+refs.length+' ESPN roster entries. Loading player profiles…';
+  for(let i=0;i<refs.length;i+=4){
+   const batch=await Promise.all(refs.slice(i,i+4).map(async ref=>{
+    const id=ref.split('/athletes/')[1]?.split(/[?\/]/)[0];
+    if(!id)return null;
+    // The per-season athlete detail may 404 even though the membership is valid.
+    let a=await resolveRef(ref);
+    if(!a||!(a.displayName||a.fullName)){
+     try{a=await json('https://site.api.espn.com/apis/site/v2/sports/basketball/nba/athletes/'+id)}catch{}
+    }
+    if(!a||!(a.displayName||a.fullName)){
+     try{a=await json('https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/athletes/'+id+'?lang=en&region=us')}catch{}
+    }
+    if(!a)return null;
+    const p=seasonAthlete({...a,id},t,y);
+    return p;
+   }));
+   found.push(...batch.filter(Boolean));
   }
  }catch(e){errors.push('ESPN historical team index: '+e.message)}
- if(!found.length)throw Error('No historical roster for '+season(y)+' '+t[1]+'. '+errors.join(' | '));
+ if(!found.length)throw Error('ESPN has no retrievable player profiles for '+season(y)+' '+t[1]+'. '+errors.join(' | '));
  // Fetch missing season averages in controlled batches. Never use another season's stats.
  for(let i=0;i<found.length;i+=4){
   await Promise.all(found.slice(i,i+4).map(async p=>{
    if(p.verified)return;
    try{
     const d=await json('https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/athletes/'+p.id+'/stats?season='+y+'&seasontype=2');
-    const v=stats(d);const categories=d.categories||d.splits?.categories||[];
+    const v=stats(d);const categories=d.categories||d.statCategories||d.splits?.categories||[];
     for(const cat of categories){let labels=cat.labels||cat.names||[],vals=cat.averages||cat.stats||[];labels.forEach((k,j)=>{let n=Number(vals[j]);if(Number.isFinite(n))v[String(k).toLowerCase().replace(/[^a-z0-9]/g,'')]=n})}
     const pp=num(v,['avgpoints','pointspergame','ppg']),rr=num(v,['avgrebounds','reboundspergame','rpg']),aa=num(v,['avgassists','assistspergame','apg']);
     if([pp,rr,aa].every(n=>n!==null)){Object.assign(p,{ppg:pp,rpg:rr,apg:aa,spg:num(v,['avgsteals','spg'])||0,bpg:num(v,['avgblocks','bpg'])||0,verified:true})}
