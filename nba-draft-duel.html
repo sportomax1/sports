@@ -63,6 +63,37 @@ async function roster(t,y){
    found.push(...batch.filter(Boolean));
   }
  }catch(e){errors.push('ESPN historical team index: '+e.message)}
+ // Proven pattern from this repo's rosters.html: reconstruct historical
+ // membership from actual season games, not a current roster query.
+ if(!found.length)try{
+  const schedule=await json('https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/'+tid+'/schedule?season='+y+'&seasontype=2&limit=150');
+  const events=(schedule.events||[]).filter(e=>e.id).slice(0,12);
+  if(!events.length)throw Error('season schedule has no games');
+  const seen=new Map();
+  for(let i=0;i<events.length;i+=3){
+   const games=await Promise.all(events.slice(i,i+3).map(e=>json('https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event='+e.id).catch(()=>null)));
+   for(const game of games){
+    for(const team of game?.boxscore?.players||[]){
+     const id=String(team.team?.id||'');
+     if(id!==String(tid))continue;
+     for(const entry of team.statistics||[]){
+      const labels=entry.labels||[];
+      for(const row of entry.athletes||[]){
+       const a=row.athlete||{};if(!a.id)continue;
+       const p=seasonAthlete(a,t,y);if(!p)continue;
+       const vals=row.stats||[],by=Object.fromEntries(labels.map((k,j)=>[String(k).toUpperCase(),vals[j]]));
+       const n=k=>{let z=Number(by[k]);return Number.isFinite(z)?z:0};
+       p.ppg=n('PTS');p.rpg=n('REB');p.apg=n('AST');p.spg=n('STL');p.bpg=n('BLK');
+       p.verified=false; // Single-game box scores are not season averages.
+       seen.set(p.id,p);
+      }
+     }
+    }
+   }
+  }
+  found=[...seen.values()];
+  if(!found.length)throw Error('no player box scores for selected team');
+ }catch(e){errors.push('ESPN season-game boxscores: '+e.message)}
  if(!found.length)throw Error('ESPN has no retrievable player profiles for '+season(y)+' '+t[1]+'. '+errors.join(' | '));
  // Fetch missing season averages in controlled batches. Never use another season's stats.
  for(let i=0;i<found.length;i+=4){
