@@ -90,7 +90,7 @@
 </main>
 <div class="notifier" id="toast" role="status"></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="./realignment-data.js"></script>
+<script src="./realignment-data.js?v=ncaa-logos-43c36856"></script>
 <script>
 (function(){
 "use strict";
@@ -119,7 +119,7 @@ const ABBR={
 "NHL":"bos buf det fla mtl ott tb tor car cbj njd nyi nyr phi pit wsh chi col dal min nsh stl uta wpg ana cgy edm lak sj sea van vgk"
 };
 const CDNLEAGUE={"NFL":"nfl","NBA":"nba","NHL":"nhl","MLB":"mlb"};
-function logoUrl(t){if(state.logos.has(t.id))return state.logos.get(t.id);if(t.logo)return t.logo;const sport=CDNLEAGUE[state.league];if(!sport)return "";let index=getTeams().findIndex(x=>x.id===t.id);let code=(ABBR[state.league]||"").split(" ")[index]||"";return code?"https://a.espncdn.com/i/teamlogos/"+sport+"/500/"+code+".png":"";}
+function logoUrl(t){if(state.logos.has(t.id))return state.logos.get(t.id);if(t.logo)return t.logo;if(t.espnId)return "https://a.espncdn.com/i/teamlogos/ncaa/500/"+encodeURIComponent(t.espnId)+".png";const sport=CDNLEAGUE[state.league];if(!sport)return "";let index=getTeams().findIndex(x=>x.id===t.id);let code=(ABBR[state.league]||"").split(" ")[index]||"";return code?"https://a.espncdn.com/i/teamlogos/"+sport+"/500/"+code+".png":"";}
 function logoHtml(t,eager=false){
   const url=logoUrl(t);
   const fallback=esc((t.name.split(" ").at(-1)||t.name).slice(0,3).toUpperCase());
