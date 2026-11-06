@@ -245,7 +245,9 @@ function renderMap(){
     for(let i=0;i<members.length;i++)for(let j=i+1;j<members.length;j++){
       geographicSpan=Math.max(geographicSpan,distance(members[i].team,members[j].team));
     }
-    if(members.length>(zoom>=10?24:6)||geographicSpan>75){
+    // Professional leagues have 30–32 clubs: always show each logo separately.
+    // College maps contain 138–365 schools and retain zoomable multi-logo clusters.
+    if(state.league.startsWith("NCAA")&&(members.length>(zoom>=10?24:6)||geographicSpan>75)){
       collapsed++;
       const location=state.map.unproject(L.point(group.x,group.y),zoom);
       const marker=L.marker(location,{
