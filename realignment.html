@@ -239,7 +239,13 @@ function renderMap(){
       continue;
     }
     nearbyTeams+=members.length;
-    if(members.length>(zoom>=10?24:6)){
+    // Only fan teams from the same metro region. If logos overlap merely due to a
+    // national-scale zoom (e.g. Philadelphia and New York), use an expandable badge.
+    let geographicSpan=0;
+    for(let i=0;i<members.length;i++)for(let j=i+1;j<members.length;j++){
+      geographicSpan=Math.max(geographicSpan,distance(members[i].team,members[j].team));
+    }
+    if(members.length>(zoom>=10?24:6)||geographicSpan>75){
       collapsed++;
       const location=state.map.unproject(L.point(group.x,group.y),zoom);
       const marker=L.marker(location,{
