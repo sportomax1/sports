@@ -120,7 +120,7 @@ const ABBR={
 };
 const CDNLEAGUE={"NFL":"nfl","NBA":"nba","NHL":"nhl","MLB":"mlb"};
 function logoUrl(t){if(state.logos.has(t.id))return state.logos.get(t.id);if(t.logo)return t.logo;const sport=CDNLEAGUE[state.league];if(!sport)return "";let index=getTeams().findIndex(x=>x.id===t.id);let code=(ABBR[state.league]||"").split(" ")[index]||"";return code?"https://a.espncdn.com/i/teamlogos/"+sport+"/500/"+code+".png":"";}
-function logoHtml(t){
+function logoHtml(t,eager=false){
   const url=logoUrl(t);
   const fallback=esc((t.name.split(" ").at(-1)||t.name).slice(0,3).toUpperCase());
   if(!url)return '<span style="display:flex">'+fallback+'</span>';
@@ -131,7 +131,7 @@ function logoHtml(t){
     ?url.replace("https://a.espncdn.com/i/teamlogos/","https://a.espncdn.com/combiner/i?img=/i/teamlogos/")
     :"";
   const onerror="if(this.dataset.backup){this.src=this.dataset.backup;this.dataset.backup='';}else{this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='flex';}";
-  return '<img alt="'+esc(t.name)+' logo" loading="eager" decoding="async" draggable="false" src="'+esc(url)+'" data-backup="'+esc(alternate)+'" onerror="'+esc(onerror)+'"><span aria-hidden="true">'+fallback+'</span>';
+  return '<img alt="'+esc(t.name)+' logo" loading="'+(eager?'eager':'lazy')+'" decoding="async" draggable="false" src="'+esc(url)+'" data-backup="'+esc(alternate)+'" onerror="'+esc(onerror)+'"><span aria-hidden="true">'+fallback+'</span>';
 }
 async function loadLogos(league){if((DATA[league]||[]).length&&(DATA[league]||[]).every(t=>t.logo))return;if(state.logoLoaded.has(league))return;state.logoLoaded.add(league);const kind={"NFL":"football/nfl","NBA":"basketball/nba","NHL":"hockey/nhl","MLB":"baseball/mlb","NCAA Football":"football/college-football","NCAA Basketball":"basketball/mens-college-basketball"}[league];try{const res=await fetch("https://site.api.espn.com/apis/site/v2/sports/"+kind+"/teams?limit=500");if(!res.ok)return;const json=await res.json();const src=json.sports?.[0]?.leagues?.[0]?.teams||[];let all=src.map(x=>x.team||x);let byName=new Map();all.forEach(t=>{if(t.displayName)byName.set(norm(t.displayName),t);if(t.shortDisplayName)byName.set(norm(t.shortDisplayName),t);if(t.name&&t.location)byName.set(norm(t.location+" "+t.name),t);});let hits=0;DATA[league]?.forEach(t=>{const v=byName.get(norm(t.name))||byName.get(norm(t.name.replace(/\s*\([^)]*\)/g,"")));const url=v?.logos?.[0]?.href||v?.logo;if(url){state.logos.set(t.id,url);hits++;}});if(state.league===league&&hits){renderMap();renderList();}}catch(err){console.info("Logo catalog unavailable; built-in CDN fallback will be used.",err.message);}}
 function toast(s){el("toast").textContent=s;el("toast").style.display="block";clearTimeout(toast.timer);toast.timer=setTimeout(()=>el("toast").style.display="none",3000);}
@@ -145,9 +145,143 @@ function setMode(mode){if(mode==="current"){pushHistory();state.assign=cloneMap(
 function initMap(){if(typeof L==="undefined"){el("map").innerHTML='<div class="empty" style="padding:50px">Map library unavailable. Coordinate table and exports remain usable.</div>';return;}state.map=L.map("map",{zoomControl:true,preferCanvas:true,worldCopyJump:false}).setView([39,-97],4);L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',maxZoom:18}).addTo(state.map);state.mapLayer=L.layerGroup().addTo(state.map);state.lineLayer=L.layerGroup().addTo(state.map);state.overlapLayer=L.layerGroup().addTo(state.map);state.labelLayer=L.layerGroup().addTo(state.map);state.map.on("zoomend",()=>{if(DATA[state.league])renderMap();});}
 function fitAll(){if(!state.map)return;let teams=getTeams().filter(t=>isFinite(t.lat)&&isFinite(t.lon));if(state.focus){teams=teams.filter(t=>{let a=state.assign.get(t.id);return state.focus===a.conf||state.focus===a.conf+"|"+a.div;});}if(!teams.length)return;state.map.fitBounds(L.latLngBounds(teams.map(t=>[t.lat,t.lon])),{padding:[32,32],maxZoom:7,animate:false});}
 function popupHtml(t){let a=state.assign.get(t.id);return '<div style="display:flex;gap:9px;align-items:center"><div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center">'+logoHtml(t)+'</div><div><b>'+esc(t.name)+'</b><br><small>'+esc(t.city||"")+" "+esc(t.state||"")+'</small></div></div><div style="margin-top:9px"><strong>'+esc(a.conf)+'</strong> / '+esc(a.div)+'</div><div style="margin-top:6px;font-variant-numeric:tabular-nums">'+(+t.lat).toFixed(4)+', '+(+t.lon).toFixed(4)+'</div><div style="font-size:10px;color:#8291a0;margin-top:3px">Latitude, longitude (WGS84 / approx.)</div>';}
-function renderMap(){if(!state.map)return;state.mapLayer.clearLayers();state.lineLayer.clearLayers();state.labelLayer.clearLayers();state.markers.clear();const teams=getTeams(),groups=getGroups(),pal=palettes();let gc=new Map(groups.map(g=>[g.key,mean(g.teams)]));let highlighted=state.focus;let useLogo=el("logoToggle").checked;teams.forEach(t=>{let a=state.assign.get(t.id),key=a.conf+"|"+a.div,focused=!highlighted||highlighted===a.conf||highlighted===key,col=colorFor({conf:a.conf,key},pal);if(!focused)return;let html='<div class="pin '+(teams.length>160?"sm ":"")+(highlighted?"focused":"")+'" style="--ring:'+col+'">'+(useLogo?logoHtml(t):'<span style="display:flex">'+esc(t.name.slice(0,2).toUpperCase())+'</span>')+'</div>';let w=teams.length>160?27:37;let marker=L.marker([t.lat,t.lon],{icon:L.divIcon({html,className:"",iconSize:[w,w],iconAnchor:[w/2,w/2]}),title:t.name,riseOnHover:true});marker.bindPopup(popupHtml(t),{maxWidth:285});marker.on("click",()=>{highlightRow(t.id)});marker.addTo(state.mapLayer);state.markers.set(t.id,marker);if(el("lineToggle").checked){let ctr=gc.get(key);L.polyline([[t.lat,t.lon],[ctr.lat,ctr.lon]],{color:col,weight:1.35,opacity:.55,dashArray:"3 5",interactive:false}).addTo(state.lineLayer);}});
- if(el("labelToggle").checked){groups.filter(isFocus).forEach(g=>{const ctr=gc.get(g.key),col=colorFor(g,pal),label=el("colorToggle").checked?g.conf+" / "+g.div:g.conf;L.marker([ctr.lat,ctr.lon],{interactive:false,icon:L.divIcon({className:"",html:'<div style="white-space:nowrap;font-size:10px;background:#ffffffef;color:#2a3f52;border:2px solid '+col+';font-weight:800;padding:4px 7px;border-radius:12px;box-shadow:0 2px 4px #0002;transform:translate(-50%,-50%)">'+esc(label)+'</div>',iconSize:[1,1]})}).addTo(state.labelLayer);});}
- renderLegend(groups,pal);}
+
+function nearbyMapGroups(teams,size){
+  const zoom=state.map.getZoom(),limit=size+8,groups=[];
+  const points=teams.map(team=>({team,p:state.map.project([team.lat,team.lon],zoom)}))
+    .sort((a,b)=>a.p.x-b.p.x||a.p.y-b.p.y);
+  for(const item of points){
+    let candidate=null,bestD=limit*limit;
+    for(const g of groups){
+      const dx=item.p.x-g.x,dy=item.p.y-g.y,d=dx*dx+dy*dy;
+      if(d<bestD){candidate=g;bestD=d;}
+    }
+    if(candidate){
+      const n=candidate.items.length;
+      candidate.x=(candidate.x*n+item.p.x)/(n+1);
+      candidate.y=(candidate.y*n+item.p.y)/(n+1);
+      candidate.items.push(item);
+    }else groups.push({x:item.p.x,y:item.p.y,items:[item]});
+  }
+  return groups;
+}
+function mapClusterHtml(items){
+  const previews=items.slice(0,3).map(item=>logoHtml(item.team,true)).join("");
+  return '<div class="logo-cluster"><div class="cluster-logos">'+previews+'</div><strong>'+items.length+'</strong></div>';
+}
+function expandMapCluster(group,latlng){
+  const zoom=state.map.getZoom();
+  if(zoom<10){
+    state.map.setView([latlng.lat,latlng.lng],Math.min(zoom+2,11),{animate:true});
+    return;
+  }
+  const members=group.items.map(x=>x.team);
+  const popupHTML='<div class="cluster-popup"><b>'+members.length+' nearby teams</b>'+
+    '<p>Choose a team to see its original location and coordinates.</p>'+
+    members.map(t=>'<button type="button" data-nearby-team="'+esc(t.id)+'">'+
+      logoHtml(t,true)+'<span>'+esc(t.name)+'</span></button>').join("")+'</div>';
+  const popup=L.popup({maxWidth:320}).setLatLng(latlng).setContent(popupHTML).openOn(state.map);
+  popup.getElement()?.querySelectorAll("[data-nearby-team]").forEach(btn=>
+    btn.addEventListener("click",()=>{state.map.closePopup();goTeam(btn.dataset.nearbyTeam);}));
+}
+function renderMap(){
+  if(!state.map)return;
+  state.mapLayer.clearLayers();
+  state.lineLayer.clearLayers();
+  state.overlapLayer.clearLayers();
+  state.labelLayer.clearLayers();
+  state.markers.clear();
+  state.offsetTeams.clear();
+  const teams=getTeams(),groups=getGroups(),pal=palettes(),zoom=state.map.getZoom();
+  const centers=new Map(groups.map(g=>[g.key,mean(g.teams)]));
+  const visible=teams.filter(t=>{
+    const a=state.assign.get(t.id),key=a.conf+"|"+a.div;
+    return !state.focus||state.focus===a.conf||state.focus===key;
+  });
+  const logoMode=el("logoToggle").checked,spread=el("spreadToggle").checked;
+  const width=teams.length>160?30:42;
+  const clusters=spread?nearbyMapGroups(visible,width):visible.map(t=>{
+    const p=state.map.project([t.lat,t.lon],zoom);
+    return {x:p.x,y:p.y,items:[{team:t,p}]};
+  });
+  let spreadGroups=0,collapsed=0,nearbyTeams=0;
+  function addMarker(t,position,offset){
+    const a=state.assign.get(t.id),key=a.conf+"|"+a.div;
+    const color=colorFor({conf:a.conf,key},pal);
+    const html='<div class="pin '+(teams.length>160?"sm ":"")+(state.focus?"focused":"")+
+      '" style="--ring:'+color+'">'+(logoMode?logoHtml(t,true):
+      '<span style="display:flex">'+esc(t.name.slice(0,2).toUpperCase())+'</span>')+'</div>';
+    const marker=L.marker(position,{icon:L.divIcon({
+      html,className:"team-marker-icon",iconSize:[width,width],iconAnchor:[width/2,width/2]
+    }),title:t.name,riseOnHover:true});
+    marker.bindPopup(popupHtml(t),{maxWidth:295});
+    marker.on("click",()=>highlightRow(t.id));
+    marker.addTo(state.mapLayer);
+    state.markers.set(t.id,marker);
+    if(offset){
+      state.offsetTeams.add(t.id);
+      L.polyline([[t.lat,t.lon],position],{
+        color,weight:1.5,opacity:.56,dashArray:"2 4",interactive:false
+      }).addTo(state.overlapLayer);
+    }
+    if(el("lineToggle").checked){
+      const ctr=centers.get(key);
+      L.polyline([[t.lat,t.lon],[ctr.lat,ctr.lon]],{
+        color,weight:1.2,opacity:.38,dashArray:"3 5",interactive:false
+      }).addTo(state.lineLayer);
+    }
+  }
+  for(const group of clusters){
+    const members=group.items;
+    if(members.length===1){
+      const t=members[0].team;
+      addMarker(t,[t.lat,t.lon],false);
+      continue;
+    }
+    nearbyTeams+=members.length;
+    if(members.length>(zoom>=10?24:6)){
+      collapsed++;
+      const location=state.map.unproject(L.point(group.x,group.y),zoom);
+      const marker=L.marker(location,{
+        icon:L.divIcon({
+          html:mapClusterHtml(members),className:"team-marker-icon",
+          iconSize:[54,54],iconAnchor:[27,27]
+        }),title:members.length+" nearby teams; click to expand",
+        riseOnHover:true,zIndexOffset:200
+      });
+      marker.on("click",()=>expandMapCluster(group,location));
+      marker.addTo(state.mapLayer);
+      continue;
+    }
+    spreadGroups++;
+    const n=members.length;
+    const radius=Math.max(width*.72,(width+8)/(2*Math.sin(Math.PI/n)));
+    for(let i=0;i<n;i++){
+      const angle=-Math.PI/2+2*Math.PI*i/n;
+      const p=L.point(group.x+Math.cos(angle)*radius,group.y+Math.sin(angle)*radius);
+      addMarker(members[i].team,state.map.unproject(p,zoom),true);
+    }
+  }
+  if(el("labelToggle").checked){
+    groups.filter(isFocus).forEach(g=>{
+      const ctr=centers.get(g.key),color=colorFor(g,pal);
+      const label=el("colorToggle").checked?g.conf+" / "+g.div:g.conf;
+      L.marker([ctr.lat,ctr.lon],{interactive:false,icon:L.divIcon({
+        className:"",html:'<div style="white-space:nowrap;font-size:10px;background:#ffffffef;color:#2a3f52;border:2px solid '+color+
+          ';font-weight:800;padding:4px 7px;border-radius:12px;box-shadow:0 2px 4px #0002;transform:translate(-50%,-50%)">'+
+          esc(label)+'</div>',iconSize:[1,1]
+      })}).addTo(state.labelLayer);
+    });
+  }
+  el("nearbySummary").textContent=spread?
+    (nearbyTeams?nearbyTeams+" nearby teams: "+spreadGroups+" groups have separate logos, "+
+      collapsed+" dense locations have expandable logo badges. Exact coordinates do not change.":
+      "All visible team markers are separate at this zoom. Actual coordinates are unchanged."):
+    "Separation is disabled. Nearby markers may overlap; enable it to reveal their logos.";
+  el("mapCaption").textContent=(state.mode==="custom"?"Custom geographic alignment":"Current league alignment")+
+    " · "+groups.length+" divisions"+(nearbyTeams?" · "+nearbyTeams+" nearby teams":"");
+  renderLegend(groups,pal);
+}
 function renderLegend(groups,pal){let perDiv=el("colorToggle").checked;let shown=perDiv?groups.map(g=>({key:g.key,name:(g.conf==="Conference 1"||g.conf.match(/^Conference \d+$/)?"C"+g.conf.split(" ").at(-1):g.conf)+" · "+g.div,conf:g.conf,count:g.teams.length,color:colorFor(g,pal)})):[...new Set(groups.map(g=>g.conf))].map(conf=>({key:conf,name:conf,conf,count:groups.filter(g=>g.conf===conf).reduce((n,g)=>n+g.teams.length,0),color:pal[conf]}));el("legendTitle").textContent=(perDiv?"Divisions":"Conferences")+" · click to focus";el("legendItems").innerHTML=shown.map(g=>'<span class="item" data-focus="'+esc(g.key)+'"><span class="color-dot" style="background:'+g.color+'"></span>'+esc(g.name)+' ('+g.count+')</span>').join("");el("legendItems").querySelectorAll("[data-focus]").forEach(b=>b.onclick=()=>focus(b.dataset.focus));}
 function focus(k){state.focus=state.focus===k?"":k;renderMap();fitAll();}
 function goTeam(id){const t=getTeams().find(x=>x.id===id);if(!t||!state.map)return;state.map.setView([t.lat,t.lon],Math.max(state.map.getZoom(),10),{animate:true});setTimeout(()=>{const marker=state.markers.get(id);if(marker)marker.openPopup();else L.popup({maxWidth:300}).setLatLng([t.lat,t.lon]).setContent(popupHtml(t)).openOn(state.map);},400);}
